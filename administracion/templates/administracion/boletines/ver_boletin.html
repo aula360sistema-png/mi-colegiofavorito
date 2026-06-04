@@ -1,0 +1,77 @@
+{% extends "home.html" %}
+
+{% block title %}Boletín Oficial{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto bg-white p-6 shadow rounded">
+
+    <h1 class="text-2xl font-bold mb-4 text-center">
+        📄 Boletín Oficial de Calificaciones
+    </h1>
+
+    <!-- DATOS GENERALES -->
+    <div class="grid grid-cols-2 gap-4 mb-6 text-sm">
+        <div>
+            <strong>Centro:</strong> {{ datos.centro }}<br>
+            <strong>Año escolar:</strong> {{ datos.anio_escolar }}
+        </div>
+        <div>
+            <strong>Estudiante:</strong> {{ datos.estudiante.nombre }}<br>
+            <strong>Matrícula:</strong> {{ datos.estudiante.matricula }}<br>
+            <strong>Grado:</strong> {{ datos.estudiante.grado }}<br>
+            <strong>Sección:</strong> {{ datos.estudiante.seccion }}
+        </div>
+    </div>
+
+    <!-- ASIGNATURAS -->
+    {% for asignatura in datos.asignaturas %}
+        <div class="mb-8 border rounded p-4">
+            <h2 class="font-semibold text-lg mb-3">
+                📘 {{ asignatura.asignatura }}
+            </h2>
+
+            <table class="w-full text-sm border-collapse">
+                <thead>
+                    <tr class="bg-gray-100">
+                        <th class="border px-2 py-1 text-left">Competencia</th>
+                        {% for p in datos.periodos %}
+                            <th class="border px-2 py-1 text-center">{{ p }}</th>
+                        {% endfor %}
+                        <th class="border px-2 py-1 text-center">PC</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for comp in asignatura.competencias %}
+                        <tr>
+                            <td class="border px-2 py-1">
+                                {{ comp.competencia }}
+                            </td>
+
+                            {% for per in comp.periodos %}
+                                <td class="border px-2 py-1 text-center">
+                                    {{ per.nota|default:"—" }}
+                                </td>
+                            {% endfor %}
+
+                            <td class="border px-2 py-1 text-center font-semibold">
+                                {{ comp.pc|default:"—" }}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <div class="text-right mt-2 font-bold">
+                PF: {{ asignatura.pf|default:"—" }}
+            </div>
+        </div>
+    {% endfor %}
+
+    <!-- FOOTER -->
+    <div class="mt-6 text-xs text-gray-500">
+        Generado el {{ acta.fecha_generacion|date:"d/m/Y H:i" }} |
+        Documento oficial no editable
+    </div>
+
+</div>
+{% endblock %}

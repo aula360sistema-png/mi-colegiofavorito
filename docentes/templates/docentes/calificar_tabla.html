@@ -1,0 +1,305 @@
+{% extends "home.html" %}
+{% load notas_extras %}
+
+{% block content %}
+
+<div class="max-w-full">
+
+    <!-- ENCABEZADO -->
+    <div class="mb-6">
+        <h2 class="text-2xl font-bold">
+            📘 {{ asignacion.asignatura.nombre }}
+        </h2>
+        <p class="text-gray-600">
+            {{ asignacion.grado }} {{ asignacion.seccion }} ·
+            Año escolar {{ asignacion.anio_escolar }}
+        </p>
+    </div>
+
+    <!-- TABLA -->
+    <div class="overflow-x-auto bg-white shadow rounded-lg">
+
+        <table class="min-w-full border text-sm text-center">
+
+            <!-- ===================== THEAD ===================== -->
+            <thead class="bg-gray-100">
+
+                <!-- FILA 1 -->
+                <tr>
+                    <th rowspan="2" class="border px-3 py-2 text-left">
+                        Estudiante
+                    </th>
+
+                    {% for ac in area_competencias %}
+                        <th colspan="{{ periodos|length }}"
+                            class="border px-3 py-2 font-semibold">
+                            {{ ac.competencia.nombre }}
+                        </th>
+                    {% endfor %}
+
+                    <!-- PROMEDIO DE COMPETENCIAS -->
+                    <th colspan="{{ area_competencias|length }}"
+                        class="border px-3 py-2 font-semibold">
+                        Promedio Competencias
+                    </th>
+
+                    <th rowspan="2" class="border px-3 py-2">
+                        PF
+                    </th>
+
+                    <th rowspan="2" class="border px-3 py-2">
+                        Acción
+                    </th>
+                </tr>
+
+                <!-- FILA 2 -->
+                <tr>
+                    {% for ac in area_competencias %}
+                        {% for p in periodos %}
+                            <th class="border px-2 py-1 text-xs">
+                                {{ p.nombre }}
+                            </th>
+                        {% endfor %}
+                    {% endfor %}
+
+                    {% for ac in area_competencias %}
+                        <th class="border px-2 py-1 text-xs font-semibold">
+                            PC {{ forloop.counter }}
+                        </th>
+                    {% endfor %}
+                </tr>
+
+            </thead>
+
+            <!-- ===================== TBODY ===================== -->
+            <tbody>
+
+            {% for ins in inscripciones %}
+                <tr class="hover:bg-gray-50">
+
+                    <!-- ESTUDIANTE -->
+                    <td class="border px-3 py-2 text-left font-medium">
+                        {{ ins.estudiante.nombre_completo }}
+                    </td>
+
+                    <!-- NOTAS -->
+                    {% for ac in area_competencias %}
+                        {% for p in periodos %}
+                        <td class="border px-1">
+                            <input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                max="100"
+                                class="nota-input w-20 text-center border rounded"
+                                data-inscripcion="{{ ins.id }}"
+                                data-competencia="{{ ac.competencia.id }}"
+                                data-periodo="{{ p.id }}"
+                                value="{{ notas|get_item:ins.id|get_item:ac.competencia.id|get_item:p.id }}"
+                                {% if p.cerrado %}disabled{% endif %}
+                            >
+                        </td>
+                        {% endfor %}
+                    {% endfor %}
+
+                    <!-- PC POR COMPETENCIA -->
+                    {% for ac in area_competencias %}
+                    <td class="border px-1 font-semibold pc"
+                        data-inscripcion="{{ ins.id }}"
+                        data-competencia="{{ ac.competencia.id }}">
+                        —
+                    </td>
+                    {% endfor %}
+
+                    <!-- PF -->
+                    <td class="border px-1 font-bold pf"
+                        data-inscripcion="{{ ins.id }}">
+                        —
+                    </td>
+
+{% if not todos_cerrados %}
+<td class="border px-2">
+    <button
+        type="button"
+        class="btn-guardar-estudiante bg-blue-600 text-white px-3 py-1 rounded text-xs hover:bg-blue-700 transition"
+        data-inscripcion="{{ ins.id }}"
+    >
+        💾 Guardar
+    </button>
+</td>
+{% else %}
+<td class="border px-2 text-center text-gray-400 text-xs">
+    🔒 Cerrado
+</td>
+{% endif %}
+          
+                    </td>
+
+                </tr>
+            {% endfor %}
+
+            </tbody>
+        </table>
+    </div>
+
+    <!-- BOTÓN GUARDAR TODO -->
+    <div class="flex justify-end mt-6">
+      {% if todos_cerrados %}
+<button
+    type="submit"
+    disabled
+    class="bg-gray-400 text-white px-4 py-2 rounded cursor-not-allowed opacity-60"
+>
+    🔒 Todos los períodos cerrados
+</button>
+{% else %}
+<button
+    type="submit"
+    class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
+>
+    💾 Guardar todo
+</button>
+{% endif %}
+
+    </div>
+
+</div>
+
+<!-- ===================== SCRIPTS ===================== -->
+
+<script>
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        document.cookie.split(';').forEach(cookie => {
+            cookie = cookie.trim();
+            if (cookie.startsWith(name + '=')) {
+                cookieValue = decodeURIComponent(cookie.slice(name.length + 1));
+            }
+        });
+    }
+    return cookieValue;
+}
+</script>
+
+<script>
+// GUARDAR POR ESTUDIANTE
+document.querySelectorAll('.btn-guardar-estudiante').forEach(btn => {
+    btn.addEventListener('click', () => guardarEstudiante(btn.dataset.inscripcion, btn));
+});
+
+function guardarEstudiante(inscripcionId, btn = null) {
+
+    const inputs = document.querySelectorAll(
+        `.nota-input[data-inscripcion="${inscripcionId}"]`
+    );
+
+    let notas = [];
+
+    inputs.forEach(input => {
+        if (input.value !== '') {
+            notas.push({
+                competencia: input.dataset.competencia,
+                periodo: input.dataset.periodo,
+                nota: input.value
+            });
+        }
+    });
+
+    fetch("{% url 'guardar_notas_ajax' asignacion.id %}", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": getCookie('csrftoken')
+        },
+        body: JSON.stringify({
+            inscripcion: inscripcionId,
+            notas: notas
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.ok && btn) {
+            btn.textContent = "✔ Guardado";
+            btn.classList.remove('bg-blue-600');
+            btn.classList.add('bg-green-600');
+        }
+    });
+}
+</script>
+
+<script>
+// GUARDAR TODO
+document.getElementById('btn-guardar-todo').addEventListener('click', () => {
+    document.querySelectorAll('.btn-guardar-estudiante').forEach(btn => {
+        guardarEstudiante(btn.dataset.inscripcion);
+    });
+});
+</script>
+
+<script>
+// CÁLCULO EN TIEMPO REAL
+document.addEventListener("input", function (e) {
+    if (!e.target.classList.contains("nota-input")) return;
+    recalcularPromedios(e.target.dataset.inscripcion);
+});
+
+function recalcularPromedios(inscripcionId) {
+
+    const competencias = {};
+    const pcs = [];
+
+    document.querySelectorAll(
+        `.nota-input[data-inscripcion="${inscripcionId}"]`
+    ).forEach(input => {
+
+        const compId = input.dataset.competencia;
+        const valor = parseFloat(input.value);
+
+        if (!isNaN(valor)) {
+            if (!competencias[compId]) {
+                competencias[compId] = [];
+            }
+            competencias[compId].push(valor);
+        }
+    });
+
+    // PC POR COMPETENCIA
+    for (const compId in competencias) {
+        const notas = competencias[compId];
+        const pc = notas.reduce((a, b) => a + b, 0) / notas.length;
+        pcs.push(pc);
+
+        const pcCell = document.querySelector(
+            `.pc[data-inscripcion="${inscripcionId}"][data-competencia="${compId}"]`
+        );
+
+        if (pcCell) pcCell.textContent = pc.toFixed(2);
+    }
+
+    // PF
+    const pfCell = document.querySelector(
+        `.pf[data-inscripcion="${inscripcionId}"]`
+    );
+
+    if (pcs.length > 0) {
+        const pf = pcs.reduce((a, b) => a + b, 0) / pcs.length;
+        pfCell.textContent = pf.toFixed(2);
+    } else {
+        pfCell.textContent = "—";
+    }
+}
+</script>
+
+<script>
+// CALCULAR TODO AL CARGAR
+document.addEventListener("DOMContentLoaded", function () {
+    const inscripciones = new Set();
+    document.querySelectorAll('.nota-input').forEach(input => {
+        inscripciones.add(input.dataset.inscripcion);
+    });
+    inscripciones.forEach(id => recalcularPromedios(id));
+});
+</script>
+
+{% endblock %}

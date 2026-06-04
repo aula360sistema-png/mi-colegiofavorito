@@ -1,0 +1,152 @@
+{% extends "home.html" %}
+
+{% block title %}
+    {% if form.instance.pk %}Editar Estudiante{% else %}Nuevo Estudiante{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+
+    <!-- Encabezado -->
+    <div class="mb-6">
+        <h2 class="text-2xl font-semibold text-gray-800">
+            👤
+            {% if form.instance.pk %}
+                Editar Estudiante
+            {% else %}
+                Nuevo Estudiante
+            {% endif %}
+        </h2>
+        <p class="text-gray-600">Complete los datos del estudiante</p>
+    </div>
+
+    <div class="bg-white shadow rounded-lg p-6">
+        <form method="post" class="space-y-10">
+            {% csrf_token %}
+
+            <!-- ================= DATOS PERSONALES ================= -->
+            <section>
+                <h3 class="text-lg font-semibold mb-4 text-gray-700">
+                    🧍 Datos personales
+                </h3>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div>
+                        {{ form.primer_nombre.label_tag }}
+                        {{ form.primer_nombre }}
+                    </div>
+                    <div>
+                        {{ form.segundo_nombre.label_tag }}
+                        {{ form.segundo_nombre }}
+                    </div>
+                    <div>
+                        {{ form.primer_apellido.label_tag }}
+                        {{ form.primer_apellido }}
+                    </div>
+                    <div>
+                        {{ form.segundo_apellido.label_tag }}
+                        {{ form.segundo_apellido }}
+                    </div>
+                    <div>
+                        {{ form.sexo.label_tag }}
+                        {{ form.sexo }}
+                    </div>
+                    <div>
+                        {{ form.fecha_nacimiento.label_tag }}
+                        {{ form.fecha_nacimiento }}
+                    </div>
+                    <div>
+                        {{ form.nacionalidad.label_tag }}
+                        {{ form.nacionalidad }}
+                    </div>
+                    <div>
+                        {{ form.lugar_nacimiento.label_tag }}
+                        {{ form.lugar_nacimiento }}
+                    </div>
+                </div>
+            </section>
+
+            <!-- ================= INFORMACIÓN GENERAL ================= -->
+            <section>
+                <h3 class="text-lg font-semibold mb-4 text-gray-700">
+                    📄 Información general
+                </h3>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div>
+                        {{ form.matricula.label_tag }}
+                        {{ form.matricula }}
+                    </div>
+                    <div>
+                        {{ form.telefono.label_tag }}
+                        {{ form.telefono }}
+                    </div>
+
+                    <div class="md:col-span-2 lg:col-span-3">
+                        {{ form.direccion.label_tag }}
+                        {{ form.direccion }}
+                    </div>
+                </div>
+            </section>
+
+            <!-- ================= DATOS DEL TUTOR ================= -->
+            <section>
+                <h3 class="text-lg font-semibold mb-4 text-gray-700">
+                    👨‍👩‍👦 Datos del tutor
+                </h3>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div>
+                        {{ form.nombre_tutor.label_tag }}
+                        {{ form.nombre_tutor }}
+                    </div>
+                    <div>
+                        {{ form.cedula_tutor.label_tag }}
+                        {{ form.cedula_tutor }}
+                    </div>
+                    <div>
+                        {{ form.telefono_tutor.label_tag }}
+                        {{ form.telefono_tutor }}
+                    </div>
+                    <div>
+                        {{ form.parentesco_tutor.label_tag }}
+                        {{ form.parentesco_tutor }}
+                    </div>
+                </div>
+            </section>
+
+            <!-- ================= BOTONES ================= -->
+            <div class="flex justify-between pt-6 border-t">
+                <a href="{% url 'estudiante_list' %}"
+                   class="text-gray-600 hover:underline">
+                    ⬅ Cancelar
+                </a>
+
+                <button type="submit"
+                        class="bg-blue-600 text-white px-8 py-2 rounded hover:bg-blue-700 transition">
+                    💾 Guardar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- SweetAlert -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+{% if messages %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    {% for message in messages %}
+        Swal.fire({
+            icon: '{{ message.tags }}',
+            title: '{{ message.tags|title }}',
+            text: '{{ message|escapejs }}',
+            confirmButtonColor: '#2563eb'
+        });
+    {% endfor %}
+});
+</script>
+{% endif %}
+
+{% endblock %}

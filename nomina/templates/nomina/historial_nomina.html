@@ -1,0 +1,405 @@
+{% extends 'home.html' %}
+
+{% block content %}
+
+<div class="page-header">
+
+    <div>
+
+        <h1 class="page-title">
+            Historial de Nómina
+        </h1>
+
+        <p class="page-subtitle">
+            Nóminas generadas agrupadas por año y mes
+        </p>
+
+    </div>
+
+</div>
+
+
+<div class="history-container">
+
+    {% for anio, meses in historial.items %}
+
+    <div class="year-block">
+
+        <!-- HEADER AÑO -->
+        <button
+            type="button"
+            class="year-header"
+            onclick="toggleAccordion('year-{{ anio }}')"
+        >
+
+            <div class="left-section">
+
+                <i class="fas fa-calendar"></i>
+
+                <span>{{ anio }}</span>
+
+            </div>
+
+            <i class="fas fa-chevron-down"></i>
+
+        </button>
+
+
+        <!-- CONTENIDO AÑO -->
+        <div
+            class="year-content"
+            id="year-{{ anio }}"
+        >
+
+            {% for mes, periodos in meses.items %}
+
+            <div class="month-block">
+
+                <!-- HEADER MES -->
+                <button
+                    type="button"
+                    class="month-header"
+                    onclick="toggleAccordion('month-{{ anio }}-{{ forloop.counter }}')"
+                >
+
+                    <div class="left-section">
+
+                        <i class="fas fa-folder"></i>
+
+                        <span>{{ mes }}</span>
+
+                    </div>
+
+                    <i class="fas fa-chevron-down"></i>
+
+                </button>
+
+
+                <!-- CONTENIDO MES -->
+                <div
+                    class="month-content"
+                    id="month-{{ anio }}-{{ forloop.counter }}"
+                >
+
+                    {% for periodo in periodos %}
+
+                    <div
+                        class="payroll-item"
+                        onclick="verDetalle({{ periodo.id }})"
+                    >
+
+                        <div>
+
+                            <strong>
+                                {{ periodo.descripcion }}
+                            </strong>
+
+                            <p>
+                                Fecha pago:
+                                {{ periodo.fecha_pago }}
+                            </p>
+
+                        </div>
+
+                        <i class="fas fa-eye"></i>
+
+                    </div>
+
+                    {% endfor %}
+
+                </div>
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+    </div>
+
+    {% endfor %}
+
+</div>
+
+
+<style>
+
+.history-container{
+    display:flex;
+    flex-direction:column;
+    gap:20px;
+}
+
+
+.year-block,
+.month-block{
+    background:white;
+    border-radius:14px;
+    overflow:hidden;
+    box-shadow:0 2px 10px rgba(0,0,0,.06);
+}
+
+
+.year-header,
+.month-header{
+    width:100%;
+    border:none;
+    padding:18px 22px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    cursor:pointer;
+    transition:.3s;
+    font-size:16px;
+    font-weight:600;
+}
+
+
+.year-header{
+    background:#1e293b;
+    color:white;
+}
+
+
+.month-header{
+    background:#f8fafc;
+}
+
+
+.left-section{
+    display:flex;
+    align-items:center;
+    gap:12px;
+}
+
+
+.year-header:hover,
+.month-header:hover{
+    opacity:.95;
+}
+
+
+.year-content,
+.month-content{
+    display:none;
+}
+
+
+.payroll-item{
+    padding:18px 22px;
+    border-top:1px solid #e5e7eb;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    cursor:pointer;
+    transition:.3s;
+}
+
+
+.payroll-item:hover{
+    background:#f9fafb;
+}
+
+
+.payroll-item p{
+    margin-top:5px;
+    color:#64748b;
+    font-size:14px;
+}
+
+
+.modal-payroll table{
+    width:100%;
+    border-collapse:collapse;
+}
+
+
+.modal-payroll table th{
+    background:#f1f5f9;
+    padding:12px;
+    text-align:left;
+}
+
+
+.modal-payroll table td{
+    padding:12px;
+    border-bottom:1px solid #e5e7eb;
+}
+
+</style>
+
+
+<script>
+
+function toggleAccordion(id){
+
+    const element = document.getElementById(id);
+
+    if(!element){
+        return;
+    }
+
+    const currentDisplay = window.getComputedStyle(element).display;
+
+    if(currentDisplay === 'none'){
+
+        element.style.display = 'block';
+
+    }else{
+
+        element.style.display = 'none';
+    }
+}
+
+
+function verDetalle(periodoId){
+
+    fetch(`/nomina/detalle/${periodoId}/`)
+
+    .then(response => response.json())
+
+    .then(data => {
+
+        if(data.success){
+
+            let html = `
+
+                <div class="modal-payroll">
+
+                    <h3 style="margin-bottom:20px;">
+                        ${data.periodo}
+                    </h3>
+
+                    <table>
+
+                        <thead>
+
+                            <tr>
+
+                                <th>Empleado</th>
+                                <th>Salario</th>
+                                <th>Ingresos</th>
+                                <th>Descuentos</th>
+                                <th>Neto</th>
+
+                            </tr>
+
+                        </thead>
+
+                        <tbody>
+            `;
+
+            data.empleados.forEach(emp => {
+
+                html += `
+
+                    <tr>
+
+                        <td>${emp.empleado}</td>
+
+                        <td>RD$ ${emp.salario}</td>
+
+                        <td>RD$ ${emp.ingresos}</td>
+
+                        <td>RD$ ${emp.descuentos}</td>
+
+                        <td>
+                            <strong>
+                                RD$ ${emp.neto}
+                            </strong>
+                        </td>
+
+                    </tr>
+                `;
+            });
+
+            html += `
+
+                        </tbody>
+
+                    </table>
+
+                    <div style="
+                        margin-top:20px;
+                        text-align:right;
+                        font-size:18px;
+                        font-weight:bold;
+                    ">
+
+                        Total General:
+                        RD$ ${data.total_general}
+
+                    </div>
+
+                </div>
+            `;
+
+            Swal.fire({
+                title: 'Detalle Nómina',
+                html: html,
+                width: '1200px',
+                confirmButtonText: 'Cerrar'
+            });
+
+        }else{
+
+            Swal.fire(
+                'Error',
+                data.message,
+                'error'
+            );
+        }
+
+    })
+
+    .catch(error => {
+
+        Swal.fire(
+            'Error',
+            'Error del servidor',
+            'error'
+        );
+
+        console.error(error);
+    });
+}
+
+</script>
+
+<script>
+
+function toggleAccordion(id){
+
+    console.log("CLICK EN ACORDEON:", id);
+
+    const element = document.getElementById(id);
+
+    console.log("ELEMENTO:", element);
+
+    if(!element){
+        console.log("NO EXISTE ELEMENTO");
+        return;
+    }
+
+    const currentDisplay = window.getComputedStyle(element).display;
+
+    console.log("DISPLAY ACTUAL:", currentDisplay);
+
+    if(currentDisplay === 'none'){
+
+        console.log("ABRIENDO ACORDEON");
+
+        element.style.display = 'block';
+
+    }else{
+
+        console.log("CERRANDO ACORDEON");
+
+        element.style.display = 'none';
+    }
+}
+
+</script>
+
+
+{% endblock %}

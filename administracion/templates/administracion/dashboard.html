@@ -1,0 +1,158 @@
+{% extends "home.html" %}
+
+{% block title %}Dashboard Dirección{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-8">
+
+    <!-- ================= ENCABEZADO ================= -->
+    <div>
+        <h2 class="text-2xl font-bold text-gray-800">
+            🏫 {{ centro.nombre }}
+        </h2>
+        <p class="text-gray-600 mt-1">
+            {% if anio_actual %}
+                Año escolar activo:
+                <span class="font-semibold">{{ anio_actual.nombre }}</span>
+            {% else %}
+                <span class="text-red-600 font-semibold">
+                    ⚠ No hay año escolar activo
+                </span>
+            {% endif %}
+        </p>
+    </div>
+
+    <!-- ================= ALERTAS ================= -->
+    {% if docentes_sin_asignacion > 0 %}
+    <div class="bg-yellow-100 border-l-4 border-yellow-500 p-4 rounded">
+        ⚠ <strong>{{ docentes_sin_asignacion }}</strong>
+        docentes activos sin asignación.
+    </div>
+    {% endif %}
+
+    {% if estudiantes_sin_inscripcion > 0 %}
+    <div class="bg-red-100 border-l-4 border-red-500 p-4 rounded">
+        ❌ <strong>{{ estudiantes_sin_inscripcion }}</strong>
+        estudiantes sin inscripción en el año actual.
+    </div>
+    {% endif %}
+
+    {% if periodos_abiertos > 0 %}
+    <div class="bg-orange-100 border-l-4 border-orange-500 p-4 rounded">
+        ⏳ <strong>{{ periodos_abiertos }}</strong>
+        períodos aún abiertos.
+    </div>
+    {% endif %}
+
+    <!-- ================= MÉTRICAS BÁSICAS ================= -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+
+        <div class="bg-white shadow rounded p-4 text-center">
+            <p class="text-gray-500">Docentes</p>
+            <p class="text-2xl font-bold text-indigo-600">
+                {{ total_docentes }}
+            </p>
+        </div>
+
+        <div class="bg-white shadow rounded p-4 text-center">
+            <p class="text-gray-500">Estudiantes</p>
+            <p class="text-2xl font-bold text-green-600">
+                {{ total_estudiantes }}
+            </p>
+        </div>
+
+        <div class="bg-white shadow rounded p-4 text-center">
+            <p class="text-gray-500">Grados</p>
+            <p class="text-2xl font-bold text-blue-600">
+                {{ total_grados }}
+            </p>
+        </div>
+
+        <div class="bg-white shadow rounded p-4 text-center">
+            <p class="text-gray-500">Asignaciones</p>
+            <p class="text-2xl font-bold text-purple-600">
+                {{ total_asignaciones }}
+            </p>
+        </div>
+
+    </div>
+
+    <!-- ================= MÉTRICAS EJECUTIVAS ================= -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+        <!-- Promedio general -->
+        <div class="bg-white shadow rounded p-6 text-center">
+            <p class="text-gray-500 mb-1">📊 Promedio General</p>
+            <p class="text-3xl font-bold text-emerald-600">
+                {{ promedio_general|default:"—" }}
+            </p>
+        </div>
+
+        <!-- Periodos cerrados -->
+        <div class="bg-white shadow rounded p-6 text-center">
+            <p class="text-gray-500 mb-1">🔒 Períodos cerrados</p>
+            <p class="text-3xl font-bold text-blue-600">
+                {{ porcentaje_periodos_cerrados }}%
+            </p>
+        </div>
+
+        <!-- Actas generadas -->
+        <div class="bg-white shadow rounded p-6 text-center">
+            <p class="text-gray-500 mb-1">📄 Boletines generados</p>
+            <p class="text-3xl font-bold text-purple-600">
+                {{ porcentaje_actas_generadas }}%
+            </p>
+        </div>
+
+    </div>
+
+    <!-- ================= GRÁFICAS ================= -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+        <div class="bg-white shadow rounded p-6">
+            <h3 class="font-semibold mb-4">📊 Estudiantes por grado</h3>
+            <canvas id="estudiantesPorGrado"></canvas>
+        </div>
+
+        <div class="bg-white shadow rounded p-6">
+            <h3 class="font-semibold mb-4">👨‍🏫 Docentes por nivel</h3>
+            <canvas id="docentesPorNivel"></canvas>
+        </div>
+
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+new Chart(
+    document.getElementById('estudiantesPorGrado'),
+    {
+        type: 'bar',
+        data: {
+            labels: [{% for g in estudiantes_por_grado %}"{{ g.grado__nombre }}",{% endfor %}],
+            datasets: [{
+                label: 'Estudiantes',
+                data: [{% for g in estudiantes_por_grado %}{{ g.total }},{% endfor %}],
+                backgroundColor: '#2563eb'
+            }]
+        }
+    }
+);
+
+new Chart(
+    document.getElementById('docentesPorNivel'),
+    {
+        type: 'pie',
+        data: {
+            labels: [{% for d in docentes_por_nivel %}"{{ d.grado__nivel__nombre }}",{% endfor %}],
+            datasets: [{
+                data: [{% for d in docentes_por_nivel %}{{ d.total }},{% endfor %}],
+                backgroundColor: ['#22c55e','#3b82f6','#f59e0b','#ef4444']
+            }]
+        }
+    }
+);
+</script>
+{% endblock %}

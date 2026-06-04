@@ -1,0 +1,38 @@
+<h2>Calificar</h2>
+
+<form method="post">
+{% csrf_token %}
+
+Inscripción:
+<select name="inscripcion">
+{% for i in inscripciones %}
+<option value="{{ i.id }}">{{ i.estudiante }}</option>
+{% endfor %}
+</select><br>
+
+Asignatura:
+<select name="asignatura">
+{% for a in asignaturas %}
+<option value="{{ a.id }}">{{ a }}</option>
+{% endfor %}
+</select><br>
+
+Competencia:
+<select name="competencia">
+{% for c in competencias %}
+<option value="{{ c.id }}">{{ c }}</option>
+{% endfor %}
+</select><br>
+
+Periodo:
+<select name="periodo">
+{% for p in periodos %}
+<option value="{{ p.id }}">{{ p.nombre }}</option>
+{% endfor %}
+</select><br>
+
+Nota:
+<input name="nota"><br>
+
+<button>Guardar</button>
+</form>

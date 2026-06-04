@@ -1,0 +1,59 @@
+{% extends "home.html" %}
+
+{% block title %}{{ accion }} Año Escolar{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+
+    <div class="bg-white shadow rounded-lg p-6">
+        <h2 class="text-xl font-semibold mb-6">
+            {{ accion }} Año Escolar
+        </h2>
+
+        <form method="post" class="space-y-4">
+            {% csrf_token %}
+
+            <div>
+                <label class="block text-sm font-medium mb-1">
+                    Nombre
+                </label>
+                {{ form.nombre }}
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium mb-1">
+                    Fecha inicio
+                </label>
+                {{ form.fecha_inicio }}
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium mb-1">
+                    Fecha fin
+                </label>
+                {{ form.fecha_fin }}
+            </div>
+
+            <div class="flex items-center gap-2">
+                {{ form.activo }}
+                <label class="text-sm">
+                    Año escolar activo
+                </label>
+            </div>
+
+            <div class="flex gap-3 pt-4">
+                <button type="submit"
+                        class="bg-blue-600 text-white px-5 py-2 rounded hover:bg-blue-700">
+                    Guardar
+                </button>
+
+                <a href="{% url 'anio_escolar_list' %}"
+                   class="bg-gray-200 text-gray-700 px-5 py-2 rounded hover:bg-gray-300">
+                    Cancelar
+                </a>
+            </div>
+        </form>
+    </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,63 @@
+
+# cargo_list.html
+
+
+{% extends 'home.html' %}
+
+{% block title %}
+Cargos
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+
+    <div>
+        <h1 class="page-title">Cargos</h1>
+        <p class="page-subtitle">Gestión de cargos del sistema</p>
+    </div>
+
+    <a href="{% url 'nomina:cargo_create' %}" class="btn-primary">
+        <i class="fas fa-plus"></i>
+        Nuevo cargo
+    </a>
+
+</div>
+
+<div class="table-card">
+
+    <table class="custom-table">
+
+        <thead>
+            <tr>
+                <th>Nombre</th>
+              
+                <th>Estado</th>
+            </tr>
+        </thead>
+
+        <tbody>
+
+            {% for cargo in cargos %}
+            <tr>
+                <td>{{ cargo.nombre }}</td>
+           
+                <td>
+                    {% if cargo.activo %}
+                        <span class="badge-success">Activo</span>
+                    {% else %}
+                        <span class="badge-danger">Inactivo</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+
+        </tbody>
+
+    </table>
+
+</div>
+
+{% endblock %}
+
+

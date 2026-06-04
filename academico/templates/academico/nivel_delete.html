@@ -1,0 +1,16 @@
+<h2>Eliminar Nivel</h2>
+
+<p>
+    ¿Seguro que deseas eliminar el nivel
+    <strong>{{ nivel.nombre }}</strong>?
+</p>
+
+<form method="post">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-danger">
+        Sí, eliminar
+    </button>
+    <a href="{% url 'nivel_list' %}" class="btn btn-secondary">
+        Cancelar
+    </a>
+</form>

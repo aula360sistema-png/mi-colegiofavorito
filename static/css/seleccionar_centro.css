@@ -1,0 +1,371 @@
+/* =========================
+   SELECCIONAR CENTRO
+========================= */
+
+:root {
+
+    --primary: #4f46e5;
+    --primary-dark: #4338ca;
+
+    --background: #f5f7fb;
+
+    --text: #111827;
+    --text-light: #6b7280;
+
+    --border: #e5e7eb;
+
+    --white: #ffffff;
+
+    --shadow:
+        0 15px 35px rgba(0,0,0,.08);
+
+    --radius: 24px;
+}
+
+/* PAGE */
+
+.centro-page {
+
+    min-height: calc(100vh - 70px);
+
+    display: flex;
+
+    justify-content: center;
+
+    align-items: center;
+
+    padding: 40px;
+}
+
+/* CARD */
+
+.centro-card {
+
+    width: 100%;
+
+    max-width: 900px;
+
+    background: var(--white);
+
+    border-radius: var(--radius);
+
+    padding: 45px;
+
+    box-shadow: var(--shadow);
+
+    border: 1px solid #eef2f7;
+}
+
+/* HEADER */
+
+.centro-header {
+
+    text-align: center;
+
+    margin-bottom: 40px;
+}
+
+/* ICON */
+
+.centro-icon {
+
+    width: 90px;
+
+    height: 90px;
+
+    margin: 0 auto 22px;
+
+    border-radius: 24px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    background:
+        linear-gradient(
+            135deg,
+            var(--primary),
+            #6366f1
+        );
+
+    color: white;
+
+    font-size: 38px;
+
+    box-shadow:
+        0 14px 30px rgba(79,70,229,.25);
+}
+
+/* TITLE */
+
+.centro-title {
+
+    font-size: 34px;
+
+    font-weight: 700;
+
+    color: var(--text);
+
+    margin-bottom: 12px;
+}
+
+/* SUBTITLE */
+
+.centro-subtitle {
+
+    color: var(--text-light);
+
+    font-size: 16px;
+}
+
+/* GRID */
+
+.centro-grid {
+
+    display: grid;
+
+    gap: 18px;
+}
+
+/* OPTION */
+
+.centro-option {
+
+    position: relative;
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 20px;
+
+    padding: 24px;
+
+    border-radius: 20px;
+
+    border: 2px solid #edf2f7;
+
+    background: #fafcff;
+
+    cursor: pointer;
+
+    transition: all .25s ease;
+}
+
+/* Hover */
+
+.centro-option:hover {
+
+    border-color: #c7d2fe;
+
+    background: #ffffff;
+
+    transform: translateY(-2px);
+
+    box-shadow:
+        0 10px 24px rgba(0,0,0,.05);
+}
+
+/* INPUT */
+
+.centro-option input {
+
+    position: absolute;
+
+    opacity: 0;
+}
+
+/* RADIO */
+
+.radio-custom {
+
+    width: 24px;
+
+    height: 24px;
+
+    border-radius: 50%;
+
+    border: 2px solid #cbd5e1;
+
+    flex-shrink: 0;
+
+    position: relative;
+
+    transition: all .25s ease;
+}
+
+/* Checked */
+
+.centro-option input:checked + .radio-custom {
+
+    border-color: var(--primary);
+
+    background: var(--primary);
+}
+
+.centro-option input:checked + .radio-custom::after {
+
+    content: "";
+
+    width: 10px;
+
+    height: 10px;
+
+    border-radius: 50%;
+
+    background: white;
+
+    position: absolute;
+
+    top: 50%;
+
+    left: 50%;
+
+    transform: translate(-50%, -50%);
+}
+
+/* INFO */
+
+.centro-info {
+
+    flex: 1;
+}
+
+/* NAME */
+
+.centro-name {
+
+    font-size: 18px;
+
+    font-weight: 700;
+
+    color: var(--text);
+}
+
+/* META */
+
+.centro-meta {
+
+    margin-top: 6px;
+
+    font-size: 14px;
+
+    color: var(--text-light);
+}
+
+/* ARROW */
+
+.centro-arrow {
+
+    color: #9ca3af;
+
+    font-size: 18px;
+
+    transition: all .25s ease;
+}
+
+.centro-option:hover .centro-arrow {
+
+    color: var(--primary);
+
+    transform: translateX(4px);
+}
+
+/* ACTIONS */
+
+.centro-actions {
+
+    margin-top: 35px;
+
+    display: flex;
+
+    justify-content: flex-end;
+}
+
+/* BUTTON */
+
+.btn-entrar {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    gap: 12px;
+
+    background:
+        linear-gradient(
+            135deg,
+            var(--primary),
+            #6366f1
+        );
+
+    color: white;
+
+    border: none;
+
+    border-radius: 16px;
+
+    padding: 16px 28px;
+
+    font-size: 15px;
+
+    font-weight: 600;
+
+    cursor: pointer;
+
+    transition: all .25s ease;
+
+    box-shadow:
+        0 12px 24px rgba(79,70,229,.22);
+}
+
+/* Hover */
+
+.btn-entrar:hover {
+
+    transform: translateY(-2px);
+
+    background:
+        linear-gradient(
+            135deg,
+            var(--primary-dark),
+            #4f46e5
+        );
+
+    box-shadow:
+        0 16px 30px rgba(79,70,229,.3);
+}
+
+/* RESPONSIVE */
+
+@media (max-width: 768px) {
+
+    .centro-card {
+
+        padding: 28px;
+    }
+
+    .centro-title {
+
+        font-size: 28px;
+    }
+
+    .centro-option {
+
+        padding: 18px;
+    }
+
+    .centro-actions {
+
+        justify-content: stretch;
+    }
+
+    .btn-entrar {
+
+        width: 100%;
+
+        justify-content: center;
+    }
+}

@@ -1,0 +1,88 @@
+{% extends 'home.html' %}
+
+{% block content %}
+
+<div class="page-header">
+
+    <div>
+        <h1 class="page-title">
+            Configuración Nómina
+        </h1>
+
+        <p class="page-subtitle">
+            Empleados configurados para nómina
+        </p>
+    </div>
+
+    <a href="{% url 'nomina:configuracion_nomina_create' %}" class="btn-primary">
+        Nueva Configuración
+    </a>
+
+</div>
+
+<div class="table-card">
+
+    <table class="custom-table">
+
+        <thead>
+            <tr>
+                <th>Empleado</th>
+                <th>Cargo</th>
+                <th>Salario</th>
+                <th>AFP</th>
+                <th>ARS</th>
+                <th>Estado</th>
+            </tr>
+        </thead>
+
+        <tbody>
+
+            {% for emp in empleados %}
+
+            <tr>
+
+                <td>
+                    {{ emp.usuario.get_full_name }}
+                </td>
+
+                <td>
+                    {{ emp.cargo }}
+                </td>
+
+                <td>
+                    RD$ {{ emp.salario_base }}
+                </td>
+
+                <td>
+                    {{ emp.afp }}
+                </td>
+
+                <td>
+                    {{ emp.ars }}
+                </td>
+
+                <td>
+
+                    {% if emp.activo %}
+                        <span class="badge-success">
+                            Activo
+                        </span>
+                    {% else %}
+                        <span class="badge-danger">
+                            Inactivo
+                        </span>
+                    {% endif %}
+
+                </td>
+
+            </tr>
+
+            {% endfor %}
+
+        </tbody>
+
+    </table>
+
+</div>
+
+{% endblock %}

@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Inscribir Estudiante</title>
+</head>
+<body>
+
+<h2>Inscribir estudiante</h2>
+
+<p>
+<strong>{{ estudiante.nombre_completo }}</strong>
+</p>
+
+<form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Inscribir</button>
+</form>
+
+<a href="{% url 'estudiante_detail' estudiante.id %}">
+    Volver al detalle
+</a>
+
+</body>
+</html>

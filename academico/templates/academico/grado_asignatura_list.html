@@ -1,0 +1,57 @@
+{% extends "home.html" %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+
+    <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-semibold">
+            📚 Asignaturas por Grado
+        </h2>
+
+        <a href="{% url 'grado_asignatura_create' %}"
+           class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm">
+            + Asignar Asignatura
+        </a>
+    </div>
+
+    <div class="bg-white shadow rounded overflow-hidden">
+        <table class="w-full text-sm">
+            <thead class="bg-gray-100 text-left">
+                <tr>
+                    <th class="px-4 py-2">Grado</th>
+                    <th class="px-4 py-2">Nivel</th>
+                    <th class="px-4 py-2">Asignatura</th>
+                    <th class="px-4 py-2 w-32">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in relaciones %}
+                <tr class="border-t">
+                    <td class="px-4 py-2">{{ r.grado.nombre }}</td>
+                    <td class="px-4 py-2">{{ r.grado.nivel.nombre }}</td>
+                    <td class="px-4 py-2">{{ r.asignatura.nombre }}</td>
+                    <td class="px-4 py-2">
+                        <form method="post"
+                              action="{% url 'grado_asignatura_delete' r.id %}">
+                            {% csrf_token %}
+                            <button
+                                class="bg-red-600 text-white px-3 py-1 rounded text-xs hover:bg-red-700">
+                                Quitar
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4"
+                        class="px-4 py-6 text-center text-gray-500">
+                        No hay asignaciones registradas
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+</div>
+{% endblock %}

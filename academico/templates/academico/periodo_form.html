@@ -1,0 +1,45 @@
+{% extends "home.html" %}
+
+{% block title %}Período Académico{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+
+    <!-- Encabezado -->
+    <div class="mb-6">
+        <h2 class="text-2xl font-semibold">
+            🗓️ {{ accion|default:"Período Académico" }}
+        </h2>
+        <p class="text-gray-500 text-sm">
+            Configure los períodos del año escolar
+        </p>
+    </div>
+
+    <!-- Card -->
+    <div class="bg-white shadow rounded-lg p-6">
+
+        <form method="post">
+            {% csrf_token %}
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {{ form.as_p }}
+            </div>
+
+            <!-- Acciones -->
+            <div class="flex justify-end gap-3 mt-6">
+                <a href="{% url 'periodo_list' %}"
+                   class="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 text-gray-800">
+                    ⬅ Cancelar
+                </a>
+
+                <button type="submit"
+                        class="px-5 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white font-semibold">
+                    💾 Guardar
+                </button>
+            </div>
+        </form>
+
+    </div>
+
+</div>
+{% endblock %}

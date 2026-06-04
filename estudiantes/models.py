@@ -1,0 +1,103 @@
+from django.db import models
+
+
+class Estudiante(models.Model):
+    usuario = models.OneToOneField(
+        'usuarios.Usuario',
+        on_delete=models.CASCADE
+    )
+
+    centro = models.ForeignKey(
+        'core.CentroEducativo',
+        on_delete=models.CASCADE
+    )
+
+    # Datos personales
+    matricula = models.CharField(max_length=50, unique=True)
+
+    primer_nombre = models.CharField(max_length=100)
+    segundo_nombre = models.CharField(max_length=100, blank=True, null=True)
+    primer_apellido = models.CharField(max_length=100)
+    segundo_apellido = models.CharField(max_length=100, blank=True, null=True)
+
+    sexo = models.CharField(max_length=1, choices=[('M', 'Masculino'), ('F', 'Femenino')])
+    fecha_nacimiento = models.DateField()
+    lugar_nacimiento = models.CharField(max_length=150)
+    nacionalidad = models.CharField(max_length=100)
+
+    # Dirección
+    direccion = models.TextField()
+    telefono = models.CharField(max_length=20, blank=True, null=True)
+
+    # Tutor
+    nombre_tutor = models.CharField(max_length=200)
+    cedula_tutor = models.CharField(max_length=13)
+    telefono_tutor = models.CharField(max_length=20)
+    parentesco_tutor = models.CharField(max_length=50)
+
+  
+
+    estado = models.CharField(
+        max_length=20,
+        choices=[('activo', 'Activo'), ('retirado', 'Retirado'), ('egresado', 'Egresado')],
+        default='activo'
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def nombre_completo(self):
+        return f"{self.primer_nombre} {self.segundo_nombre or ''} {self.primer_apellido} {self.segundo_apellido or ''}".strip()
+
+    def __str__(self):
+        return self.nombre_completo()
+
+
+
+
+class HistorialAcademico(models.Model):
+    estudiante = models.ForeignKey('estudiantes.Estudiante', on_delete=models.CASCADE)
+    nivel = models.ForeignKey('academico.Nivel', on_delete=models.PROTECT)
+    grado = models.ForeignKey('academico.Grado', on_delete=models.PROTECT)
+    seccion = models.ForeignKey('academico.Seccion', on_delete=models.PROTECT)
+
+    anio_escolar = models.CharField(max_length=9)  # 2025-2026
+    estado = models.CharField(
+        max_length=20,
+        choices=[
+            ('aprobado', 'Aprobado'),
+            ('reprobado', 'Reprobado'),
+            ('retirado', 'Retirado'),
+        ]
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
+class Inscripcion(models.Model):
+    estudiante = models.ForeignKey(
+        'estudiantes.Estudiante',
+        on_delete=models.CASCADE
+    )
+    centro = models.ForeignKey(
+        'core.CentroEducativo',
+        on_delete=models.CASCADE
+    )
+    anio_escolar = models.ForeignKey(
+        'core.AnioEscolar',
+        on_delete=models.PROTECT
+    )
+    grado = models.ForeignKey(
+        'academico.Grado',
+        on_delete=models.PROTECT
+    )
+    seccion = models.ForeignKey(
+        'academico.Seccion',
+        on_delete=models.PROTECT
+    )
+    fecha = models.DateField(auto_now_add=True)
+    def __str__(self):
+        return f"{self.estudiante.nombre_completo()} - {self.centro.nombre} - {self.anio_escolar.nombre} - {self.grado.nombre} - {self.seccion.nombre}"
+
+    class Meta:
+        unique_together = ('estudiante', 'anio_escolar')

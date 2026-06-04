@@ -1,0 +1,75 @@
+{% extends "home.html" %}
+
+{% block title %}Asignar Competencias a Asignatura{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto bg-white shadow rounded-lg p-6">
+    <h2 class="text-2xl font-bold mb-4">📝 Asignar Competencias a Asignatura</h2>
+
+    <form method="post" id="area-competencia-form">
+        {% csrf_token %}
+
+        <!-- Selector de Asignatura -->
+        <div class="mb-4">
+            <label class="block font-medium mb-2">Asignatura</label>
+            <select name="asignatura" id="asignatura-select" class="w-full border rounded px-3 py-2">
+                <option value="">-- Seleccione --</option>
+                {% for a in asignaturas %}
+                    <option value="{{ a.id }}">{{ a.nombre }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Contenedor de competencias (oculto al inicio) -->
+        <div id="competencias-container" class="mb-4 hidden">
+            <label class="block font-medium mb-2">Competencias</label>
+            <div id="competencias-list" class="grid grid-cols-1 gap-2">
+                {% for c in competencias %}
+                <div class="flex items-center space-x-2 border p-2 rounded">
+                    <input type="checkbox" name="competencias" value="{{ c.id }}" checked>
+                    <span class="flex-1">{{ c.nombre }}</span>
+                    <input type="number" name="peso" value="100" min="1" max="100"
+                           class="w-20 border rounded px-2 py-1" placeholder="Peso %">
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <button type="submit"
+                class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">
+            ✅ Crear
+        </button>
+    </form>
+</div>
+
+<!-- SweetAlert2 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<!-- Mostrar/Ocultar competencias según asignatura -->
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const asignaturaSelect = document.getElementById('asignatura-select');
+    const competenciasContainer = document.getElementById('competencias-container');
+
+    asignaturaSelect.addEventListener('change', function () {
+        if (this.value) {
+            competenciasContainer.classList.remove('hidden');  // mostrar
+        } else {
+            competenciasContainer.classList.add('hidden');  // ocultar
+        }
+    });
+
+    // Mostrar mensajes de Django con SweetAlert2
+    {% if messages %}
+        {% for message in messages %}
+        Swal.fire({
+            icon: '{% if message.tags == "success" %}success{% elif message.tags == "warning" %}warning{% elif message.tags == "error" %}error{% else %}info{% endif %}',
+            title: '{{ message.tags|capfirst }}',
+            text: '{{ message }}',
+            confirmButtonColor: '#2563eb'
+        });
+        {% endfor %}
+    {% endif %}
+});
+</script>
+{% endblock %}

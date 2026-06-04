@@ -1,0 +1,103 @@
+{% extends "home.html" %}
+
+{% block title %}Períodos Académicos{% endblock %}
+
+{% block content %}
+
+
+<div class="max-w-6xl mx-auto">
+
+    <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-semibold">📆 Períodos Académicos</h2>
+<a href="{% url 'cerrar_todos_periodos' %}"
+   class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">
+    🔒 Cerrar todos los periodos
+</a>
+
+        <a href="{% url 'periodo_create' %}"
+           class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+            ➕ Nuevo período
+        </a>
+    </div>
+
+    <div class="bg-white shadow rounded overflow-hidden">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-4 py-2 text-left text-sm font-semibold">Año Escolar</th>
+                    <th class="px-4 py-2 text-left text-sm font-semibold">Nombre</th>
+                    <th class="px-4 py-2 text-center text-sm font-semibold">Orden</th>
+                    <th class="px-4 py-2 text-center text-sm font-semibold">Activo</th>
+                    <th class="px-4 py-2 text-center text-sm font-semibold">Acciones</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+                {% for p in periodos %}
+                <tr>
+                    <td class="px-4 py-2">{{ p.anio_escolar }}</td>
+                    <td class="px-4 py-2">{{ p.nombre }}</td>
+                    <td class="px-4 py-2 text-center">{{ p.orden }}</td>
+                    <td class="px-4 py-2 text-center">
+                        {% if p.activo %}
+                            <span class="text-green-600 font-semibold">Sí</span>
+                        {% else %}
+                            <span class="text-red-600 font-semibold">No</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-4 py-2 text-center space-x-2">
+                        <a href="{% url 'periodo_update' p.id %}"
+                           class="text-blue-600 hover:underline">
+                            ✏️
+                        </a>
+
+                        <button onclick="confirmarEliminacion({{ p.id }}, '{{ p.nombre }}')"
+                                class="text-red-600 hover:underline">
+                            🗑️
+                        </button>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="px-4 py-4 text-center text-gray-500">
+                        No hay períodos registrados
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+</div>
+
+<!-- SweetAlert -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+
+function confirmarEliminacion(id, nombre) {
+    Swal.fire({
+        title: '¿Eliminar período?',
+        text: `Se eliminará el período "${nombre}"`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            fetch("{% url 'periodo_delete' 0 %}".replace('0', id), {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}'
+                }
+            }).then(() => {
+                location.reload();
+            });
+        }
+    });
+}
+
+
+</script>
+{% endblock %}

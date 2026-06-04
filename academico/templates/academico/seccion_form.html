@@ -1,0 +1,62 @@
+{% extends "home.html" %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+
+    <!-- Header -->
+    <div class="mb-6">
+        <h2 class="text-2xl font-semibold">
+            {{ accion }} Sección
+        </h2>
+        <p class="text-sm text-gray-500">
+            Asigne la sección a un grado académico
+        </p>
+    </div>
+
+    <!-- Card -->
+    <div class="bg-white shadow rounded p-6">
+        <form method="post" class="space-y-5">
+            {% csrf_token %}
+
+            <!-- Grado -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">
+                    Grado
+                </label>
+                {{ form.grado }}
+                {% if form.grado.errors %}
+                    <p class="text-red-600 text-xs mt-1">
+                        {{ form.grado.errors|striptags }}
+                    </p>
+                {% endif %}
+            </div>
+
+            <!-- Nombre -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">
+                    Nombre de la sección
+                </label>
+                {{ form.nombre }}
+                {% if form.nombre.errors %}
+                    <p class="text-red-600 text-xs mt-1">
+                        {{ form.nombre.errors|striptags }}
+                    </p>
+                {% endif %}
+            </div>
+
+            <!-- Actions -->
+            <div class="flex justify-end gap-3 pt-4">
+                <a href="{% url 'seccion_list' %}"
+                   class="px-4 py-2 rounded bg-gray-200 text-gray-700 text-sm hover:bg-gray-300">
+                    Cancelar
+                </a>
+                <button type="submit"
+                        class="px-4 py-2 rounded bg-green-600 text-white text-sm hover:bg-green-700">
+                    Guardar
+                </button>
+            </div>
+        </form>
+    </div>
+
+</div>
+{% endblock %}

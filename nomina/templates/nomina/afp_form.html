@@ -1,0 +1,25 @@
+{% extends 'home.html' %}
+
+{% block content %}
+
+<div class="form-card">
+
+    <h2>
+        {{ accion }} AFP
+    </h2>
+
+    <form method="POST">
+
+        {% csrf_token %}
+
+        {{ form.as_p }}
+
+        <button type="submit" class="btn-primary">
+            Guardar
+        </button>
+
+    </form>
+
+</div>
+
+{% endblock %}

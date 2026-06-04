@@ -1,0 +1,65 @@
+{% extends "home.html" %}
+
+{% block title %}Áreas y Competencias{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto bg-white shadow rounded-lg p-6">
+
+    <!-- Encabezado -->
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800">
+                📚 Áreas y Competencias
+            </h1>
+            <p class="text-gray-500 text-sm">
+                Relación de áreas académicas con sus competencias
+            </p>
+        </div>
+
+        <a href="{% url 'area_competencia_create' %}"
+           class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition">
+            ➕ Asignar competencia
+        </a>
+    </div>
+
+    <!-- Tabla -->
+    <div class="overflow-x-auto">
+        <table class="min-w-full border border-gray-200 rounded-lg">
+            <thead class="bg-gray-100 text-gray-700">
+                <tr>
+                    <th class="px-4 py-2 text-left">Área</th>
+                    <th class="px-4 py-2 text-left">Competencia</th>
+                    <th class="px-4 py-2 text-center">Acciones</th>
+                </tr>
+            </thead>
+
+            <tbody class="divide-y divide-gray-200">
+                {% for r in relaciones %}
+                <tr class="hover:bg-gray-50">
+                    <td class="px-4 py-2 font-medium text-gray-800">
+                        {{ r.area }}
+                    </td>
+                    <td class="px-4 py-2 text-gray-700">
+                        {{ r.competencia }}
+                    </td>
+                    <td class="px-4 py-2 text-center">
+                        <a href="{% url 'area_competencia_delete' r.id %}"
+                           class="text-red-600 hover:text-red-800 text-sm">
+                            🗑 Eliminar
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="3"
+                        class="px-4 py-6 text-center text-gray-500">
+                        No hay asignaciones registradas
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+</div>
+{% endblock %}

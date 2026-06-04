@@ -1,0 +1,142 @@
+{% extends "home.html" %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-8">
+
+    <!-- ================= ENCABEZADO ================= -->
+    <div>
+        <h2 class="text-2xl font-bold text-gray-800">
+            👋 Bienvenido, {{ docente.nombre_completo }}
+        </h2>
+        <p class="text-gray-600 mt-1">
+            Año escolar activo:
+            <span class="font-semibold">{{ anio.nombre }}</span>
+        </p>
+    </div>
+
+    <!-- ================= RESUMEN ================= -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+
+        <div class="bg-white shadow rounded-lg p-5">
+            <p class="text-sm text-gray-500">Asignaturas</p>
+            <p class="text-3xl font-bold text-indigo-600">
+                {{ total_asignaciones }}
+            </p>
+        </div>
+
+        <div class="bg-white shadow rounded-lg p-5">
+            <p class="text-sm text-gray-500">Períodos activos</p>
+            <p class="text-3xl font-bold text-green-600">
+                {{ periodos|length }}
+            </p>
+        </div>
+
+        <div class="bg-white shadow rounded-lg p-5">
+            <p class="text-sm text-gray-500">Con notas</p>
+            <p class="text-3xl font-bold text-yellow-600">
+                {{ asignaciones_con_notas }}
+            </p>
+        </div>
+
+        <div class="bg-white shadow rounded-lg p-5">
+            <p class="text-sm text-gray-500">Completadas</p>
+            <p class="text-3xl font-bold text-blue-600">
+                {{ asignaciones_completas }}
+            </p>
+        </div>
+
+        <div class="bg-white shadow rounded-lg p-5">
+            <p class="text-sm text-gray-500">Estado</p>
+            <p class="text-lg font-semibold text-gray-800">
+                Docente activo
+            </p>
+        </div>
+
+    </div>
+
+    <!-- ================= ASIGNACIONES ================= -->
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <h3 class="text-lg font-semibold mb-6">
+            📘 Mis asignaciones
+        </h3>
+
+        {% if asignaciones %}
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+
+            {% for a in asignaciones %}
+            <div class="border rounded-lg p-5 hover:shadow transition">
+
+                <h4 class="text-lg font-semibold mb-1">
+                    {{ a.obj.asignatura.nombre }}
+                </h4>
+
+                <p class="text-sm text-gray-600">
+                    🎓 {{ a.obj.grado.nombre }} - {{ a.obj.seccion.nombre }}
+                </p>
+
+                <p class="text-sm text-gray-500 mb-2">
+                    Año: {{ anio.nombre }}
+                </p>
+
+                <!-- ===== ESTADO ===== -->
+                {% if a.estado == "pendiente" %}
+                    <span class="text-xs text-red-600">⚠️ Sin calificar</span>
+                {% elif a.estado == "progreso" %}
+                    <span class="text-xs text-yellow-600">🟡 En progreso</span>
+                {% else %}
+                    <span class="text-xs text-green-600">✅ Completado</span>
+                {% endif %}
+
+                <!-- ===== BOTONES ===== -->
+                <div class="flex gap-2 mt-4">
+
+                    {% if periodos %}
+                    <a href="{% url 'calificar_tabla' a.obj.id %}"
+                       class="flex-1 text-center bg-green-600 text-white text-sm py-2 rounded hover:bg-green-700">
+                        ✏️ Calificar
+                    </a>
+                    {% else %}
+                    <button disabled
+                        class="flex-1 bg-gray-300 text-gray-600 text-sm py-2 rounded cursor-not-allowed">
+                        🔒 Período cerrado
+                    </button>
+                    {% endif %}
+
+                    <a href="{% url 'docente_estudiantes' a.obj.id %}"
+                       class="flex-1 text-center bg-indigo-600 text-white text-sm py-2 rounded hover:bg-indigo-700">
+                        👥 Estudiantes
+                    </a>
+                </div>
+
+            </div>
+            {% endfor %}
+
+        </div>
+        {% else %}
+            <p class="text-gray-500 text-center py-6">
+                No tienes asignaciones registradas.
+            </p>
+        {% endif %}
+    </div>
+
+    <!-- ================= PERÍODOS ================= -->
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <h3 class="text-lg font-semibold mb-4">
+            📅 Períodos activos
+        </h3>
+
+        {% if periodos %}
+        <div class="flex flex-wrap gap-2">
+            {% for p in periodos %}
+                <span class="px-4 py-1 bg-blue-100 text-blue-700 rounded-full text-sm">
+                    {{ p.nombre }}
+                </span>
+            {% endfor %}
+        </div>
+        {% else %}
+            <p class="text-gray-500">No hay períodos activos.</p>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}

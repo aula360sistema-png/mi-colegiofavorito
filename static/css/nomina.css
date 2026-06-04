@@ -1,0 +1,23 @@
+.btn-nomina {
+    background: #16a34a;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    border: none;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.btn-nomina:hover {
+    background: #15803d;
+}
+
+.btn-disabled {
+    background: #9ca3af;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    border: none;
+}

@@ -1,0 +1,61 @@
+{% extends "home.html" %}
+
+{% block title %}Boletines Oficiales{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+
+    <h1 class="text-2xl font-bold mb-6">
+        📑 Boletines Oficiales
+    </h1>
+
+    <div class="bg-white shadow rounded overflow-x-auto">
+        <table class="w-full text-sm">
+            <thead class="bg-gray-100">
+                <tr>
+                    <th class="px-3 py-2 text-left">Estudiante</th>
+                    <th class="px-3 py-2">Matrícula</th>
+                    <th class="px-3 py-2">Grado</th>
+                    <th class="px-3 py-2">Sección</th>
+                    <th class="px-3 py-2">Año</th>
+                    <th class="px-3 py-2 text-center">Acción</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for acta in actas %}
+                    <tr class="border-t">
+                        <td class="px-3 py-2">
+                            {{ acta.estudiante.nombre_completo }}
+                        </td>
+                        <td class="px-3 py-2 text-center">
+                            {{ acta.estudiante.matricula }}
+                        </td>
+                        <td class="px-3 py-2 text-center">
+                            {{ acta.grado }}
+                        </td>
+                        <td class="px-3 py-2 text-center">
+                            {{ acta.seccion }}
+                        </td>
+                        <td class="px-3 py-2 text-center">
+                            {{ acta.anio_escolar }}
+                        </td>
+                        <td class="px-3 py-2 text-center">
+                            <a href="{% url 'administracion:ver_boletin' acta.id %}"
+                               class="text-blue-600 hover:underline font-medium">
+                                📄 Ver
+                            </a>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-6 text-gray-500">
+                            No hay boletines generados
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+</div>
+{% endblock %}

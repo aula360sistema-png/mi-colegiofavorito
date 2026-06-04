@@ -1,0 +1,99 @@
+{% extends "home.html" %}
+
+{% block title %}Inscripción de Estudiante{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto bg-white shadow rounded-lg p-6">
+
+    <h2 class="text-2xl font-semibold mb-4">
+        📝 Inscripción de Estudiante
+    </h2>
+
+    <div class="mb-4 text-gray-700">
+        <p><strong>Estudiante:</strong> {{ estudiante.nombre_completo }}</p>
+        <p><strong>Año escolar:</strong> {{ anio_escolar.nombre }}</p>
+    </div>
+
+    <hr class="my-4">
+
+    <form method="post" class="space-y-4">
+        {% csrf_token %}
+
+        <div>
+            <label class="block font-medium mb-1">Grado</label>
+            {{ form.grado }}
+        </div>
+
+        <div>
+            <label class="block font-medium mb-1">Sección</label>
+            {{ form.seccion }}
+        </div>
+
+        <div class="flex justify-between items-center pt-4">
+            <a href="{% url 'estudiante_detail' estudiante.id %}"
+               class="text-gray-600 hover:underline">
+                ⬅ Volver
+            </a>
+
+            <button type="submit"
+                    class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">
+                ✅ Inscribir
+            </button>
+        </div>
+    </form>
+
+</div>
+
+<!-- 🔥 JS SECCIONES -->
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const gradoSelect = document.getElementById('id_grado');
+    const seccionSelect = document.getElementById('id_seccion');
+
+    if (!gradoSelect || !seccionSelect) {
+        console.error("❌ No se encontraron los selects");
+        return;
+    }
+
+    gradoSelect.addEventListener('change', function () {
+        const gradoId = this.value;
+
+        seccionSelect.innerHTML = '<option value="">---------</option>';
+
+        if (!gradoId) return;
+
+        fetch("{% url 'ajax_cargar_secciones' %}?grado=" + gradoId)
+            .then(response => response.json())
+            .then(data => {
+                data.forEach(seccion => {
+                    const option = document.createElement('option');
+                    option.value = seccion.id;
+                    option.textContent = seccion.nombre;
+                    seccionSelect.appendChild(option);
+                });
+            })
+            .catch(error => {
+                console.error("❌ Error cargando secciones:", error);
+            });
+    });
+});
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+{% if messages %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    {% for message in messages %}
+        Swal.fire({
+            icon: '{% if message.tags == "success" %}success{% elif message.tags == "warning" %}warning{% elif message.tags == "error" %}error{% else %}info{% endif %}',
+            title: '{{ message.tags|capfirst }}',
+            text: '{{ message }}',
+            confirmButtonColor: '#2563eb'
+        });
+    {% endfor %}
+});
+</script>
+{% endif %}
+
+{% endblock %}

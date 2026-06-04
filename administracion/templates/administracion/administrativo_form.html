@@ -1,0 +1,46 @@
+{% extends "home.html" %}
+
+{% block title %}Crear Administrativo{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Crear Administrativo</h1>
+    <form method="post">
+        {% csrf_token %}
+
+        {% for field in form %}
+            <div>
+                <label>{{ field.label }}</label>
+                {{ field }}
+                {% if field.errors %}
+                    <ul class="errorlist">
+                        {% for error in field.errors %}
+                            <li style="color:red;">{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            </div>
+        {% endfor %}
+
+        <div class="btn-container">
+            <button type="submit" class="btn-primary">Crear Administrativo</button>
+            <a href="{% url 'administracion:dashboard_admin' %}" class="btn-link">← Volver al Dashboard</a>
+        </div>
+    </form>
+</div>
+
+<style>
+.container { max-width: 800px; margin: 30px auto; font-family: 'Segoe UI', Tahoma, Verdana, sans-serif; }
+h1 { text-align: center; color: #4b6cb7; margin-bottom: 30px; }
+form { display: grid; grid-template-columns: 1fr 1fr; gap: 20px 15px; }
+form label { font-weight: 600; display: block; margin-bottom: 5px; color: #333; }
+form input, form select, form textarea { width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ccc; font-size: 14px; }
+form input:focus, form select:focus, form textarea:focus { border-color: #4b6cb7; outline: none; }
+textarea { grid-column: 1 / -1; }
+.btn-container { grid-column: 1 / -1; display: flex; justify-content: flex-start; gap: 15px; margin-top: 20px; }
+.btn-primary { background-color: #4b6cb7; color: #fff; padding: 12px 25px; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; }
+.btn-primary:hover { background-color: #3a54a1; }
+.btn-link { text-decoration: none; color: #4b6cb7; font-weight: 500; line-height: 38px; }
+.errorlist { margin: 5px 0 0 0; padding: 0; list-style: none; }
+</style>
+{% endblock %}

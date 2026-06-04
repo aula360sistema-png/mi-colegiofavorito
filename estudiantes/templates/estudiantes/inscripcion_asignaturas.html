@@ -1,0 +1,53 @@
+{% extends "home.html" %}
+
+{% block title %}Materias del Estudiante{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+
+    <h2 class="text-2xl font-semibold mb-4">
+        📘 Materias
+    </h2>
+
+    <p class="mb-4 text-gray-600">
+        {{ inscripcion.estudiante.nombre_completo }} —
+        {{ inscripcion.grado.nombre }} {{ inscripcion.seccion.nombre }} |
+        {{ inscripcion.anio_escolar }}
+    </p>
+
+    <div class="bg-white shadow rounded overflow-hidden">
+        <table class="w-full">
+            <thead class="bg-gray-100">
+                <tr>
+                    <th class="px-4 py-2 text-left">Asignatura</th>
+                    <th class="px-4 py-2 text-left">Docente</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y">
+                {% for a in asignaciones %}
+                <tr>
+                    <td class="px-4 py-2">
+                        {{ a.asignatura.nombre }}
+                    </td>
+                    <td class="px-4 py-2">
+                        {{ a.docente.nombre_completo|default:"—" }}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="2" class="px-4 py-3 text-gray-500 text-center">
+                        No hay materias asignadas
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <a href="{% url 'estudiante_detail' inscripcion.estudiante.id %}"
+       class="inline-block mt-4 text-blue-600 hover:underline">
+        ← Volver al estudiante
+    </a>
+
+</div>
+{% endblock %}

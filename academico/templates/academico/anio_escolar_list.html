@@ -1,0 +1,60 @@
+{% extends "home.html" %}
+
+{% block title %}Años Escolares{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+
+    <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-semibold">📆 Años Escolares</h2>
+
+        <a href="{% url 'anio_escolar_create' %}"
+           class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+            ➕ Nuevo
+        </a>
+    </div>
+
+    <div class="bg-white shadow rounded overflow-hidden">
+        <table class="w-full">
+            <thead class="bg-gray-100">
+                <tr>
+                    <th class="px-4 py-2 text-left">Nombre</th>
+                    <th class="px-4 py-2">Inicio</th>
+                    <th class="px-4 py-2">Fin</th>
+                    <th class="px-4 py-2">Activo</th>
+                    <th class="px-4 py-2"></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for a in anios %}
+                <tr class="border-t">
+                    <td class="px-4 py-2">{{ a.nombre }}</td>
+                    <td class="px-4 py-2 text-center">{{ a.fecha_inicio }}</td>
+                    <td class="px-4 py-2 text-center">{{ a.fecha_fin }}</td>
+                    <td class="px-4 py-2 text-center">
+                        {% if a.activo %}
+                            ✅
+                        {% else %}
+                            —
+                        {% endif %}
+                    </td>
+                    <td class="px-4 py-2 text-right">
+                        <a href="{% url 'anio_escolar_update' a.id %}"
+                           class="text-blue-600 hover:underline">
+                            Editar
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="px-4 py-4 text-center text-gray-500">
+                        No hay años escolares registrados
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+</div>
+{% endblock %}

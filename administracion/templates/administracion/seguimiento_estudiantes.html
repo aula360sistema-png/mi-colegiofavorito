@@ -1,0 +1,78 @@
+{% extends "home.html" %}
+
+{% block title %}Seguimiento de Estudiantes{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-6">
+
+    <!-- Encabezado -->
+    <div>
+        <h1 class="text-2xl font-bold text-gray-800">
+            🧑‍🎓 Seguimiento de Estudiantes
+        </h1>
+        <p class="text-gray-500 text-sm">
+            Consulta académica y boletines oficiales
+        </p>
+    </div>
+
+    <!-- Tabla -->
+    <div class="bg-white shadow rounded overflow-x-auto">
+        <table class="min-w-full text-sm">
+            <thead class="bg-gray-100">
+                <tr>
+                    <th class="px-4 py-3 text-left">Estudiante</th>
+                    <th class="px-4 py-3 text-left">Grado</th>
+                    <th class="px-4 py-3 text-left">Sección</th>
+                    <th class="px-4 py-3 text-center">Último promedio</th>
+                 <th class="px-4 py-3 text-center">Historial</th>
+<th class="px-4 py-3 text-center">Boletín</th>
+                </tr>
+            </thead>
+            <tbody>
+
+            {% for fila in actas %}
+                <tr class="border-t">
+                    <td class="px-4 py-2">
+                        {{ fila.estudiante.nombre_completo }}
+                    </td>
+
+                    <td class="px-4 py-2">
+                        {{ fila.grado }}
+                    </td>
+
+                    <td class="px-4 py-2">
+                        {{ fila.seccion }}
+                    </td>
+
+                    <td class="px-4 py-2 text-center font-semibold">
+                        {{ fila.promedio|default:"—" }}
+                    </td>
+
+                    <td class="px-4 py-2 text-center">
+                        <a href="{% url 'administracion:seguimiento_estudiante' fila.estudiante.id %}"
+                           class="text-blue-600 hover:underline">
+                            📄 Ver historial
+                        </a>
+                    </td>
+                       <td class="px-4 py-2 text-center">
+        <a href="{% url 'administracion:imprimir_boletin_acta' fila.acta_id %}"
+           target="_blank"
+           class="text-indigo-600 hover:underline">
+           🖨️ Imprimir boletín
+        </a>
+    </td>
+                </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center py-6 text-gray-500">
+                        No hay estudiantes con boletines generados.
+                    </td>
+                </tr>
+            {% endfor %}
+
+            </tbody>
+        </table>
+    </div>
+
+</div>
+{% endblock %}

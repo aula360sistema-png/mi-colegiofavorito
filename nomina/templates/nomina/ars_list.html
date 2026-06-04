@@ -1,0 +1,57 @@
+{% extends 'home.html' %}
+
+{% block content %}
+
+<div class="page-header">
+
+    <div>
+        <h1 class="page-title">
+            ARS
+        </h1>
+
+        <p class="page-subtitle">
+            Administrar ARS
+        </p>
+    </div>
+
+    <a href="{% url 'nomina:ars_create' %}" class="btn-primary">
+        Nueva ARS
+    </a>
+
+</div>
+
+<div class="table-card">
+
+    <table class="custom-table">
+
+        <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>% Empleado</th>
+                <th>% Empresa</th>
+            </tr>
+        </thead>
+
+        <tbody>
+
+            {% for ars in ars_list %}
+
+            <tr>
+
+                <td>{{ ars.nombre }}</td>
+
+                <td>{{ ars.porcentaje_empleado }}%</td>
+
+                <td>{{ ars.porcentaje_empresa }}%</td>
+
+            </tr>
+
+            {% endfor %}
+
+        </tbody>
+
+    </table>
+
+</div>
+
+{% endblock %}

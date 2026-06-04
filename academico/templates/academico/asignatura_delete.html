@@ -1,0 +1,19 @@
+
+<h2>Eliminar Area</h2>
+
+<p>
+    ¿Seguro que deseas eliminar la Asignatura
+    <strong>{{ asignatura.nombre }}</strong>
+
+</p>
+
+<form method="post">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-danger">
+        Sí, eliminar
+    </button>
+    <a href="{% url 'asignatura_list' %}" class="btn btn-secondary">
+        Cancelar
+    </a>
+</form>
+

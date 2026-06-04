@@ -1,0 +1,121 @@
+{% extends "home.html" %}
+
+{% block content %}
+<div class="max-w-xl mx-auto">
+
+    <h2 class="text-2xl font-semibold mb-6">
+        {{ accion }} Asignatura a Grado
+    </h2>
+
+    <div class="bg-white shadow rounded p-6">
+        <form method="post" novalidate>
+            {% csrf_token %}
+
+            <!-- GRADO -->
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-1">
+                    Grado
+                </label>
+                {{ form.grado }}
+                {% if form.grado.errors %}
+                    <p class="text-red-600 text-xs mt-1">
+                        {{ form.grado.errors|striptags }}
+                    </p>
+                {% endif %}
+            </div>
+
+            <!-- ASIGNATURA -->
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-1">
+                    Asignatura
+                </label>
+
+                <select name="asignatura" id="id_asignatura"
+                        class="w-full border rounded px-3 py-2 text-sm">
+                    <option value="">Seleccione un grado primero</option>
+                </select>
+
+                <p id="asignatura-msg"
+                   class="text-sm text-gray-500 mt-1 hidden"></p>
+
+                {% if form.asignatura.errors %}
+                    <p class="text-red-600 text-xs mt-1">
+                        {{ form.asignatura.errors|striptags }}
+                    </p>
+                {% endif %}
+            </div>
+
+            {% if form.non_field_errors %}
+                <div class="bg-red-50 border border-red-200 text-red-700 text-sm p-3 rounded mb-4">
+                    {{ form.non_field_errors }}
+                </div>
+            {% endif %}
+
+            <div class="flex justify-end gap-2 mt-6">
+                <a href="{% url 'grado_asignatura_list' %}"
+                   class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 text-sm">
+                    Cancelar
+                </a>
+
+                <button
+                    class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm">
+                    Guardar
+                </button>
+            </div>
+        </form>
+    </div>
+
+</div>
+
+<!-- =================== AJAX =================== -->
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const gradoSelect = document.getElementById('id_grado');
+    const asignaturaSelect = document.getElementById('id_asignatura');
+    const mensaje = document.getElementById('asignatura-msg');
+
+    gradoSelect.addEventListener('change', function () {
+        const gradoId = this.value;
+
+        asignaturaSelect.innerHTML =
+            '<option value="">Cargando asignaturas...</option>';
+        mensaje.classList.add('hidden');
+
+        if (!gradoId) {
+            asignaturaSelect.innerHTML =
+                '<option value="">Seleccione un grado primero</option>';
+            return;
+        }
+
+        fetch(`/academico/ajax/asignaturas-por-grado/${gradoId}/`)
+            .then(response => response.json())
+            .then(data => {
+                asignaturaSelect.innerHTML = '';
+
+                if (data.asignaturas.length === 0) {
+                    asignaturaSelect.innerHTML =
+                        '<option value="">No hay asignaturas disponibles</option>';
+                    mensaje.textContent =
+                        'Todas las asignaturas ya están asignadas a este grado.';
+                    mensaje.classList.remove('hidden');
+                    return;
+                }
+
+                asignaturaSelect.innerHTML =
+                    '<option value="">Seleccione una asignatura</option>';
+
+                data.asignaturas.forEach(asig => {
+                    const option = document.createElement('option');
+                    option.value = asig.id;
+                    option.textContent = asig.nombre;
+                    asignaturaSelect.appendChild(option);
+                });
+            })
+            .catch(() => {
+                asignaturaSelect.innerHTML =
+                    '<option value="">Error cargando asignaturas</option>';
+            });
+    });
+});
+</script>
+{% endblock %}

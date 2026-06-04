@@ -1,0 +1,112 @@
+{% extends "home.html" %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+
+    <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-semibold">
+            🎓 Grados Académicos
+        </h2>
+
+        <a href="{% url 'grado_create' %}"
+           class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm">
+            + Nuevo Grado
+        </a>
+    </div>
+
+    <div class="bg-white shadow rounded overflow-hidden">
+        <table class="w-full text-sm">
+            <thead class="bg-gray-100 text-left">
+                <tr>
+                    <th class="px-4 py-2">Grado</th>
+                    <th class="px-4 py-2">Nivel</th>
+                    <th class="px-4 py-2 w-40">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for grado in grados %}
+                <tr class="border-t">
+                    <td class="px-4 py-2">{{ grado.nombre }}</td>
+                    <td class="px-4 py-2">{{ grado.nivel.nombre }}</td>
+                 <td class="px-4 py-2 flex gap-2">
+
+  <a href="{% url 'grado_estudiantes' grado.id %}"
+       class="bg-green-600 text-white px-3 py-1 rounded text-xs hover:bg-green-700">
+        Ver estudiantes
+    </a>
+
+    <a href="{% url 'grado_asignaturas' grado.id %}"
+       class="bg-indigo-600 text-white px-3 py-1 rounded text-xs hover:bg-indigo-700">
+        Ver asignaturas
+    </a>
+
+    <a href="{% url 'grado_update' grado.id %}"
+       class="bg-yellow-500 text-white px-3 py-1 rounded text-xs hover:bg-yellow-600">
+        Editar
+    </a>
+
+    <button
+        onclick="eliminarGrado(
+            '{{ grado.id }}',
+            '{{ grado.nombre }}',
+            '{% url 'grado_delete' grado.id %}'
+        )"
+        class="bg-red-600 text-white px-3 py-1 rounded text-xs hover:bg-red-700">
+        Eliminar
+    </button>
+</td>
+
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="3" class="px-4 py-6 text-center text-gray-500">
+                        No hay grados registrados
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+</div>
+
+<!-- SweetAlert -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+function eliminarGrado(id, nombre, url) {
+    Swal.fire({
+        title: '¿Eliminar grado?',
+        text: `Se eliminará el grado "${nombre}"`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc2626',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken')
+                }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire(
+                        'Eliminado',
+                        'El grado fue eliminado correctamente',
+                        'success'
+                    ).then(() => location.reload())
+                } else {
+                    Swal.fire('Error', data.error, 'error')
+                }
+            })
+        }
+    })
+}
+</script>
+{% endblock %}

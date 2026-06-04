@@ -1,0 +1,114 @@
+{% extends "home.html" %}
+
+{% block title %}Personal del Centro{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+
+    <h2 class="text-2xl font-semibold mb-4">
+        👥 Personal del centro: {{ centro.nombre }}
+    </h2>
+
+    <!-- Selector -->
+    <form method="get" class="flex gap-3 mb-6">
+        <select name="tipo"
+                class="border rounded px-3 py-2 text-sm"
+                required>
+            <option value="">-- Seleccionar --</option>
+            <option value="administrativo" {% if tipo == 'administrativo' %}selected{% endif %}>
+                Personal administrativo
+            </option>
+            <option value="estudiante" {% if tipo == 'estudiante' %}selected{% endif %}>
+                Estudiantes
+            </option>
+        </select>
+
+        <button type="submit"
+                class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+            🔍 Buscar
+        </button>
+    </form>
+
+    <!-- ADMINISTRATIVOS -->
+    {% if tipo == 'administrativo' %}
+    <div class="bg-white shadow rounded">
+        <table class="w-full text-sm">
+            <thead class="bg-gray-50 text-left">
+                <tr>
+                    <th class="px-4 py-2">Nombre</th>
+                    <th class="px-4 py-2">Cargo</th>
+                    <th class="px-4 py-2">Correo</th>
+                    <th class="px-4 py-2">Estado</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in administrativos %}
+                <tr class="border-t">
+                    <td class="px-4 py-2">{{ p.nombre_completo }}</td>
+                    <td class="px-4 py-2 capitalize">{{ p.get_cargo_display }}</td>
+                    <td class="px-4 py-2">{{ p.usuario.email }}</td>
+                    <td class="px-4 py-2">
+                        <span class="px-2 py-1 rounded text-xs
+                            {% if p.estado == 'activo' %}
+                                bg-green-100 text-green-700
+                            {% else %}
+                                bg-red-100 text-red-700
+                            {% endif %}">
+                            {{ p.estado }}
+                        </span>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" class="px-4 py-6 text-center text-gray-500">
+                        No hay personal administrativo
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    <!-- ESTUDIANTES -->
+    {% if tipo == 'estudiante' %}
+    <div class="bg-white shadow rounded">
+        <table class="w-full text-sm">
+            <thead class="bg-gray-50 text-left">
+                <tr>
+                    <th class="px-4 py-2">Nombre</th>
+                    <th class="px-4 py-2">Matrícula</th>
+                    <th class="px-4 py-2">Grado</th>
+                    <th class="px-4 py-2">Estado</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for e in estudiantes %}
+                <tr class="border-t">
+                    <td class="px-4 py-2">{{ e.nombre_completo }}</td>
+                    <td class="px-4 py-2">{{ e.matricula }}</td>
+ <td class="px-4 py-2">
+    {% if e.grado_actual != '—' %}
+        {{ e.grado_actual }} {{ e.seccion_actual }}
+    {% else %}
+        <span class="text-gray-400">Sin inscripción activa</span>
+    {% endif %}
+</td>
+
+
+                    <td class="px-4 py-2">{{ e.estado }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" class="px-4 py-6 text-center text-gray-500">
+                        No hay estudiantes
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

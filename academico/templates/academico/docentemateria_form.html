@@ -1,0 +1,56 @@
+{% extends "home.html" %}
+
+{% block title %}Asignación Docente{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto bg-white shadow rounded-lg p-6">
+
+    <h2 class="text-2xl font-semibold mb-6">
+        {{ accion|default:"Asignación Docente" }}
+    </h2>
+
+    <form method="post" class="space-y-4">
+        {% csrf_token %}
+
+        {% for field in form %}
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">
+                    {{ field.label }}
+                </label>
+                {{ field }}
+                {% if field.errors %}
+                    <p class="text-sm text-red-600 mt-1">
+                        {{ field.errors|striptags }}
+                    </p>
+                {% endif %}
+            </div>
+        {% endfor %}
+
+        {% if form.non_field_errors %}
+            <div class="text-red-600 text-sm">
+                {{ form.non_field_errors }}
+            </div>
+        {% endif %}
+
+        <div class="flex justify-between items-center pt-4">
+            <a href="{% url 'docentemateria_list' %}"
+               class="text-gray-600 hover:underline">
+                ⬅ Volver
+            </a>
+
+            <button type="submit"
+                    class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">
+                Guardar
+            </button>
+        </div>
+    </form>
+
+</div>
+
+<script>
+document.getElementById("id_grado").addEventListener("change", function () {
+    this.form.submit();
+});
+</script>
+
+{% endblock %}

@@ -1,0 +1,10 @@
+<h3>¿Eliminar asignación?</h3>
+
+<p>{{ asignacion }}</p>
+
+<form method="post">
+    {% csrf_token %}
+    <button type="submit">Sí, eliminar</button>
+</form>
+
+<a href="{% url 'docentemateria_list' %}">Cancelar</a>

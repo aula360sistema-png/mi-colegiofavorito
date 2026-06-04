@@ -1,0 +1,120 @@
+{% extends "home.html" %}
+
+{% block title %}Niveles Académicos{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto">
+
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h2 class="text-2xl font-semibold">📚 Niveles Académicos</h2>
+            <p class="text-sm text-gray-500">
+                Centro: <strong>{{ centro.nombre }}</strong>
+            </p>
+        </div>
+
+        <a href="{% url 'nivel_create' %}"
+           class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+            + Nuevo Nivel
+        </a>
+    </div>
+
+    <div class="bg-white shadow rounded">
+        <table class="w-full text-sm">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-4 py-2 text-left">Nombre</th>
+                    <th class="px-4 py-2 text-right">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for nivel in niveles %}
+                <tr class="border-t">
+                    <td class="px-4 py-2">{{ nivel.nombre }}</td>
+                    <td class="px-4 py-2 text-right space-x-2">
+                        <a type="button"  href="{% url 'nivel_update' nivel.id %}"
+                           class="text-yellow-600 hover:underline">
+                            Editar
+                        </a>
+           <button
+    onclick="eliminarNivel('{{ nivel.id }}', '{{ nivel.nombre }}', '{% url 'nivel_delete' nivel.id %}')"
+    class="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 text-sm">
+    Eliminar
+</button>
+
+
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="2"
+                        class="px-4 py-6 text-center text-gray-500">
+                        No hay niveles registrados
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+</div>
+
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+function eliminarNivel(id, nombre, url) {
+    Swal.fire({
+        title: '¿Eliminar nivel?',
+        text: `Se eliminará el nivel "${nombre}"`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc2626',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken')
+                }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire(
+                        'Eliminado',
+                        'El nivel fue eliminado correctamente',
+                        'success'
+                    ).then(() => location.reload())
+                } else {
+                    Swal.fire('Error', data.error, 'error')
+                }
+            })
+        }
+    })
+}
+</script>
+
+<script>
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let cookie of cookies) {
+            cookie = cookie.trim();
+            if (cookie.startsWith(name + '=')) {
+                cookieValue = decodeURIComponent(
+                    cookie.substring(name.length + 1)
+                );
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+
+{% endblock %}

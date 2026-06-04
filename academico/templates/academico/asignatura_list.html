@@ -1,0 +1,80 @@
+{% extends "home.html" %}
+
+{% block title %}Asignaturas{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+
+    <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-semibold">
+            📘 Asignaturas
+        </h2>
+
+        <a href="{% url 'asignatura_create' %}"
+           class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+            + Nueva Asignatura
+        </a>
+    </div>
+
+    <div class="bg-white shadow rounded-lg overflow-hidden">
+        <table class="w-full text-sm">
+            <thead class="bg-gray-50 text-left">
+                <tr>
+                    <th class="px-4 py-3">Nombre</th>
+                    <th class="px-4 py-3">Área</th>
+                    <th class="px-4 py-3 text-center w-40">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for asignatura in asignaturas %}
+                <tr class="border-t hover:bg-gray-50">
+                    <td class="px-4 py-2">{{ asignatura.nombre }}</td>
+                    <td class="px-4 py-2">{{ asignatura.area.nombre }}</td>
+                    <td class="px-4 py-2 text-center space-x-2">
+                        <a href="{% url 'asignatura_update' asignatura.id %}"
+                           class="text-yellow-600 hover:underline">
+                            Editar
+                        </a>
+
+                        <button onclick="confirmDelete('{{ asignatura.id }}', '{{ asignatura.nombre }}')"
+                                class="text-red-600 hover:underline">
+                            Eliminar
+                        </button>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="3" class="px-4 py-6 text-center text-gray-500">
+                        No hay asignaturas registradas
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+</div>
+
+<!-- SweetAlert -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+function confirmDelete(id, nombre) {
+    Swal.fire({
+        title: '¿Eliminar asignatura?',
+        text: `Se eliminará "${nombre}"`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc2626',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            window.location.href = `/asignaturas/${id}/eliminar/`;
+        }
+    });
+}
+</script>
+
+{% endblock %}

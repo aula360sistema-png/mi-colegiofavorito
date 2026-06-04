@@ -1,0 +1,33 @@
+{% extends "home.html" %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto p-6 bg-white rounded-lg shadow-md">
+
+    <h1 class="text-2xl font-bold mb-6">Detalle de Docente</h1>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div>
+            <p class="text-gray-700"><span class="font-medium">Nombre:</span> {{ docente.nombre_completo }}</p>
+            <p class="text-gray-700"><span class="font-medium">Cédula:</span> {{ docente.cedula }}</p>
+            <p class="text-gray-700"><span class="font-medium">Centro:</span> {{ docente.centro.nombre }}</p>
+            <p class="text-gray-700"><span class="font-medium">Sexo:</span> {{ docente.get_sexo_display }}</p>
+        </div>
+        <div>
+            <p class="text-gray-700"><span class="font-medium">Correo:</span> {{ docente.correo_personal|default:"-" }}</p>
+            <p class="text-gray-700"><span class="font-medium">Área:</span> {{ docente.area_especialidad }}</p>
+            <p class="text-gray-700"><span class="font-medium">Estado:</span> {{ docente.estado }}</p>
+            <p class="text-gray-700"><span class="font-medium">Tanda:</span> {{ docente.tanda }}</p>
+        </div>
+    </div>
+
+    <div class="flex space-x-2">
+        <a href="{% url 'docente_update' docente.pk %}" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 transition">
+            Editar
+        </a>
+        <a href="{% url 'docente_list' %}" class="bg-gray-200 text-gray-700 px-4 py-2 rounded hover:bg-gray-300 transition">
+            Volver al listado
+        </a>
+    </div>
+
+</div>
+{% endblock %}

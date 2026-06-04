@@ -1,0 +1,68 @@
+{% extends "home.html" %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/docentes.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<div class="form-container">
+
+    <h1 class="form-title">
+        {% if form.instance.pk %}
+            Editar Docente
+        {% else %}
+            Crear Docente
+        {% endif %}
+    </h1>
+
+    <form method="post">
+    {% csrf_token %}
+
+    <div class="form-grid">
+
+        {% for field in form %}
+
+            <div class="form-group {% if field.name == 'direccion' or field.name == 'descripcion' %}full-width{% endif %}">
+
+                <label class="form-label">
+                    {{ field.label }}
+                </label>
+
+                {{ field }}
+
+                {% if field.help_text %}
+                    <p class="help-text">
+                        {{ field.help_text }}
+                    </p>
+                {% endif %}
+
+                {% for error in field.errors %}
+                    <p class="error-text">
+                        {{ error }}
+                    </p>
+                {% endfor %}
+
+            </div>
+
+        {% endfor %}
+
+    </div>
+
+    <div class="form-actions">
+
+        <button type="submit" class="btn-primary">
+            Guardar
+        </button>
+
+        <a href="{% url 'docente_list' %}" class="btn-secondary">
+            Volver
+        </a>
+
+    </div>
+</form>
+
+</div>
+
+{% endblock %}

@@ -1,0 +1,46 @@
+{% extends "home.html" %}
+
+{% block content %}
+<div class="p-6 bg-white rounded-lg shadow-md">
+
+    <h2 class="text-2xl font-bold mb-4">Centro activo: <span class="text-indigo-600">{{ centro.nombre }}</span></h2>
+
+    <div class="mb-4">
+        <a href="{% url 'docente_create' %}" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 transition">
+            Crear Docente
+        </a>
+    </div>
+
+    <div class="overflow-x-auto">
+        <table class="min-w-full border border-gray-200 divide-y divide-gray-200">
+            <thead class="bg-gray-100">
+                <tr>
+                    <th class="px-6 py-3 text-left text-sm font-medium text-gray-700">Nombre</th>
+                    <th class="px-6 py-3 text-left text-sm font-medium text-gray-700">Cédula</th>
+                    <th class="px-6 py-3 text-left text-sm font-medium text-gray-700">Centro</th>
+                    <th class="px-6 py-3 text-left text-sm font-medium text-gray-700">Acciones</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for docente in docentes %}
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4 whitespace-nowrap">{{ docente.nombre_completo }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">{{ docente.cedula }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">{{ docente.centro.nombre }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap space-x-2">
+                        <a href="{% url 'docente_detail' docente.pk %}" class="text-blue-600 hover:underline">Ver</a>
+                        <a href="{% url 'docente_update' docente.pk %}" class="text-yellow-600 hover:underline">Editar</a>
+                        <a href="{% url 'docente_delete' docente.pk %}" class="text-red-600 hover:underline">Eliminar</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" class="px-6 py-4 text-center text-gray-500">No hay docentes registrados.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+</div>
+{% endblock %}

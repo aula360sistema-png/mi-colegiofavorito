@@ -1,0 +1,97 @@
+
+{% load static %}
+
+{% block title %}
+Seleccionar Centro Educativo
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet"
+      href="{% static 'css/seleccionar_centro.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<div class="centro-page">
+
+    <div class="centro-card">
+
+        <!-- HEADER -->
+        <div class="centro-header">
+
+            <div class="centro-icon">
+                <i class="fas fa-school"></i>
+            </div>
+
+            <h1 class="centro-title">
+                Seleccionar Centro Educativo
+            </h1>
+
+            <p class="centro-subtitle">
+                Selecciona el centro educativo al que deseas acceder.
+            </p>
+
+        </div>
+
+        <!-- FORM -->
+        <form method="post"
+              class="centro-form">
+
+            {% csrf_token %}
+
+            <div class="centro-grid">
+
+                {% for uc in centros %}
+
+                <label class="centro-option">
+
+                    <input type="radio"
+                           name="centro_id"
+                           value="{{ uc.id }}"
+                           required>
+
+                    <div class="radio-custom"></div>
+
+                    <div class="centro-info">
+
+                        <div class="centro-name">
+                            {{ uc.nombre }}
+                        </div>
+
+                        <div class="centro-meta">
+                            Centro educativo disponible
+                        </div>
+
+                    </div>
+
+                    <div class="centro-arrow">
+                        <i class="fas fa-arrow-right"></i>
+                    </div>
+
+                </label>
+
+                {% endfor %}
+
+            </div>
+
+            <!-- ACTIONS -->
+            <div class="centro-actions">
+
+                <button type="submit"
+                        class="btn-entrar">
+
+                    <i class="fas fa-right-to-bracket"></i>
+
+                    Entrar al sistema
+
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+{% endblock %}

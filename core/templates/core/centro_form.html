@@ -1,0 +1,122 @@
+{% extends "home.html" %}
+
+{% block title %}
+{{ accion }} Centro
+{% endblock %}
+
+{% block content %}
+
+<div class="max-w-3xl mx-auto">
+
+    <div class="bg-white rounded-xl shadow p-6">
+
+        <!-- Header -->
+        <div class="mb-6">
+
+            <h1 class="text-2xl font-bold text-gray-800">
+                🏫 {{ accion }} Centro Educativo
+            </h1>
+
+            <p class="text-sm text-gray-500">
+                Complete la información del centro
+            </p>
+
+        </div>
+
+        <!-- Formulario -->
+        <form method="POST" class="space-y-5">
+
+            {% csrf_token %}
+
+            <!-- Nombre -->
+            <div>
+
+                <label class="block text-sm font-medium mb-1">
+                    Nombre
+                </label>
+
+                {{ form.nombre }}
+
+            </div>
+
+            <!-- Código -->
+            <div>
+
+                <label class="block text-sm font-medium mb-1">
+                    Código MINERD
+                </label>
+
+                {{ form.codigo_minerd }}
+
+            </div>
+
+            <!-- Dirección -->
+            <div>
+
+                <label class="block text-sm font-medium mb-1">
+                    Dirección
+                </label>
+
+                {{ form.direccion }}
+
+            </div>
+
+            <!-- Teléfono -->
+            <div>
+
+                <label class="block text-sm font-medium mb-1">
+                    Teléfono
+                </label>
+
+                {{ form.telefono }}
+
+            </div>
+
+            <!-- Email -->
+            <div>
+
+                <label class="block text-sm font-medium mb-1">
+                    Email
+                </label>
+
+                {{ form.email }}
+
+            </div>
+
+            <!-- Activo -->
+            <div class="flex items-center gap-2">
+
+                {{ form.activo }}
+
+                <label class="text-sm font-medium">
+                    Centro activo
+                </label>
+
+            </div>
+
+            <!-- Botones -->
+            <div class="pt-4 flex gap-3">
+
+                <button type="submit"
+                        class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg shadow">
+
+                    💾 Guardar
+
+                </button>
+
+                <a href="{% url 'core:centro_list' %}"
+                   class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-5 py-2 rounded-lg">
+
+                    Cancelar
+
+                </a>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+{% endblock %}

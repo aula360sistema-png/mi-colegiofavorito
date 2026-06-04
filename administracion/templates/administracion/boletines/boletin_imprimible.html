@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Boletín de Calificaciones</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 11px;
+            margin: 20px;
+        }
+
+        .titulo {
+            background: #d35400;
+            color: white;
+            text-align: center;
+            padding: 6px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            border: 1px solid #000;
+            padding: 4px;
+            text-align: center;
+        }
+
+        th {
+            background: #f5cba7;
+        }
+
+        .left {
+            text-align: left;
+        }
+
+        .firma {
+            margin-top: 40px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .firma div {
+            width: 45%;
+            text-align: center;
+        }
+
+        @media print {
+            body {
+                margin: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ================= ENCABEZADO ================= -->
+<p>
+    <strong>Nombre(s) y apellido(s):</strong>
+    {{ datos.estudiante.nombre }}
+    &nbsp;&nbsp;&nbsp;
+    <strong>Grado:</strong> {{ datos.estudiante.grado }}
+    &nbsp;&nbsp;&nbsp;
+    <strong>Sección:</strong> {{ datos.estudiante.seccion }}
+</p>
+
+<div class="titulo">
+    CALIFICACIONES DE RENDIMIENTO
+</div>
+
+<!-- ================= TABLA PRINCIPAL ================= -->
+<table>
+    <thead>
+        <tr>
+            <th rowspan="2">ÁREAS CURRICULARES</th>
+            {% for p in datos.periodos %}
+                <th>{{ p }}</th>
+            {% endfor %}
+            <th>PC</th>
+            <th>CF</th>
+            <th>A</th>
+            <th>R</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        {% for asignatura in datos.asignaturas %}
+        <tr>
+            <td class="left">
+                {{ asignatura.asignatura }}
+            </td>
+
+            {% for c in asignatura.competencias %}
+                {% for p in c.periodos %}
+                    <td>{{ p.nota|default:"" }}</td>
+                {% endfor %}
+            {% endfor %}
+
+            <td>{{ asignatura.pf|default:"" }}</td>
+
+            <td>
+                {% if asignatura.pf >= 70 %}
+                    ✔
+                {% endif %}
+            </td>
+
+            <td>
+                {% if asignatura.pf < 70 %}
+                    ✔
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<!-- ================= SITUACIÓN FINAL ================= -->
+<br>
+
+<p>
+    <strong>Situación del/de la estudiante:</strong>
+    {% if datos.promovido %}
+        Promovido/a
+    {% else %}
+        Repitente
+    {% endif %}
+</p>
+
+<!-- ================= FIRMAS ================= -->
+<div class="firma">
+    <div>
+        _______________________________<br>
+        Maestro(a) encargado(a) del grado
+    </div>
+
+    <div>
+        _______________________________<br>
+        Director(a) del Centro Educativo
+    </div>
+</div>
+
+<script>
+    window.onload = () => {
+        window.print();
+    }
+</script>
+
+</body>
+</html>

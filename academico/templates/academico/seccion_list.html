@@ -1,0 +1,90 @@
+{% extends "home.html" %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h2 class="text-2xl font-semibold">Secciones</h2>
+            <p class="text-sm text-gray-500">
+                Gestión de secciones por grado y nivel
+            </p>
+        </div>
+
+        <a href="{% url 'seccion_create' %}"
+           class="bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700">
+            + Nueva Sección
+        </a>
+    </div>
+
+    <!-- Tabla -->
+    <div class="bg-white shadow rounded overflow-hidden">
+        <table class="w-full text-sm">
+            <thead class="bg-gray-50 text-left">
+                <tr>
+                    <th class="px-4 py-3">Sección</th>
+                    <th class="px-4 py-3">Grado</th>
+                    <th class="px-4 py-3">Nivel</th>
+                    <th class="px-4 py-3 w-40">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for seccion in secciones %}
+                <tr class="border-t hover:bg-gray-50">
+                    <td class="px-4 py-2 font-medium">
+                        {{ seccion.nombre }}
+                    </td>
+                    <td class="px-4 py-2">
+                        {{ seccion.grado.nombre }}
+                    </td>
+                    <td class="px-4 py-2 text-gray-600">
+                        {{ seccion.grado.nivel.nombre }}
+                    </td>
+                    <td class="px-4 py-2 flex gap-2">
+                        <a href="{% url 'seccion_update' seccion.id %}"
+                           class="px-3 py-1 rounded bg-yellow-500 text-white text-xs hover:bg-yellow-600">
+                            Editar
+                        </a>
+                        <button
+                            onclick="confirmDelete('{{ seccion.id }}')"
+                            class="px-3 py-1 rounded bg-red-600 text-white text-xs hover:bg-red-700">
+                            Eliminar
+                        </button>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4"
+                        class="px-4 py-6 text-center text-gray-500">
+                        No hay secciones registradas
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+</div>
+
+<!-- SweetAlert -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+function confirmDelete(id) {
+    Swal.fire({
+        title: '¿Eliminar sección?',
+        text: 'Esta acción no se puede deshacer',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc2626',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            window.location.href = `/secciones/${id}/eliminar/`;
+        }
+    })
+}
+</script>
+{% endblock %}

@@ -1,0 +1,123 @@
+{% extends "home.html" %}
+{% block title %}Mantenimiento{% endblock %}
+
+{% block content %}
+<h2 class="text-2xl font-semibold mb-6">
+    🛠️ Mantenimiento Académico
+</h2>
+
+<p class="text-sm text-gray-500 mb-6">
+    Centro: <strong>{{ centro.nombre }}</strong>
+</p>
+
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+    <!-- Año Escolar (NUEVO, NO QUITA NADA) -->
+    <a href="{% url 'anio_escolar_list' %}"
+       class="bg-white shadow rounded p-5 hover:shadow-lg transition">
+        <h3 class="font-semibold text-lg mb-1">📆 Año Escolar</h3>
+        <p class="text-sm text-gray-500">Gestión del año académico activo</p>
+    </a>
+
+    <!-- Niveles -->
+    <a href="{% url 'nivel_list' %}"
+       class="bg-white shadow rounded p-5 hover:shadow-lg transition">
+        <h3 class="font-semibold text-lg mb-1">📚 Niveles</h3>
+        <p class="text-sm text-gray-500">Inicial, Primaria, Secundaria</p>
+    </a>
+
+    <!-- Grados -->
+    <a href="{% url 'grado_list' %}"
+       class="bg-white shadow rounded p-5 hover:shadow-lg transition">
+        <h3 class="font-semibold text-lg mb-1">🏫 Grados</h3>
+        <p class="text-sm text-gray-500">Grados por nivel</p>
+    </a>
+
+    <!-- Secciones -->
+    <a href="{% url 'seccion_list' %}"
+       class="bg-white shadow rounded p-5 hover:shadow-lg transition">
+        <h3 class="font-semibold text-lg mb-1">🧩 Secciones</h3>
+        <p class="text-sm text-gray-500">A, B, C…</p>
+    </a>
+
+    <!-- Áreas -->
+    <a href="{% url 'area_list' %}"
+       class="bg-white shadow rounded p-5 hover:shadow-lg transition">
+        <h3 class="font-semibold text-lg mb-1">📘 Áreas Curriculares</h3>
+        <p class="text-sm text-gray-500">Lengua, Matemática…</p>
+    </a>
+
+    <!-- Asignaturas -->
+    <a href="{% url 'asignatura_list' %}"
+       class="bg-white shadow rounded p-5 hover:shadow-lg transition">
+        <h3 class="font-semibold text-lg mb-1">📖 Asignaturas</h3>
+        <p class="text-sm text-gray-500">Por área y centro</p>
+    </a>
+<!-- Asignación Asignatura por Grado -->
+<a href="{% url 'grado_asignatura_list' %}"
+   class="bg-white shadow rounded p-5 hover:shadow-lg transition">
+    <h3 class="font-semibold text-lg mb-1">🧠 Asignaturas por Grado</h3>
+    <p class="text-sm text-gray-500">
+        Define qué asignaturas corresponden a cada grado
+    </p>
+</a>
+
+    <!-- Competencias -->
+    <a href="{% url 'competencia_list' %}"
+       class="bg-white shadow rounded p-5 hover:shadow-lg transition">
+        <h3 class="font-semibold text-lg mb-1">🎯 Competencias</h3>
+        <p class="text-sm text-gray-500">Evaluación académica</p>
+    </a>
+
+    <!-- Asignación Área–Competencia -->
+    <a href="{% url 'area_competencia_list' %}"
+       class="bg-white shadow rounded p-5 hover:shadow-lg transition">
+        <h3 class="font-semibold text-lg mb-1">👨‍🏫 Asignación de Competencias</h3>
+        <p class="text-sm text-gray-500">Competencias por asignatura</p>
+    </a>
+
+    <!-- Periodos -->
+    <a href="{% url 'periodo_list' %}"
+       class="bg-white shadow rounded p-5 hover:shadow-lg transition">
+        <h3 class="font-semibold text-lg mb-1">🗓 Períodos</h3>
+        <p class="text-sm text-gray-500">P1, P2, completivo…</p>
+    </a>
+
+    <!-- Docente Materia -->
+    <a href="{% url 'docentemateria_list' %}"
+       class="bg-white shadow rounded p-5 hover:shadow-lg transition">
+        <h3 class="font-semibold text-lg mb-1">👨‍🏫 Docente / Materia</h3>
+        <p class="text-sm text-gray-500">Asignación académica</p>
+    </a>
+
+    <!-- Generar boletines -->
+    {% if not todos_cerrados %}
+    <form method="post"
+          action="{% url 'administracion:generar_boletines' %}"
+          class="bg-white shadow rounded p-5 hover:shadow-lg transition cursor-pointer">
+        {% csrf_token %}
+        <button type="submit" class="w-full text-left">
+            <h3 class="font-semibold text-lg mb-1">📄 Generar boletines oficiales</h3>
+            <p class="text-sm text-gray-500">
+                Genera los boletines finales de todos los estudiantes
+            </p>
+        </button>
+    </form>
+    {% else %}
+    <div class="bg-gray-100 shadow rounded p-5 opacity-50 cursor-not-allowed">
+        <h3 class="font-semibold text-lg mb-1">📄 Generar boletines oficiales</h3>
+        <p class="text-sm text-gray-500">
+            ❌ No disponible: hay períodos abiertos
+        </p>
+    </div>
+    {% endif %}
+
+    <!-- Lista de boletines -->
+    <a href="{% url 'administracion:lista_boletines' %}"
+       class="bg-white shadow rounded p-5 hover:shadow-lg transition">
+        <h3 class="font-semibold text-lg mb-1">📑 Boletines</h3>
+        <p class="text-sm text-gray-500">Boletines oficiales generados</p>
+    </a>
+
+</div>
+{% endblock %}

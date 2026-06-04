@@ -1,0 +1,55 @@
+{% extends 'home.html' %}
+
+{% block content %}
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">
+            AFP
+        </h1>
+
+        <p class="page-subtitle">
+            Administrar AFP
+        </p>
+    </div>
+
+    <a href="{% url 'nomina:afp_create' %}" class="btn-primary">
+        Nueva AFP
+    </a>
+</div>
+
+<div class="table-card">
+
+    <table class="custom-table">
+
+        <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>% Empleado</th>
+                <th>% Empresa</th>
+            </tr>
+        </thead>
+
+        <tbody>
+
+            {% for afp in afps %}
+
+            <tr>
+
+                <td>{{ afp.nombre }}</td>
+
+                <td>{{ afp.porcentaje_empleado }}%</td>
+
+                <td>{{ afp.porcentaje_empresa }}%</td>
+
+            </tr>
+
+            {% endfor %}
+
+        </tbody>
+
+    </table>
+
+</div>
+
+{% endblock %}

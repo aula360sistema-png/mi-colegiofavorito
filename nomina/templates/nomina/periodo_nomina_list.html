@@ -1,0 +1,272 @@
+{% extends 'home.html' %}
+
+{% block content %}
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">
+            Períodos de Nómina
+        </h1>
+
+        <p class="page-subtitle">
+            Generación y administración de nómina
+        </p>
+    </div>
+</div>
+
+
+<div class="table-card">
+
+    <table class="custom-table">
+
+        <thead>
+            <tr>
+                <th>Año</th>
+                <th>Mes</th>
+                <th>Periodo</th>
+                <th>Fecha Pago</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+
+        <tbody>
+
+            {% for periodo in periodos %}
+
+            <tr>
+
+                <td>
+                    {{ periodo.anio }}
+                </td>
+
+                <td>
+                    {{ periodo.mes }}
+                </td>
+
+                <td>
+                    {{ periodo.numero_periodo }}
+                </td>
+
+                <td>
+                    {{ periodo.fecha_pago }}
+                </td>
+
+                <td>
+
+                    {% if periodo.cerrado %}
+
+                        <span class="badge-danger">
+                            Cerrado
+                        </span>
+
+                    {% elif periodo.nomina_generada %}
+
+                        <span class="badge-warning">
+                            Nómina Generada
+                        </span>
+
+                    {% else %}
+
+                        <span class="badge-success">
+                            Pendiente
+                        </span>
+
+                    {% endif %}
+
+                </td>
+
+                <td>
+
+                    {% if not periodo.nomina_generada and not periodo.cerrado %}
+
+                        <button
+                            class="btn-nomina"
+                            id="btn-{{ periodo.id }}"
+                            onclick="generarNomina({{ periodo.id }})"
+                        >
+                            <i class="fas fa-play"></i>
+                            Generar Nómina
+                        </button>
+
+                    {% elif periodo.nomina_generada %}
+
+                        <button
+                            class="btn-disabled"
+                            disabled
+                        >
+                            <i class="fas fa-check"></i>
+                            Generada
+                        </button>
+
+                    {% else %}
+
+                        <button
+                            class="btn-disabled"
+                            disabled
+                        >
+                            <i class="fas fa-lock"></i>
+                            Cerrado
+                        </button>
+
+                    {% endif %}
+
+                </td>
+
+            </tr>
+
+            {% empty %}
+
+            <tr>
+
+                <td colspan="6">
+
+                    <div class="empty-state">
+
+                        <i class="fas fa-calendar-times"></i>
+
+                        <p>
+                            No existen períodos disponibles
+                        </p>
+
+                    </div>
+
+                </td>
+
+            </tr>
+
+            {% endfor %}
+
+        </tbody>
+
+    </table>
+
+</div>
+
+
+<script>
+
+function generarNomina(periodoId) {
+
+    const btn = document.getElementById(
+        `btn-${periodoId}`
+    );
+
+    Swal.fire({
+
+        title: '¿Generar nómina?',
+        
+        html: `
+            Se generará automáticamente:
+            <br><br>
+
+            • Salario base<br>
+            • AFP<br>
+            • ARS<br>
+            • Ingresos extras<br>
+            • Descuentos<br>
+            • Neto a pagar
+        `,
+
+        icon: 'warning',
+
+        showCancelButton: true,
+
+        confirmButtonText: 'Sí, generar',
+
+        cancelButtonText: 'Cancelar',
+
+        reverseButtons: true
+
+    }).then((result) => {
+
+        if (result.isConfirmed) {
+
+            btn.disabled = true;
+
+            btn.innerHTML = `
+                <i class="fas fa-spinner fa-spin"></i>
+                Generando...
+            `;
+
+            fetch(`/nomina/generar/${periodoId}/`, {
+
+                method: 'POST',
+
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'Content-Type': 'application/json'
+                }
+
+            })
+
+            .then(res => res.json())
+
+            .then(data => {
+
+                if (data.success) {
+
+                    Swal.fire({
+
+                        title: 'Nómina generada',
+
+                        text: data.message,
+
+                        icon: 'success',
+
+                        confirmButtonText: 'Aceptar'
+
+                    }).then(() => {
+
+                        location.reload();
+
+                    });
+
+                } else {
+
+                    Swal.fire({
+
+                        title: 'Error',
+
+                        text: data.message,
+
+                        icon: 'error'
+
+                    });
+
+                    btn.disabled = false;
+
+                    btn.innerHTML = `
+                        <i class="fas fa-play"></i>
+                        Generar Nómina
+                    `;
+                }
+
+            })
+
+            .catch(() => {
+
+                Swal.fire({
+
+                    title: 'Error',
+
+                    text: 'Ocurrió un error del servidor',
+
+                    icon: 'error'
+
+                });
+
+                btn.disabled = false;
+
+                btn.innerHTML = `
+                    <i class="fas fa-play"></i>
+                    Generar Nómina
+                `;
+            });
+        }
+    });
+}
+
+</script>
+
+{% endblock %}

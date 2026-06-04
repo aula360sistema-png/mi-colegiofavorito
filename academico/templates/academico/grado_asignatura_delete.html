@@ -1,0 +1,16 @@
+
+<h2>Eliminar Asignación</h2>
+
+<p>
+    ¿Quitar <strong>{{ relacion.asignatura.nombre }}</strong>
+    del grado <strong>{{ relacion.grado.nombre }}</strong>?
+</p>
+
+<form method="post">
+    {% csrf_token %}
+    <button class="btn btn-danger">Sí, quitar</button>
+    <a href="{% url 'grado_asignatura_list' %}" class="btn btn-secondary">
+        Cancelar
+    </a>
+</form>
+
