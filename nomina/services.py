@@ -1,5 +1,7 @@
 from datetime import date, timedelta
 
+import logging
+
 from dateutil.relativedelta import relativedelta
 
 from decimal import Decimal
@@ -21,6 +23,8 @@ from .models import (
     TipoIngreso
 )
 
+logger = logging.getLogger(__name__)
+
 
 # =========================================================
 # GENERAR NOMINA ERP
@@ -33,9 +37,10 @@ def generar_nomina(periodo, centro_id):
     Motor ERP básico de nómina
     """
 
-    print(
-        f"Generando nómina para período: "
-        f"{periodo} - Centro ID: {centro_id}"
+    logger.debug(
+        "Generando nómina para período: %s - Centro ID: %s",
+        periodo,
+        centro_id
     )
 
     # =====================================================

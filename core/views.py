@@ -96,7 +96,7 @@ def dashboard(request):
         centro = CentroEducativo.objects.get(id=centro_id)
     except CentroEducativo.DoesNotExist:
         del request.session['centro_id']
-        return redirect('seleccionar_centro')
+        return redirect('core:seleccionar_centro')
 
     return render(
         request,

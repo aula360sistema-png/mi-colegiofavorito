@@ -35,7 +35,7 @@ def crear_miembro(request):
     tipo = request.GET.get('tipo') or request.POST.get('tipo')  # docente | estudiante | secretaria
     centro = get_centro_activo(request)
     if not centro:
-        return redirect('seleccionar_centro')
+        return redirect('core:seleccionar_centro')
 
     if tipo == "docente":
         return docente_create(request)  # reutiliza la función existente

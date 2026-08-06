@@ -1,0 +1,374 @@
+from collections import Counter
+from datetime import date, datetime, timedelta
+
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.forms import formset_factory
+from django.shortcuts import redirect, render
+
+from academico.models import DocenteMateria
+from core.decorators import role_required
+from core.models import AnioEscolar
+from core.utils.centro import obtener_centro_del_usuario
+from core.utils.session import get_centro_activo
+from docentes.models import AsignacionDocente, Docente
+from estudiantes.models import Inscripcion
+
+from .forms import AsistenciaForm, DiaNoDocenciaForm
+from .models import AsistenciaEstudiante, DiaNoDocencia
+from .services import es_dia_lectivo, resumen_por_inscripciones
+
+ROLES_ACCESO = ('docente', 'admin', 'director', 'superadmin', 'secretaria')
+
+AsistenciaFormSet = formset_factory(AsistenciaForm, extra=0)
+
+
+def _obtener_centro(request):
+    """Resuelve el centro del usuario según su rol."""
+    if request.user.rol in ('admin', 'superadmin'):
+        return get_centro_activo(request)
+    return obtener_centro_del_usuario(request)
+
+
+def _anio_activo(centro):
+    return AnioEscolar.objects.filter(
+        centro=centro,
+        activo=True
+    ).first()
+
+
+def _grados_secciones(request, centro, anio):
+    """Tuplas (grado_id, grado, seccion_id, seccion) disponibles.
+
+    Para el docente, solo sus grados/secciones asignadas en el año activo.
+    Para el resto de roles, todos los grados/secciones con inscripciones.
+    """
+    pares = set()
+
+    if request.user.rol == 'docente':
+        docente = Docente.objects.filter(
+            usuario=request.user
+        ).first()
+
+        if docente:
+            materias = DocenteMateria.objects.filter(
+                docente=docente,
+                anio_escolar=anio
+            ).select_related('grado', 'seccion')
+
+            for dm in materias:
+                pares.add((dm.grado_id, dm.grado, dm.seccion_id, dm.seccion))
+
+            asignaciones = AsignacionDocente.objects.filter(
+                docente=docente,
+                anio_escolar=anio
+            ).select_related('grado', 'seccion')
+
+            for ad in asignaciones:
+                pares.add((ad.grado_id, ad.grado, ad.seccion_id, ad.seccion))
+    else:
+        inscripciones = Inscripcion.objects.filter(
+            anio_escolar=anio,
+            estudiante__estado='activo',
+        ).select_related('grado', 'seccion')
+
+        for i in inscripciones:
+            pares.add((i.grado_id, i.grado, i.seccion_id, i.seccion))
+
+    return sorted(pares, key=lambda p: (p[1].nombre, p[3].nombre))
+
+
+def _parsear_fecha(raw):
+    if not raw:
+        return None
+    try:
+        return datetime.strptime(raw, '%Y-%m-%d').date()
+    except (ValueError, TypeError):
+        return None
+
+
+def _inscripciones_de_seccion(anio, grado_id, seccion_id):
+    return list(
+        Inscripcion.objects.filter(
+            anio_escolar=anio,
+            grado_id=grado_id,
+            seccion_id=seccion_id,
+            estudiante__estado='activo',
+        ).select_related(
+            'estudiante',
+            'grado',
+            'seccion',
+        ).order_by(
+            'estudiante__primer_nombre',
+            'estudiante__primer_apellido',
+        )
+    )
+
+
+# ==========================================
+# TOMAR ASISTENCIA
+# ==========================================
+
+@login_required
+@role_required(*ROLES_ACCESO)
+def tomar_asistencia(request):
+
+    centro = _obtener_centro(request)
+
+    if not centro:
+        messages.error(request, 'Debe seleccionar un centro educativo.')
+        return redirect('core:seleccionar_centro')
+
+    anio = _anio_activo(centro)
+
+    if not anio:
+        messages.error(request, 'No hay un año escolar activo.')
+        return redirect('core:home')
+
+    grados_secciones = _grados_secciones(request, centro, anio)
+
+    grado_id = request.GET.get('grado') or request.POST.get('grado')
+    seccion_id = request.GET.get('seccion') or request.POST.get('seccion')
+    fecha_raw = (
+        request.GET.get('fecha')
+        or request.POST.get('fecha')
+        or date.today().isoformat()
+    )
+    fecha = _parsear_fecha(fecha_raw) or date.today()
+
+    inscripciones = []
+    registros = {}
+    formset = None
+    ya_registrada = False
+    es_lectivo = es_dia_lectivo(anio, fecha)
+    resumen_dia = None
+    filas = []
+
+    if grado_id and seccion_id:
+        inscripciones = _inscripciones_de_seccion(
+            anio,
+            grado_id,
+            seccion_id,
+        )
+
+        registros = {
+            a.inscripcion_id: a.estado
+            for a in AsistenciaEstudiante.objects.filter(
+                fecha=fecha,
+                inscripcion__in=inscripciones,
+            )
+        }
+
+        ya_registrada = bool(registros)
+
+        if request.method == 'POST':
+            formset = AsistenciaFormSet(request.POST)
+
+            if es_lectivo and formset.is_valid():
+
+                for form in formset:
+
+                    data = form.cleaned_data
+
+                    AsistenciaEstudiante.objects.update_or_create(
+                        inscripcion_id=data['inscripcion'],
+                        fecha=fecha,
+                        defaults={
+                            'estado': data['estado'],
+                            'registrada_por': request.user,
+                        },
+                    )
+
+                messages.success(
+                    request,
+                    f'Asistencia registrada para {len(inscripciones)} estudiantes.'
+                )
+
+                return redirect(
+                    f"{request.path}?grado={grado_id}&seccion={seccion_id}"
+                    f"&fecha={fecha.isoformat()}"
+                )
+
+            if not es_lectivo:
+                messages.error(
+                    request,
+                    'La fecha seleccionada no es un día lectivo, '
+                    'no se puede registrar asistencia.'
+                )
+                formset = AsistenciaFormSet(
+                    initial=[{'inscripcion': i.id} for i in inscripciones]
+                )
+        else:
+            formset = AsistenciaFormSet(
+                initial=[
+                    {
+                        'inscripcion': i.id,
+                        'estado': registros.get(i.id, 'presente'),
+                    }
+                    for i in inscripciones
+                ]
+            )
+
+        if formset:
+            filas = zip(inscripciones, formset.forms)
+
+        if registros:
+            conteo = Counter(registros.values())
+            resumen_dia = dict(conteo)
+
+    return render(
+        request,
+        'asistencia/tomar_asistencia.html',
+        {
+            'anio': anio,
+            'grados_secciones': grados_secciones,
+            'grado_id': int(grado_id) if grado_id else None,
+            'seccion_id': int(seccion_id) if seccion_id else None,
+            'fecha': fecha,
+            'inscripciones': inscripciones,
+            'formset': formset,
+            'filas': filas,
+            'ya_registrada': ya_registrada,
+            'es_lectivo': es_lectivo,
+            'resumen_dia': resumen_dia,
+            'dia_ayer': (date.today() - timedelta(days=1)).isoformat(),
+        }
+    )
+
+
+# ==========================================
+# RESUMEN DE ASISTENCIA
+# ==========================================
+
+@login_required
+@role_required(*ROLES_ACCESO)
+def resumen_asistencia(request):
+
+    centro = _obtener_centro(request)
+
+    if not centro:
+        messages.error(request, 'Debe seleccionar un centro educativo.')
+        return redirect('core:seleccionar_centro')
+
+    anio = _anio_activo(centro)
+
+    if not anio:
+        messages.error(request, 'No hay un año escolar activo.')
+        return redirect('core:home')
+
+    grados_secciones = _grados_secciones(request, centro, anio)
+
+    grado_id = request.GET.get('grado')
+    seccion_id = request.GET.get('seccion')
+    hasta = _parsear_fecha(request.GET.get('hasta')) or date.today()
+
+    resumen = None
+    promedio_general = None
+
+    if grado_id and seccion_id:
+        inscripciones = _inscripciones_de_seccion(
+            anio,
+            grado_id,
+            seccion_id,
+        )
+
+        resumen = resumen_por_inscripciones(
+            inscripciones,
+            hasta=hasta,
+        )
+
+        promedios = [
+            r['porcentaje']
+            for r in resumen
+            if r['porcentaje'] is not None
+        ]
+
+        if promedios:
+            promedio_general = round(
+                sum(promedios) / len(promedios),
+                2,
+            )
+
+    return render(
+        request,
+        'asistencia/resumen_asistencia.html',
+        {
+            'anio': anio,
+            'grados_secciones': grados_secciones,
+            'grado_id': int(grado_id) if grado_id else None,
+            'seccion_id': int(seccion_id) if seccion_id else None,
+            'hasta': hasta,
+            'resumen': resumen,
+            'promedio_general': promedio_general,
+        }
+    )
+
+
+# ==========================================
+# DIAS DE NO DOCENCIA
+# ==========================================
+
+@login_required
+@role_required(*ROLES_ACCESO)
+def dias_no_docencia(request):
+
+    centro = _obtener_centro(request)
+
+    if not centro:
+        messages.error(request, 'Debe seleccionar un centro educativo.')
+        return redirect('core:seleccionar_centro')
+
+    anio = _anio_activo(centro)
+
+    if request.method == 'POST':
+
+        if 'eliminar' in request.POST:
+
+            dia_id = request.POST.get('dia_id')
+
+            DiaNoDocencia.objects.filter(
+                id=dia_id,
+                centro=centro,
+            ).delete()
+
+            messages.success(
+                request,
+                'Día de no docencia eliminado.'
+            )
+
+            return redirect('asistencia:dias_no_docencia')
+
+        form = DiaNoDocenciaForm(request.POST, centro=centro)
+
+        if form.is_valid():
+
+            dia = form.save(commit=False)
+            dia.centro = centro
+            dia.registrado_por = request.user
+            dia.save()
+
+            messages.success(
+                request,
+                'Día de no docencia registrado correctamente.'
+            )
+
+            return redirect('asistencia:dias_no_docencia')
+    else:
+
+        form = DiaNoDocenciaForm(centro=centro)
+
+    dias = DiaNoDocencia.objects.filter(
+        centro=centro,
+    ).select_related(
+        'anio_escolar',
+    ).order_by('-fecha')
+
+    return render(
+        request,
+        'asistencia/dias_no_docencia.html',
+        {
+            'form': form,
+            'dias': dias,
+            'anio': anio,
+        }
+    )

@@ -4,19 +4,43 @@
 
 <div class="form-card">
 
-    <h2>
-        {{ accion }} ARS
-    </h2>
+    <div class="form-header">
+        <h1>{{ accion }} ARS</h1>
+    </div>
 
-    <form method="POST">
+    <form method="post" class="custom-form">
 
         {% csrf_token %}
 
-        {{ form.as_p }}
+        {% for field in form %}
 
-        <button type="submit" class="btn-primary">
-            Guardar
-        </button>
+        <div class="form-group">
+
+            <label>
+                {{ field.label }}
+            </label>
+
+            {{ field }}
+
+            {% for error in field.errors %}
+                <p class="error-text">{{ error }}</p>
+            {% endfor %}
+
+        </div>
+
+        {% endfor %}
+
+        <div class="form-actions">
+
+            <button type="submit" class="btn-primary">
+                Guardar
+            </button>
+
+            <a href="{% url 'nomina:ars_list' %}" class="btn-secondary">
+                Volver
+            </a>
+
+        </div>
 
     </form>
 

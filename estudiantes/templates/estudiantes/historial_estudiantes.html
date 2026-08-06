@@ -1,0 +1,364 @@
+{% extends "home.html" %}
+
+{% block title %}
+Historial Académico
+{% endblock %}
+
+{% block content %}
+
+<div class="max-w-7xl mx-auto">
+
+    <!-- Encabezado -->
+    <div class="flex justify-between items-center mb-6">
+
+        <div>
+            <h2 class="text-2xl font-semibold">
+                📚 Historial Académico
+            </h2>
+
+            <p class="text-gray-600">
+                Consulta histórica de inscripciones y resultados académicos.
+            </p>
+        </div>
+
+    </div>
+
+    <!-- Filtros -->
+    <div class="bg-white shadow rounded-lg p-4 mb-6">
+
+        <form method="get">
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+
+                <div>
+                    <label class="block text-sm font-medium mb-1">
+                        Buscar estudiante
+                    </label>
+
+                    <input
+                        type="text"
+                        name="q"
+                        value="{{ q }}"
+                        placeholder="Nombre o matrícula"
+                        class="w-full border rounded px-3 py-2">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium mb-1">
+                        Año Escolar
+                    </label>
+
+                    <select
+                        name="anio"
+                        class="w-full border rounded px-3 py-2">
+
+                        <option value="">
+                            Todos
+                        </option>
+
+                        {% for anio in anios %}
+                        <option
+                            value="{{ anio.id }}"
+                            {% if anio.id|stringformat:"s" == anio_seleccionado %}
+                            selected
+                            {% endif %}
+                        >
+                            {{ anio.nombre }}
+                        </option>
+                        {% endfor %}
+
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium mb-1">
+                        Grado
+                    </label>
+
+                    <select
+                        name="grado"
+                        class="w-full border rounded px-3 py-2">
+
+                        <option value="">
+                            Todos
+                        </option>
+
+                        {% for grado in grados %}
+                        <option
+                            value="{{ grado.id }}"
+                            {% if grado.id|stringformat:"s" == grado_seleccionado %}
+                            selected
+                            {% endif %}
+                        >
+                            {{ grado.nombre }}
+                        </option>
+                        {% endfor %}
+
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium mb-1">
+                        Sección
+                    </label>
+
+                    <select
+                        name="seccion"
+                        class="w-full border rounded px-3 py-2">
+
+                        <option value="">
+                            Todas
+                        </option>
+
+                        {% for seccion in secciones %}
+                        <option
+                            value="{{ seccion.id }}"
+                            {% if seccion.id|stringformat:"s" == seccion_seleccionada %}
+                            selected
+                            {% endif %}
+                        >
+                            {{ seccion.nombre }}
+                        </option>
+                        {% endfor %}
+
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium mb-1">
+                        Estado
+                    </label>
+
+                    <select
+                        name="estado"
+                        class="w-full border rounded px-3 py-2">
+
+                        <option value="">
+                            Todos
+                        </option>
+
+                        <option value="aprobado" {% if estado == "aprobado" %}selected{% endif %}>
+                            Aprobado
+                        </option>
+
+                        <option value="recuperacion" {% if estado == "recuperacion" %}selected{% endif %}>
+                            Recuperación
+                        </option>
+
+                        <option value="reprobado" {% if estado == "reprobado" %}selected{% endif %}>
+                            Reprobado
+                        </option>
+
+                        <option value="pendiente" {% if estado == "pendiente" %}selected{% endif %}>
+                            Pendiente
+                        </option>
+
+                        <option value="sin_calificacion" {% if estado == "sin_calificacion" %}selected{% endif %}>
+                            Sin calificación
+                        </option>
+
+                    </select>
+                </div>
+
+                <div class="flex items-end gap-2">
+
+                    <button
+                        type="submit"
+                        class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+
+                        Filtrar
+
+                    </button>
+
+                    <a
+                        href="{% url 'historial_estudiantes' %}"
+                        class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">
+
+                        Limpiar
+
+                    </a>
+
+                </div>
+
+            </div>
+
+        </form>
+
+    </div>
+
+    <!-- Resumen -->
+    <div class="bg-white shadow rounded-lg p-4 mb-6">
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+            <div>
+                <strong>Centro:</strong>
+                {{ centro.nombre }}
+            </div>
+
+            <div>
+                <strong>Total registros:</strong>
+                {{ total_registros }}
+            </div>
+
+            <div>
+                <strong>Año seleccionado:</strong>
+
+                {% if anio_seleccionado %}
+                    Filtrado
+                {% else %}
+                    Todos
+                {% endif %}
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- Tabla -->
+    <div class="bg-white shadow rounded-lg overflow-hidden">
+
+        <div class="overflow-x-auto">
+
+            <table class="min-w-full divide-y divide-gray-200">
+
+                <thead class="bg-gray-50">
+
+                    <tr>
+
+                        <th class="px-4 py-3 text-left">
+                            Matrícula
+                        </th>
+
+                        <th class="px-4 py-3 text-left">
+                            Estudiante
+                        </th>
+
+                        <th class="px-4 py-3 text-left">
+                            Año Escolar
+                        </th>
+
+                        <th class="px-4 py-3 text-left">
+                            Grado
+                        </th>
+
+                        <th class="px-4 py-3 text-left">
+                            Sección
+                        </th>
+
+                        <th class="px-4 py-3 text-center">
+                            Promedio
+                        </th>
+
+                        <th class="px-4 py-3 text-center">
+                            Estado
+                        </th>
+
+                        <th class="px-4 py-3 text-center">
+                            Acciones
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+                <tbody class="divide-y divide-gray-100">
+
+                    {% for inscripcion in inscripciones %}
+
+                    <tr class="hover:bg-gray-50">
+
+                        <td class="px-4 py-3">
+                            {{ inscripcion.estudiante.matricula }}
+                        </td>
+
+                        <td class="px-4 py-3">
+                            {{ inscripcion.estudiante.nombre_completo }}
+                        </td>
+
+                        <td class="px-4 py-3">
+                            {{ inscripcion.anio_escolar.nombre }}
+                        </td>
+
+                        <td class="px-4 py-3">
+                            {{ inscripcion.grado.nombre }}
+                        </td>
+
+                        <td class="px-4 py-3">
+                            {{ inscripcion.seccion.nombre }}
+                        </td>
+
+                        <td class="px-4 py-3 text-center">
+                            {{ inscripcion.promedio_final|default:"-" }}
+                        </td>
+
+                        <td class="px-4 py-3 text-center">
+
+                            {% if inscripcion.estado_final == "aprobado" %}
+                            <span class="bg-green-100 text-green-700 px-2 py-1 rounded text-xs">
+                                Aprobado
+                            </span>
+
+                            {% elif inscripcion.estado_final == "recuperacion" %}
+                            <span class="bg-yellow-100 text-yellow-700 px-2 py-1 rounded text-xs">
+                                Recuperación
+                            </span>
+
+                            {% elif inscripcion.estado_final == "reprobado" %}
+                            <span class="bg-red-100 text-red-700 px-2 py-1 rounded text-xs">
+                                Reprobado
+                            </span>
+
+                            {% elif inscripcion.estado_final == "sin_calificacion" %}
+                            <span class="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs">
+                                Sin calificación
+                            </span>
+
+                            {% else %}
+                            <span class="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs">
+                                Pendiente
+                            </span>
+                            {% endif %}
+
+                        </td>
+
+                        <td class="px-4 py-3 text-center">
+
+                            <a
+                                href="{% url 'estudiante_detail' inscripcion.estudiante.id %}"
+                                class="text-blue-600 hover:underline">
+
+                                👁 Detalle
+
+                            </a>
+
+                        </td>
+
+                    </tr>
+
+                    {% empty %}
+
+                    <tr>
+
+                        <td colspan="8"
+                            class="px-4 py-8 text-center text-gray-500">
+
+                            No se encontraron registros.
+
+                        </td>
+
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

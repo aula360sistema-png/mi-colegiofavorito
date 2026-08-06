@@ -1,7 +1,7 @@
 from django.urls import path
 
 from administracion.views import anio_escolar_create, anio_escolar_list, anio_escolar_update
-from .views import area_competencia_create, area_competencia_delete, area_competencia_list, competencia_create, competencia_delete, competencia_list, competencia_update, docentemateria_create, docentemateria_delete, docentemateria_list, docentemateria_update, registrar_calificaciones
+from .views import area_competencia_create, area_competencia_delete, area_competencia_list, competencia_create, competencia_delete, competencia_list, competencia_update, docentemateria_create, docentemateria_delete, docentemateria_list, docentemateria_update, registrar_calificaciones, cerrar_anio_escolar
 from . import views
 
 
@@ -106,5 +106,6 @@ path('docente-materia/<int:pk>/eliminar/', docentemateria_delete, name='docentem
     path('anio-escolar/', anio_escolar_list, name='anio_escolar_list'),
     path('anio-escolar/crear/', anio_escolar_create, name='anio_escolar_create'),
     path('anio-escolar/<int:pk>/editar/', anio_escolar_update, name='anio_escolar_update'),
+    path('anio-escolar/<int:pk>/cerrar/', views.cerrar_anio_escolar, name='cerrar_anio_escolar'),
 
 ]

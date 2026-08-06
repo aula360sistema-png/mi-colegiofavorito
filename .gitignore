@@ -1,0 +1,30 @@
+# Entorno
+.env
+.env.local
+
+# Base de datos
+*.sqlite3
+db.sqlite3
+
+# Archivos subidos / media
+/media/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

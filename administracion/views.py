@@ -33,6 +33,7 @@ from administracion.models import (
 
 from administracion.services.acta import generar_acta_estudiante
 
+from administracion.services.boletin import construir_boletin_estudiante
 from core.decorators import (
     centro_required,
     role_required
@@ -359,23 +360,22 @@ def redondear(valor):
 
 
 
-
 @login_required
 @centro_required
 @role_required('director', 'secretaria', 'superadmin')
 def generar_boletines(request):
+
     if request.method != "POST":
         return redirect("administracion:dashboard_admin")
 
     centro = request.centro
-
     anio = obtener_anio_activo(centro)
 
     if not anio:
         messages.error(request, "No hay año escolar activo.")
         return redirect("administracion:dashboard_admin")
 
-    # 🔒 Validar que TODOS los períodos estén cerrados
+    # 🔒 validar períodos cerrados
     if Periodo.objects.filter(
         centro=centro,
         anio_escolar=anio,
@@ -390,26 +390,81 @@ def generar_boletines(request):
     inscripciones = Inscripcion.objects.filter(
         centro=centro,
         anio_escolar=anio
-    ).select_related("estudiante")
+    ).select_related("estudiante", "grado", "seccion")
 
     creados = 0
+    actualizados = 0
 
     for inscripcion in inscripciones:
-        acta, creada = generar_acta_estudiante(
+
+        # 🔥 1. CONSTRUIR BOLETÍN COMPLETO (motor real)
+        boletin = construir_boletin_estudiante(
             inscripcion=inscripcion,
             centro=centro,
-            anio=anio,
-            usuario=request.user
+            anio=anio
         )
+
+        # 🔥 2. EXTRAER PROMEDIO GENERAL
+        asignaturas = boletin.get("asignaturas", [])
+
+        promedios = [
+            a["pf"]
+            for a in asignaturas
+            if a.get("pf") is not None
+        ]
+
+        promedio_general = (
+            sum(promedios) / len(promedios)
+            if promedios else None
+        )
+        tiene_materia_reprobada = any(
+            (a.get("pf") or 0) < 70
+            for a in asignaturas
+            if a.get("pf") is not None
+        )
+
+        # 🔥 3. DEFINIR ESTADO ACADÉMICO
+        if not promedios:
+            estado = "sin_calificaciones"
+        elif tiene_materia_reprobada:
+            estado = "recuperacion"
+        elif promedio_general >= 70:
+            estado = "aprobado"
+        else:
+            estado = "reprobado"
+
+        # 🔥 4. ACTUALIZAR INSCRIPCIÓN (estado operativo)
+        inscripcion.promedio_final = promedio_general
+        inscripcion.estado_final = estado
+        inscripcion.save()
+
+        # 🔥 5. AGREGAR ESTADO AL BOLETÍN (IMPORTANTE PARA FILTROS)
+        boletin["estado_final"] = estado
+        boletin["promedio_general"] = promedio_general
+
+        # 🔥 6. GENERAR / ACTUALIZAR ACTA (snapshot oficial)
+        acta, creada = Acta.objects.update_or_create(
+            centro=centro,
+            anio_escolar=anio,
+            estudiante=inscripcion.estudiante,
+            defaults={
+                "grado": inscripcion.grado,
+                "seccion": str(inscripcion.seccion),
+                "datos": boletin,
+                "generado_por": request.user
+            }
+        )
+
         if creada:
             creados += 1
+        else:
+            actualizados += 1
 
     messages.success(
         request,
-        f"✅ Boletines oficiales generados correctamente ({creados})"
+        f"✅ Boletines procesados correctamente. Nuevos: {creados}, Actualizados: {actualizados}"
     )
 
-    # ✅ RETORNO OBLIGATORIO
     return redirect("administracion:lista_boletines")
 
 from django.shortcuts import render, get_object_or_404
@@ -439,17 +494,36 @@ def ver_boletin_estudiante(request, acta_id):
 @centro_required
 @role_required('director', 'secretaria', 'superadmin')
 def lista_boletines(request):
+
     centro = request.centro
 
-    actas = (
-        Acta.objects
-        .filter(centro=centro)
-        .select_related('estudiante', 'grado', 'anio_escolar')
-        .order_by('grado', 'seccion', 'estudiante__primer_apellido')
+    actas = Acta.objects.filter(
+        centro=centro
+    ).select_related(
+        'estudiante', 'grado', 'anio_escolar'
     )
 
+    # 🔥 filtros GET
+    anio_id = request.GET.get("anio")
+    estado = request.GET.get("estado")
+
+    if anio_id:
+        actas = actas.filter(anio_escolar_id=anio_id)
+
+    if estado:
+        actas = actas.filter(datos__estado_final=estado)
+
+    actas = actas.order_by(
+        'grado',
+        'seccion',
+        'estudiante__primer_apellido'
+    )
+  
     context = {
-        "actas": actas
+        "actas": actas,
+        "anios": AnioEscolar.objects.filter(centro=centro).order_by('-fecha_inicio'),
+        "filtro_anio": anio_id,
+        "filtro_estado": estado,
     }
 
     return render(request, "administracion/boletines/lista_boletines.html", context)
@@ -511,18 +585,16 @@ def anio_escolar_create(request):
 @centro_required
 @role_required('director', 'secretaria', 'superadmin')
 def anio_escolar_update(request, pk):
-    centro = request.centro 
+    centro = request.centro
 
     anio = get_object_or_404(
         AnioEscolar,
         pk=pk,
         centro=centro
     )
-
     if request.method == 'POST':
         form = AnioEscolarForm(request.POST, instance=anio)
         if form.is_valid():
-
             if form.cleaned_data.get('activo'):
                 AnioEscolar.objects.filter(
                     centro=centro,
@@ -610,7 +682,7 @@ def seguimiento_estudiantes(request):
 def seguimiento_estudiante(request, estudiante_id):
     centro = request.centro
     if not centro:
-        return redirect('seleccionar_centro')
+        return redirect('core:seleccionar_centro')
 
     actas = (
         Acta.objects

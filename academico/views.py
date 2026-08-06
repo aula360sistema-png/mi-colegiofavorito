@@ -1,9 +1,15 @@
-from django.shortcuts import render
+from gettext import translation
+import logging
+
+logger = logging.getLogger(__name__)
+
+
 
 # Create your views here.
 from django.shortcuts import render, redirect
 
 from administracion.views import obtener_centro_del_usuario
+from core.decorators import centro_required, role_required
 from .models import Asignatura, DocenteMateria
 from docentes.models import Docente
 from core.models import AnioEscolar
@@ -12,15 +18,17 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
 
-from estudiantes.models import Inscripcion
+from estudiantes.models import HistorialAcademico, Inscripcion
 from .models import Calificacion, Periodo, Asignatura, Seccion, AreaCurricular
 from .forms import CalificacionForm, SeccionForm, CompetenciaForm, AreaCurricularForm, AsignaturaForm, GradoAsignaturaForm
 from core.models import CentroEducativo
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
+
+
 from .models import Nivel
 from .forms import NivelForm
-from core.models import CentroEducativo
+
+
+from django.db import transaction
 
 def asignar_docente2(request):
     if request.method == "POST":
@@ -66,25 +74,25 @@ from estudiantes.models import Inscripcion
 
 @login_required
 def registrar_calificaciones(request, inscripcion_id, asignatura_id):
-    print("🟢 Entrando a registrar_calificaciones")
+    logger.debug('Entrando a registrar_calificaciones')
 
     centro = get_centro_activo(request)
     if not centro:
-        return redirect('seleccionar_centro')
+        return redirect('core:seleccionar_centro')
 
     inscripcion = get_object_or_404(
         Inscripcion,
         id=inscripcion_id,
         centro=centro
     )
-    print("➡️ Inscripción:", inscripcion)
+    logger.debug('Inscripción: %s', inscripcion)
 
     asignatura = get_object_or_404(
         Asignatura,
         id=asignatura_id,
         centro=centro
     )
-    print("➡️ Asignatura:", asignatura)
+    logger.debug('Asignatura: %s', asignatura)
 
     periodos = Periodo.objects.filter(
         centro=centro,
@@ -96,7 +104,7 @@ def registrar_calificaciones(request, inscripcion_id, asignatura_id):
         return redirect('estudiante_detail', pk=inscripcion.estudiante.id)
 
     periodo = periodos.first()
-    print("➡️ Período activo:", periodo)
+    logger.debug('Período activo: %s', periodo)
 
     calificaciones = Calificacion.objects.filter(
         inscripcion=inscripcion,
@@ -105,7 +113,7 @@ def registrar_calificaciones(request, inscripcion_id, asignatura_id):
     )
 
     if request.method == 'POST':
-        print("📨 POST recibido:", request.POST)
+        logger.debug('POST recibido: %s', request.POST)
 
         form = CalificacionForm(
             request.POST,
@@ -122,7 +130,7 @@ def registrar_calificaciones(request, inscripcion_id, asignatura_id):
                 periodo=periodo
             ).exists()
 
-            print("➡️ ¿Existe ya la nota?:", existe)
+            logger.debug('¿Existe ya la nota?: %s', existe)
 
             if existe:
                 messages.warning(
@@ -136,7 +144,7 @@ def registrar_calificaciones(request, inscripcion_id, asignatura_id):
                 calificacion.periodo = periodo
                 calificacion.save()
 
-                print("✅ Nota guardada:", calificacion.nota)
+                logger.debug('Nota guardada: %s', calificacion.nota)
 
                 messages.success(request, 'Calificación registrada')
                 return redirect(
@@ -145,7 +153,7 @@ def registrar_calificaciones(request, inscripcion_id, asignatura_id):
                     asignatura_id=asignatura.id
                 )
         else:
-            print("❌ Errores:", form.errors)
+            logger.warning('Errores de formulario: %s', form.errors)
 
     else:
         form = CalificacionForm(asignatura=asignatura)
@@ -201,7 +209,7 @@ def get_centro_activo(request):
 def nivel_list(request):
     centro = get_centro_activo(request)
     if not centro:
-        return redirect('seleccionar_centro')
+        return redirect('core:seleccionar_centro')
 
     niveles = Nivel.objects.filter(centro=centro)
 
@@ -216,7 +224,7 @@ def nivel_list(request):
 def nivel_create(request):
     centro = get_centro_activo(request)
     if not centro:
-        return redirect('seleccionar_centro')
+        return redirect('core:seleccionar_centro')
 
     if request.method == 'POST':
         form = NivelForm(request.POST)
@@ -372,7 +380,7 @@ def cerrar_todos_los_periodos(request):
     centro = get_centro_activo(request)
     if not centro:
         messages.error(request, "No hay un centro activo en sesión.")
-        return redirect('seleccionar_centro')
+        return redirect('core:seleccionar_centro')
 
     # Cerrar todos los periodos del centro
     periodos = Periodo.objects.filter(centro=centro, cerrado=False)
@@ -878,7 +886,7 @@ def area_competencia_list(request):
 def area_competencia_create(request):
     centro = get_centro_activo(request)
     if not centro:
-        return redirect('seleccionar_centro')
+        return redirect('core:seleccionar_centro')
 
     # Todas las asignaturas del centro
     asignaturas = Asignatura.objects.filter(centro=centro)
@@ -1159,3 +1167,101 @@ def anio_escolar_update(request, pk):
         'form': form,
         'accion': 'Editar'
     })
+
+
+
+
+@login_required
+@centro_required
+@role_required('director', 'superadmin')
+def cerrar_anio_escolar(request, pk):
+
+    anio = get_object_or_404(
+        AnioEscolar,
+        pk=pk,
+        centro=request.centro
+    )
+
+    # ====================================
+    # VALIDAR PERÍODOS ABIERTOS
+    # ====================================
+    if Periodo.objects.filter(
+        anio_escolar=anio,
+        cerrado=False
+    ).exists():
+
+        messages.error(
+            request,
+            "No se puede cerrar el año escolar. Existen períodos abiertos."
+        )
+
+        return redirect('anio_escolar_list')
+
+    # ====================================
+    # VALIDAR ESTUDIANTES PENDIENTES
+    # ====================================
+    pendientes = Inscripcion.objects.filter(
+        anio_escolar=anio,
+        estado_final__in = ['pendiente', 'sin_calificacion']
+    ).select_related(
+        'estudiante',
+        'grado'
+    )
+
+    if pendientes.exists():
+
+        request.session['pendientes_cierre'] = [
+            {
+                "estudiante": i.estudiante.nombre_completo(),
+                "grado": str(i.grado),
+                "promedio": str(i.promedio_final or "N/A"),
+                "estado": i.estado_final,
+            }
+            for i in pendientes
+        ]
+
+        messages.error(
+            request,
+            f"No se puede cerrar el año escolar. Existen {pendientes.count()} estudiantes pendientes."
+        )
+
+        return redirect('anio_escolar_list')
+
+    # ====================================
+    # CERRAR AÑO ESCOLAR
+    # ====================================
+    try:
+
+        with transaction.atomic():
+
+            anio.cerrar()
+
+            for inscripcion in Inscripcion.objects.filter(
+                anio_escolar=anio
+            ):
+
+                HistorialAcademico.objects.get_or_create(
+                estudiante=inscripcion.estudiante,
+                nivel=inscripcion.grado.nivel,
+                grado=inscripcion.grado,
+                seccion=inscripcion.seccion,
+                anio_escolar=anio,
+                defaults={
+                    "estado": inscripcion.estado_final,
+                    "cerrado": True,
+                }
+            )
+
+        messages.success(
+            request,
+            f"Año escolar {anio.nombre} cerrado correctamente."
+        )
+
+    except Exception as e:
+
+        messages.error(
+            request,
+            f"Error al cerrar el año escolar: {e}"
+        )
+
+    return redirect('anio_escolar_list')

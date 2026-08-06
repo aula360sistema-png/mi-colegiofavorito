@@ -2,7 +2,8 @@ from django.db import models
 
 # Create your models here.
 from django.db import models
-
+from django.core.exceptions import ValidationError
+from django.core.exceptions import ValidationError
 class CentroEducativo(models.Model):
     nombre = models.CharField(max_length=255)
     codigo_minerd = models.CharField(max_length=50, unique=True)
@@ -28,12 +29,55 @@ class AnioEscolar(models.Model):
     fecha_fin = models.DateField()
 
     activo = models.BooleanField(default=False)
+    cerrado = models.BooleanField(default=False)
 
     class Meta:
         unique_together = ('centro', 'nombre')
 
+        constraints = [
+            models.UniqueConstraint(
+                fields=['centro'],
+                condition=models.Q(activo=True),
+                name='unique_active_year_per_center'
+            )
+        ]
+
     def __str__(self):
         return f"{self.nombre} - {self.centro.nombre}"
+    
+    def cerrar(self):
+        self.cerrado = True
+        self.activo = False
+        self.save()
+    
+    def save(self, *args, **kwargs):
+
+        if self.activo:
+
+            # Si se activa un año, automáticamente se abre
+            self.cerrado = False
+
+            # Cerrar los demás
+            AnioEscolar.objects.filter(
+                centro=self.centro,
+                activo=True
+            ).exclude(
+                id=self.id
+            ).update(
+                activo=False,
+                cerrado=True
+            )
+
+        super().save(*args, **kwargs)
+    
+  
+
+   # def clean(self):
+    #    if self.cerrado and self.activo:
+   #         raise ValidationError({
+   #             'activo': 'Un año escolar cerrado no puede activarse.'
+  #          })
+   
 
 
 class RolCentro(models.Model):

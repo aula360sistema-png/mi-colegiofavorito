@@ -4,74 +4,181 @@
 
 {% block content %}
 
-<div class="max-w-6xl mx-auto">
+<div class="max-w-7xl mx-auto">
 
     <!-- Encabezado -->
     <div class="flex justify-between items-center mb-6">
-        <h2 class="text-2xl font-semibold">
-            🎓 Estudiantes – {{ centro.nombre }}
-        </h2>
+
+        <div>
+            <h2 class="text-2xl font-semibold">
+                🎓 Estudiantes
+            </h2>
+
+            {% if anio_activo %}
+            <p class="text-sm text-gray-500">
+                Año escolar activo: {{ anio_activo.nombre }}
+            </p>
+            {% endif %}
+        </div>
 
         <a href="{% url 'estudiante_create' %}"
            class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
             ➕ Nuevo estudiante
         </a>
+
+    </div>
+
+    <!-- Buscador -->
+    <div class="bg-white shadow rounded p-4 mb-6">
+
+        <form method="get" class="flex gap-2">
+
+            <input
+                type="text"
+                name="q"
+                value="{{ q }}"
+                placeholder="Buscar por matrícula, nombre o apellido..."
+                class="flex-1 border rounded px-3 py-2"
+            >
+
+            <button
+                type="submit"
+                class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                🔍 Buscar
+            </button>
+
+            {% if q %}
+            <a href="{% url 'estudiante_list' %}"
+               class="bg-gray-300 px-4 py-2 rounded hover:bg-gray-400">
+                Limpiar
+            </a>
+            {% endif %}
+
+        </form>
+
     </div>
 
     <!-- Tabla -->
-    <div class="bg-white shadow rounded overflow-hidden">
+    <div class="bg-white shadow rounded overflow-x-auto">
+
         <table class="min-w-full divide-y divide-gray-200">
+
             <thead class="bg-gray-50">
+
                 <tr>
-                    <th class="px-4 py-2 text-left text-sm font-semibold">
+
+                    <th class="px-4 py-3 text-left text-sm font-semibold">
+                        Matrícula
+                    </th>
+
+                    <th class="px-4 py-3 text-left text-sm font-semibold">
                         Nombre
                     </th>
-                    <th class="px-4 py-2 text-left text-sm font-semibold">
-    Inscripción actual
-</th>
 
-                    <th class="px-4 py-2 text-center text-sm font-semibold">
+                    <th class="px-4 py-3 text-left text-sm font-semibold">
+                        Inscripción actual
+                    </th>
+
+                    <th class="px-4 py-3 text-center text-sm font-semibold">
+                        Estado
+                    </th>
+
+                    <th class="px-4 py-3 text-center text-sm font-semibold">
                         Acciones
                     </th>
+
                 </tr>
+
             </thead>
 
             <tbody class="divide-y divide-gray-100">
+
                 {% for e in estudiantes %}
+
                 <tr class="hover:bg-gray-50">
-                    <td class="px-4 py-2">
+
+                    <td class="px-4 py-3">
+                        {{ e.matricula }}
+                    </td>
+
+                    <td class="px-4 py-3">
                         {{ e.nombre_completo }}
                     </td>
-                    <td class="px-4 py-2">
-    {% if e.inscripcion_actual %}
-        {% with ins=e.inscripcion_actual.0 %}
-            {{ ins.grado.nombre }}{{ ins.seccion.nombre }}
-            · {{ ins.anio_escolar.nombre }}
-        {% endwith %}
-    {% else %}
-        <span class="text-gray-400 italic">
-            No inscrito
-        </span>
-    {% endif %}
-</td>
 
-                    <td class="px-4 py-2 text-center">
+                    <td class="px-4 py-3">
+
+                        {% if e.inscripcion_actual %}
+
+                            {% with ins=e.inscripcion_actual.0 %}
+                                {{ ins.grado.nombre }}
+                                {{ ins.seccion.nombre }}
+                                ·
+                                {{ ins.anio_escolar.nombre }}
+                            {% endwith %}
+
+                        {% else %}
+
+                            <span class="text-gray-400 italic">
+                                No inscrito
+                            </span>
+
+                        {% endif %}
+
+                    </td>
+
+                    <td class="px-4 py-3 text-center">
+
+                        {% if e.inscripcion_actual %}
+
+                            <span class="bg-green-100 text-green-700 px-2 py-1 rounded text-xs">
+                                Inscrito
+                            </span>
+
+                        {% else %}
+
+                            <span class="bg-red-100 text-red-700 px-2 py-1 rounded text-xs">
+                                No inscrito
+                            </span>
+
+                        {% endif %}
+
+                    </td>
+
+                    <td class="px-4 py-3 text-center">
+
                         <a href="{% url 'estudiante_detail' e.id %}"
                            class="text-blue-600 hover:underline">
                             👁️ Ver detalle
                         </a>
+
                     </td>
+
                 </tr>
+
                 {% empty %}
+
                 <tr>
-                    <td colspan="2"
-                        class="px-4 py-4 text-center text-gray-500">
-                        No hay estudiantes registrados
+
+                    <td colspan="5"
+                        class="px-4 py-6 text-center text-gray-500">
+
+                        No se encontraron estudiantes.
+
                     </td>
+
                 </tr>
+
                 {% endfor %}
+
             </tbody>
+
         </table>
+
+    </div>
+
+    <!-- Total -->
+    <div class="mt-4 text-sm text-gray-600">
+        Total de estudiantes: <strong>{{ estudiantes|length }}</strong>
     </div>
 
 </div>

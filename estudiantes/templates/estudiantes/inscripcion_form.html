@@ -1,26 +1,249 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>Inscribir Estudiante</title>
-</head>
-<body>
+{% extends "home.html" %}
 
-<h2>Inscribir estudiante</h2>
+{% block title %}
+Inscribir Estudiante
+{% endblock %}
 
-<p>
-<strong>{{ estudiante.nombre_completo }}</strong>
-</p>
+{% block content %}
 
-<form method="post">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit">Inscribir</button>
-</form>
+<div class="max-w-5xl mx-auto">
 
-<a href="{% url 'estudiante_detail' estudiante.id %}">
-    Volver al detalle
-</a>
+    <!-- Encabezado -->
+    <div class="flex justify-between items-center mb-6">
 
-</body>
-</html>
+        <div>
+            <h2 class="text-2xl font-semibold">
+                📝 Inscribir Estudiante
+            </h2>
+
+            <p class="text-gray-500">
+                Registro manual de inscripción
+            </p>
+        </div>
+
+        <a href="{% url 'estudiante_detail' estudiante.id %}"
+           class="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded">
+            ⬅ Volver
+        </a>
+
+    </div>
+
+    <!-- Datos del estudiante -->
+    <div class="bg-white shadow rounded-lg p-6 mb-6">
+
+        <h3 class="text-lg font-semibold mb-4">
+            👤 Información del estudiante
+        </h3>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+            <div>
+                <span class="text-sm text-gray-500">
+                    Matrícula
+                </span>
+
+                <div class="font-medium">
+                    {{ estudiante.matricula }}
+                </div>
+            </div>
+
+            <div>
+                <span class="text-sm text-gray-500">
+                    Nombre
+                </span>
+
+                <div class="font-medium">
+                    {{ estudiante.nombre_completo }}
+                </div>
+            </div>
+
+            <div>
+                <span class="text-sm text-gray-500">
+                    Sexo
+                </span>
+
+                <div class="font-medium">
+                    {{ estudiante.get_sexo_display }}
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- Formulario -->
+    <div class="bg-white shadow rounded-lg p-6 mb-6">
+
+        <h3 class="text-lg font-semibold mb-4">
+            🎓 Datos de Inscripción
+        </h3>
+
+        <form method="post">
+
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+                <div class="bg-red-50 border border-red-300 rounded p-4 mb-4">
+                    {{ form.non_field_errors }}
+                </div>
+            {% endif %}
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                {% for field in form %}
+
+                <div>
+
+                    <label class="block font-medium mb-2">
+                        {{ field.label }}
+                    </label>
+
+                    {{ field }}
+
+                    {% if field.errors %}
+                        <div class="text-red-600 text-sm mt-1">
+                            {{ field.errors }}
+                        </div>
+                    {% endif %}
+
+                </div>
+
+                {% endfor %}
+
+            </div>
+
+            <div class="border-t pt-6 mt-6 flex justify-end gap-3">
+
+                <a href="{% url 'estudiante_detail' estudiante.id %}"
+                   class="bg-gray-200 hover:bg-gray-300 px-5 py-2 rounded">
+
+                    Cancelar
+
+                </a>
+
+                <button type="submit"
+                        class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded">
+
+                    ✅ Guardar Inscripción
+
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
+
+    <!-- Historial -->
+    <div class="bg-white shadow rounded-lg overflow-hidden">
+
+        <div class="px-6 py-4 border-b">
+
+            <h3 class="text-lg font-semibold">
+                📚 Historial de Inscripciones
+            </h3>
+
+        </div>
+
+        <div class="overflow-x-auto">
+
+            <table class="min-w-full divide-y divide-gray-200">
+
+                <thead class="bg-gray-50">
+
+                    <tr>
+                        <th class="px-4 py-3 text-left">
+                            Año Escolar
+                        </th>
+
+                        <th class="px-4 py-3 text-left">
+                            Grado
+                        </th>
+
+                        <th class="px-4 py-3 text-left">
+                            Sección
+                        </th>
+
+                        <th class="px-4 py-3 text-center">
+                            Estado
+                        </th>
+                    </tr>
+
+                </thead>
+
+                <tbody class="divide-y divide-gray-100">
+
+                    {% for i in inscripciones_previas %}
+
+                    <tr>
+
+                        <td class="px-4 py-3">
+                            {{ i.anio_escolar.nombre }}
+                        </td>
+
+                        <td class="px-4 py-3">
+                            {{ i.grado.nombre }}
+                        </td>
+
+                        <td class="px-4 py-3">
+                            {{ i.seccion.nombre }}
+                        </td>
+
+                        <td class="px-4 py-3 text-center">
+
+                            {% if i.estado_final == "aprobado" %}
+                                <span class="bg-green-100 text-green-700 px-2 py-1 rounded text-xs">
+                                    Aprobado
+                                </span>
+
+                            {% elif i.estado_final == "reprobado" %}
+                                <span class="bg-red-100 text-red-700 px-2 py-1 rounded text-xs">
+                                    Reprobado
+                                </span>
+
+                            {% elif i.estado_final == "recuperacion" %}
+                                <span class="bg-yellow-100 text-yellow-700 px-2 py-1 rounded text-xs">
+                                    Recuperación
+                                </span>
+
+                            {% elif i.estado_final == "sin_calificacion" %}
+                                <span class="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs">
+                                    Sin Calificación
+                                </span>
+
+                            {% else %}
+                                <span class="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs">
+                                    Pendiente
+                                </span>
+                            {% endif %}
+
+                        </td>
+
+                    </tr>
+
+                    {% empty %}
+
+                    <tr>
+
+                        <td colspan="4"
+                            class="text-center py-8 text-gray-500">
+
+                            No existen inscripciones previas.
+
+                        </td>
+
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

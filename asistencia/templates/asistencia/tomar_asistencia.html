@@ -1,0 +1,275 @@
+{% extends 'home.html' %}
+
+{% block title %}
+Asistencia de Estudiantes
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">
+            Asistencia de Estudiantes
+        </h1>
+
+        <p class="page-subtitle">
+            Año escolar {{ anio.nombre }} · Solo cuentan días lectivos (lun a vie)
+        </p>
+    </div>
+</div>
+
+{% if not grados_secciones %}
+
+<div class="asistencia-banner alert-warning">
+    <i class="fas fa-info-circle"></i>
+    <span>
+        No tiene grados o secciones asignadas para el año escolar activo,
+        o no hay estudiantes inscritos todavía.
+    </span>
+</div>
+
+{% else %}
+
+<div class="asistencia-selector">
+
+    <form method="get" class="asistencia-filtros">
+
+        <div class="form-group">
+            <label>Grado</label>
+            <select id="grado" name="grado">
+                <option value="">-- Seleccionar --</option>
+                {% for gid, grado, sid, seccion in grados_secciones %}
+                    {% ifchanged gid %}
+                        <option value="{{ gid }}" {% if gid == grado_id %}selected{% endif %}>
+                            {{ grado.nombre }}
+                        </option>
+                    {% endifchanged %}
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Sección</label>
+            <select id="seccion" name="seccion">
+                <option value="">-- Seleccionar --</option>
+                {% for gid, grado, sid, seccion in grados_secciones %}
+                    <option
+                        value="{{ sid }}"
+                        data-grado="{{ gid }}"
+                        {% if sid == seccion_id and gid == grado_id %}selected{% endif %}
+                    >
+                        {{ seccion.nombre }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Fecha</label>
+            <input
+                type="date"
+                name="fecha"
+                value="{{ fecha|date:'Y-m-d' }}"
+                max="{{ anio.fecha_fin|date:'Y-m-d' }}"
+            >
+        </div>
+
+        <button type="submit" class="btn-primary">
+            <i class="fas fa-search"></i>
+            Buscar
+        </button>
+
+    </form>
+
+</div>
+
+{% if es_lectivo and inscripciones and formset %}
+
+    {% if ya_registrada %}
+
+    <div class="asistencia-banner alert-info">
+        <i class="fas fa-check-circle"></i>
+        <span>
+            Este día ya tiene asistencia registrada.
+            Si envía el formulario actualizará los registros.
+        </span>
+    </div>
+
+    <div class="resumen-dia">
+
+        {% if resumen_dia.presente %}
+        <span class="badge-success">
+            <i class="fas fa-user-check"></i>
+            {{ resumen_dia.presente }} presente
+        </span>
+        {% endif %}
+
+        {% if resumen_dia.tardanza %}
+        <span class="badge-warning">
+            <i class="fas fa-clock"></i>
+            {{ resumen_dia.tardanza }} tardanza
+        </span>
+        {% endif %}
+
+        {% if resumen_dia.justificado %}
+        <span class="badge-info">
+            <i class="fas fa-file-medical"></i>
+            {{ resumen_dia.justificado }} justificado
+        </span>
+        {% endif %}
+
+        {% if resumen_dia.ausente %}
+        <span class="badge-danger">
+            <i class="fas fa-user-times"></i>
+            {{ resumen_dia.ausente }} ausente
+        </span>
+        {% endif %}
+
+    </div>
+
+    {% endif %}
+
+    <div class="table-card">
+
+        <form method="post" id="form-asistencia">
+
+            {% csrf_token %}
+
+            {{ formset.management_form }}
+
+            <table class="custom-table">
+
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Estudiante</th>
+                        <th>Matrícula</th>
+                        <th>Asistencia</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    {% for inscripcion, form in filas %}
+
+                    <tr>
+
+                        <td>{{ forloop.counter }}</td>
+
+                        <td>
+                            <strong>{{ inscripcion.estudiante.nombre_completo }}</strong>
+                        </td>
+
+                        <td>{{ inscripcion.estudiante.matricula }}</td>
+
+                        <td>
+                            {{ form.inscripcion }}
+
+                            <div class="asistencia-radios">
+
+                                {% for value, label in form.estado.field.choices %}
+
+                                <label
+                                    class="asistencia-radio {% if form.estado.value == value %}activo{% endif %}"
+                                    data-estado="{{ value }}"
+                                >
+                                    <input
+                                        type="radio"
+                                        name="{{ form.estado.html_name }}"
+                                        value="{{ value }}"
+                                        {% if form.estado.value == value %}checked{% endif %}
+                                    >
+                                    <span>{{ label }}</span>
+                                </label>
+
+                                {% endfor %}
+
+                            </div>
+                        </td>
+
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+            <div class="asistencia-actions">
+
+                <button type="submit" class="btn-nomina">
+                    <i class="fas fa-save"></i>
+                    Guardar asistencia
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
+
+{% elif grado_id and seccion_id and inscripciones and not es_lectivo %}
+
+    <div class="asistencia-banner alert-warning">
+        <i class="fas fa-calendar-xmark"></i>
+        <span>
+            La fecha seleccionada no es un día lectivo
+            (fin de semana, feriado o día de no docencia),
+            por lo que no cuenta en la asistencia y no se puede registrar.
+        </span>
+    </div>
+
+{% elif grado_id and seccion_id and not inscripciones %}
+
+    <div class="asistencia-banner alert-warning">
+        <i class="fas fa-users-slash"></i>
+        <span>
+            No hay estudiantes activos inscritos en esta sección para el año escolar activo.
+        </span>
+    </div>
+
+{% endif %}
+
+{% endif %}
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const grado = document.getElementById('grado');
+        const seccion = document.getElementById('seccion');
+
+        if (!grado || !seccion) return;
+
+        function filtrarSecciones() {
+            const gid = grado.value;
+
+            seccion.querySelectorAll('option').forEach(function (op) {
+                if (!op.value) return;
+
+                op.style.display = (op.dataset.grado === gid) ? '' : 'none';
+            });
+        }
+
+        grado.addEventListener('change', function () {
+            seccion.value = '';
+            filtrarSecciones();
+        });
+
+        filtrarSecciones();
+
+        document.querySelectorAll('.asistencia-radios').forEach(function (group) {
+            group.querySelectorAll('input[type="radio"]').forEach(function (input) {
+                input.addEventListener('change', function () {
+                    group.querySelectorAll('label.asistencia-radio').forEach(function (label) {
+                        label.classList.remove('activo');
+                    });
+
+                    if (input.checked) {
+                        input.closest('label').classList.add('activo');
+                    }
+                });
+            });
+        });
+    });
+</script>
+
+{% endblock %}

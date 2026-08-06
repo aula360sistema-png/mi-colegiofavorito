@@ -3,79 +3,189 @@
 {% block title %}Inscripción de Estudiante{% endblock %}
 
 {% block content %}
-<div class="max-w-3xl mx-auto bg-white shadow rounded-lg p-6">
 
-    <h2 class="text-2xl font-semibold mb-4">
-        📝 Inscripción de Estudiante
-    </h2>
+<div class="max-w-4xl mx-auto">
 
-    <div class="mb-4 text-gray-700">
-        <p><strong>Estudiante:</strong> {{ estudiante.nombre_completo }}</p>
-        <p><strong>Año escolar:</strong> {{ anio_escolar.nombre }}</p>
+    <!-- Encabezado -->
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h2 class="text-2xl font-semibold">
+                📝 Inscripción de Estudiante
+            </h2>
+
+            <p class="text-gray-500">
+                Registrar inscripción para el año escolar activo
+            </p>
+        </div>
+
+        <a href="{% url 'estudiante_detail' estudiante.id %}"
+           class="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded">
+            ⬅ Volver
+        </a>
     </div>
 
-    <hr class="my-4">
+    <!-- Información del estudiante -->
+    <div class="bg-white shadow rounded-lg p-6 mb-6">
 
-    <form method="post" class="space-y-4">
-        {% csrf_token %}
+        <h3 class="text-lg font-semibold mb-4">
+            👤 Datos del estudiante
+        </h3>
 
-        <div>
-            <label class="block font-medium mb-1">Grado</label>
-            {{ form.grado }}
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+            <div>
+                <span class="text-gray-500 text-sm">
+                    Nombre
+                </span>
+
+                <div class="font-medium">
+                    {{ estudiante.nombre_completo }}
+                </div>
+            </div>
+
+            <div>
+                <span class="text-gray-500 text-sm">
+                    Matrícula
+                </span>
+
+                <div class="font-medium">
+                    {{ estudiante.matricula }}
+                </div>
+            </div>
+
+            <div>
+                <span class="text-gray-500 text-sm">
+                    Año Escolar
+                </span>
+
+                <div class="font-medium">
+                    {{ anio_escolar.nombre }}
+                </div>
+            </div>
+
+            <div>
+                <span class="text-gray-500 text-sm">
+                    Sexo
+                </span>
+
+                <div class="font-medium">
+                    {{ estudiante.get_sexo_display }}
+                </div>
+            </div>
+
         </div>
 
-        <div>
-            <label class="block font-medium mb-1">Sección</label>
-            {{ form.seccion }}
-        </div>
+    </div>
 
-        <div class="flex justify-between items-center pt-4">
-            <a href="{% url 'estudiante_detail' estudiante.id %}"
-               class="text-gray-600 hover:underline">
-                ⬅ Volver
-            </a>
+    <!-- Formulario -->
+    <div class="bg-white shadow rounded-lg p-6">
 
-            <button type="submit"
-                    class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">
-                ✅ Inscribir
-            </button>
-        </div>
-    </form>
+        <h3 class="text-lg font-semibold mb-4">
+            🎓 Datos de inscripción
+        </h3>
+
+        <form method="post">
+
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+                <div class="mb-4 bg-red-50 border border-red-200 rounded p-3 text-red-700">
+                    {{ form.non_field_errors }}
+                </div>
+            {% endif %}
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                <div>
+                    <label class="block text-sm font-medium mb-2">
+                        Grado
+                    </label>
+
+                    {{ form.grado }}
+
+                    {% if form.grado.errors %}
+                        <div class="text-red-600 text-sm mt-1">
+                            {{ form.grado.errors }}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium mb-2">
+                        Sección
+                    </label>
+
+                    {{ form.seccion }}
+
+                    {% if form.seccion.errors %}
+                        <div class="text-red-600 text-sm mt-1">
+                            {{ form.seccion.errors }}
+                        </div>
+                    {% endif %}
+                </div>
+
+            </div>
+
+            <div class="border-t mt-6 pt-6 flex justify-end gap-3">
+
+                <a href="{% url 'estudiante_detail' estudiante.id %}"
+                   class="bg-gray-200 hover:bg-gray-300 px-5 py-2 rounded">
+                    Cancelar
+                </a>
+
+                <button type="submit"
+                        class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded">
+                    ✅ Guardar inscripción
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
 
 </div>
 
-<!-- 🔥 JS SECCIONES -->
+<!-- AJAX Secciones -->
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+
     const gradoSelect = document.getElementById('id_grado');
     const seccionSelect = document.getElementById('id_seccion');
 
-    if (!gradoSelect || !seccionSelect) {
-        console.error("❌ No se encontraron los selects");
-        return;
-    }
+    if (!gradoSelect || !seccionSelect) return;
 
     gradoSelect.addEventListener('change', function () {
+
         const gradoId = this.value;
 
-        seccionSelect.innerHTML = '<option value="">---------</option>';
+        seccionSelect.innerHTML =
+            '<option value="">Seleccione una sección</option>';
 
         if (!gradoId) return;
 
         fetch("{% url 'ajax_cargar_secciones' %}?grado=" + gradoId)
             .then(response => response.json())
             .then(data => {
+
                 data.forEach(seccion => {
+
                     const option = document.createElement('option');
+
                     option.value = seccion.id;
                     option.textContent = seccion.nombre;
+
                     seccionSelect.appendChild(option);
+
                 });
+
             })
             .catch(error => {
-                console.error("❌ Error cargando secciones:", error);
+                console.error(error);
             });
+
     });
+
 });
 </script>
 
@@ -84,14 +194,17 @@ document.addEventListener('DOMContentLoaded', function () {
 {% if messages %}
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+
     {% for message in messages %}
-        Swal.fire({
-            icon: '{% if message.tags == "success" %}success{% elif message.tags == "warning" %}warning{% elif message.tags == "error" %}error{% else %}info{% endif %}',
-            title: '{{ message.tags|capfirst }}',
-            text: '{{ message }}',
-            confirmButtonColor: '#2563eb'
-        });
+
+    Swal.fire({
+        icon: '{% if message.tags == "success" %}success{% elif message.tags == "error" %}error{% elif message.tags == "warning" %}warning{% else %}info{% endif %}',
+        title: '{{ message.tags|capfirst }}',
+        text: '{{ message|escapejs }}'
+    });
+
     {% endfor %}
+
 });
 </script>
 {% endif %}

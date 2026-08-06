@@ -1,0 +1,130 @@
+{% extends 'home.html' %}
+
+{% block title %}
+Días de No Docencia
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">
+            Días de No Docencia
+        </h1>
+
+        <p class="page-subtitle">
+            Días en los que no se imparte docencia y no afectan el promedio de asistencia
+        </p>
+    </div>
+</div>
+
+<div class="asistencia-grid">
+
+    <div class="form-card">
+
+        <div class="form-header">
+            <h1>Registrar día</h1>
+        </div>
+
+        <form method="post" class="custom-form">
+
+            {% csrf_token %}
+
+            {% for field in form %}
+
+            <div class="form-group">
+
+                <label>
+                    {{ field.label }}
+                </label>
+
+                {{ field }}
+
+                {% for error in field.errors %}
+                    <p class="error-text">{{ error }}</p>
+                {% endfor %}
+
+            </div>
+
+            {% endfor %}
+
+            <div class="form-actions">
+                <button type="submit" class="btn-primary">
+                    <i class="fas fa-plus"></i>
+                    Registrar
+                </button>
+            </div>
+
+        </form>
+
+    </div>
+
+    <div class="table-card">
+
+        <table class="custom-table">
+
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Motivo</th>
+                    <th>Año escolar</th>
+                    <th></th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                {% for dia in dias %}
+
+                <tr>
+
+                    <td>
+                        <strong>{{ dia.fecha|date:'d/m/Y' }}</strong>
+                    </td>
+
+                    <td>{{ dia.motivo }}</td>
+
+                    <td>
+                        <span class="badge-info">{{ dia.anio_escolar.nombre }}</span>
+                    </td>
+
+                    <td>
+                        <form
+                            method="post"
+                            class="inline-form"
+                            onsubmit="return confirm('¿Eliminar este día de no docencia?');"
+                        >
+                            {% csrf_token %}
+                            <input type="hidden" name="eliminar" value="1">
+                            <input type="hidden" name="dia_id" value="{{ dia.id }}">
+
+                            <button type="submit" class="btn-icon-danger" title="Eliminar">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </form>
+                    </td>
+
+                </tr>
+
+                {% empty %}
+
+                <tr>
+                    <td colspan="4">
+                        <div class="empty-state">
+                            <i class="fas fa-calendar-check"></i>
+                            <p>No hay días de no docencia registrados</p>
+                        </div>
+                    </td>
+                </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+{% endblock %}

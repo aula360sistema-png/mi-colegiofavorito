@@ -1,53 +1,224 @@
 {% extends "home.html" %}
 
-{% block title %}Materias del Estudiante{% endblock %}
+{% block title %}
+Materias del Estudiante
+{% endblock %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto">
 
-    <h2 class="text-2xl font-semibold mb-4">
-        📘 Materias
-    </h2>
+<div class="max-w-6xl mx-auto">
 
-    <p class="mb-4 text-gray-600">
-        {{ inscripcion.estudiante.nombre_completo }} —
-        {{ inscripcion.grado.nombre }} {{ inscripcion.seccion.nombre }} |
-        {{ inscripcion.anio_escolar }}
-    </p>
+    <!-- Encabezado -->
+    <div class="flex justify-between items-center mb-6">
 
-    <div class="bg-white shadow rounded overflow-hidden">
-        <table class="w-full">
-            <thead class="bg-gray-100">
-                <tr>
-                    <th class="px-4 py-2 text-left">Asignatura</th>
-                    <th class="px-4 py-2 text-left">Docente</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y">
-                {% for a in asignaciones %}
-                <tr>
-                    <td class="px-4 py-2">
-                        {{ a.asignatura.nombre }}
-                    </td>
-                    <td class="px-4 py-2">
-                        {{ a.docente.nombre_completo|default:"—" }}
-                    </td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="2" class="px-4 py-3 text-gray-500 text-center">
-                        No hay materias asignadas
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <div>
+            <h2 class="text-2xl font-semibold">
+                📘 Materias Inscritas
+            </h2>
+
+            <p class="text-gray-500">
+                Asignaturas asignadas al estudiante
+            </p>
+        </div>
+
+        <a href="{% url 'estudiante_detail' inscripcion.estudiante.id %}"
+           class="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded">
+            ⬅ Volver
+        </a>
+
     </div>
 
-    <a href="{% url 'estudiante_detail' inscripcion.estudiante.id %}"
-       class="inline-block mt-4 text-blue-600 hover:underline">
-        ← Volver al estudiante
-    </a>
+    <!-- Información -->
+    <div class="bg-white shadow rounded-lg p-6 mb-6">
+
+        <h3 class="text-lg font-semibold mb-4">
+            👤 Información Académica
+        </h3>
+
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+
+            <div>
+                <div class="text-sm text-gray-500">
+                    Estudiante
+                </div>
+
+                <div class="font-medium">
+                    {{ inscripcion.estudiante.nombre_completo }}
+                </div>
+            </div>
+
+            <div>
+                <div class="text-sm text-gray-500">
+                    Año Escolar
+                </div>
+
+                <div class="font-medium">
+                    {{ inscripcion.anio_escolar.nombre }}
+                </div>
+            </div>
+
+            <div>
+                <div class="text-sm text-gray-500">
+                    Grado
+                </div>
+
+                <div class="font-medium">
+                    {{ inscripcion.grado.nombre }}
+                </div>
+            </div>
+
+            <div>
+                <div class="text-sm text-gray-500">
+                    Sección
+                </div>
+
+                <div class="font-medium">
+                    {{ inscripcion.seccion.nombre }}
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- Resumen -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+
+        <div class="bg-white shadow rounded-lg p-4">
+            <div class="text-gray-500 text-sm">
+                Total Materias
+            </div>
+
+            <div class="text-2xl font-bold">
+                {{ total_materias }}
+            </div>
+        </div>
+
+        <div class="bg-white shadow rounded-lg p-4">
+            <div class="text-gray-500 text-sm">
+                Promedio Final
+            </div>
+
+            <div class="text-2xl font-bold">
+                {{ inscripcion.promedio_final|default:"N/A" }}
+            </div>
+        </div>
+
+        <div class="bg-white shadow rounded-lg p-4">
+            <div class="text-gray-500 text-sm">
+                Estado
+            </div>
+
+            <div>
+
+                {% if inscripcion.estado_final == "aprobado" %}
+                    <span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm">
+                        Aprobado
+                    </span>
+
+                {% elif inscripcion.estado_final == "reprobado" %}
+                    <span class="bg-red-100 text-red-700 px-3 py-1 rounded-full text-sm">
+                        Reprobado
+                    </span>
+
+                {% elif inscripcion.estado_final == "recuperacion" %}
+                    <span class="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full text-sm">
+                        Recuperación
+                    </span>
+
+                {% elif inscripcion.estado_final == "sin_calificacion" %}
+                    <span class="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm">
+                        Sin Calificación
+                    </span>
+
+                {% else %}
+                    <span class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm">
+                        Pendiente
+                    </span>
+
+                {% endif %}
+
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Materias -->
+    <div class="bg-white shadow rounded-lg overflow-hidden">
+
+        <div class="px-6 py-4 border-b">
+
+            <h3 class="text-lg font-semibold">
+                📚 Asignaturas
+            </h3>
+
+        </div>
+
+        <div class="overflow-x-auto">
+
+            <table class="min-w-full divide-y divide-gray-200">
+
+                <thead class="bg-gray-50">
+
+                    <tr>
+                        <th class="px-4 py-3 text-left">
+                            Asignatura
+                        </th>
+
+                        <th class="px-4 py-3 text-left">
+                            Docente
+                        </th>
+                    </tr>
+
+                </thead>
+
+                <tbody class="divide-y divide-gray-100">
+
+                    {% for a in asignaciones %}
+
+                    <tr class="hover:bg-gray-50">
+
+                        <td class="px-4 py-3">
+                            {{ a.asignatura.nombre }}
+                        </td>
+
+                        <td class="px-4 py-3">
+
+                            {% if a.docente %}
+                                {{ a.docente.nombre_completo }}
+                            {% else %}
+                                <span class="text-gray-400">
+                                    No asignado
+                                </span>
+                            {% endif %}
+
+                        </td>
+
+                    </tr>
+
+                    {% empty %}
+
+                    <tr>
+
+                        <td colspan="2"
+                            class="text-center py-8 text-gray-500">
+
+                            No existen materias asignadas para esta inscripción.
+
+                        </td>
+
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
 
 </div>
+
 {% endblock %}

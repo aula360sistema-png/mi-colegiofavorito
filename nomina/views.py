@@ -1,18 +1,17 @@
-from django.http import JsonResponse
-from django.shortcuts import render, redirect
+import logging
 
-from django.views.decorators.http import require_POST
-from django.db import transaction
-
-from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from httpx import request
+from django.contrib.auth.decorators import login_required
+from django.db import transaction
+from django.http import JsonResponse
+from django.shortcuts import render, redirect, get_object_or_404
+from django.views.decorators.http import require_POST
 
 from core.decorators import role_required
 
 from nomina.services import (
     generar_nomina,
-    generar_periodos_si_no_existen
+    generar_periodos_si_no_existen,
 )
 
 from .models import (
@@ -20,6 +19,7 @@ from .models import (
     ARS,
     Cargo,
     ConfiguracionNomina,
+    Nomina,
     PeriodoNomina,
 )
 
@@ -29,6 +29,8 @@ from .forms import (
     CargoForm,
     ConfiguracionNominaForm,
 )
+
+logger = logging.getLogger(__name__)
 
 
 # ==========================================
@@ -365,43 +367,13 @@ def generar_nomina_view(request, periodo_id):
 
     except Exception as e:
 
+        logger.exception('Error generando nómina para periodo %s', periodo_id)
+
         return JsonResponse({
             'success': False,
             'message': str(e)
         })
 
-
-
-from collections import defaultdict
-
-from django.http import JsonResponse
-from django.shortcuts import render, get_object_or_404
-
-from django.contrib.auth.decorators import login_required
-
-from core.decorators import role_required
-
-from .models import (
-PeriodoNomina,
-Nomina
-)
-
-
-# views.py
-
-from collections import defaultdict
-
-from django.http import JsonResponse
-from django.shortcuts import render, get_object_or_404
-
-from django.contrib.auth.decorators import login_required
-
-from core.decorators import role_required
-
-from .models import (
-PeriodoNomina,
-Nomina
-)
 
 # ==========================================
 
@@ -414,8 +386,6 @@ Nomina
 def historial_nomina(request):
 
     centro_id = request.session.get('centro_id')
-
-    print("CENTRO:", centro_id)
 
     MESES = {
     1: 'Enero',
@@ -440,8 +410,6 @@ def historial_nomina(request):
         '-mes'
     )
 
-    print("PERIODOS:", periodos.count())
-
     historial = {}
 
     for periodo in periodos:
@@ -460,8 +428,6 @@ def historial_nomina(request):
             historial[anio][mes] = []
 
         historial[anio][mes].append(periodo)
-
-    print("HISTORIAL:", historial)
 
     return render(
         request,

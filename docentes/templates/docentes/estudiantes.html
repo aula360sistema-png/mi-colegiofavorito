@@ -1,64 +1,203 @@
 {% extends "home.html" %}
 
+{% block title %}
+Estudiantes Asignados
+{% endblock %}
+
 {% block content %}
+
 <div class="max-w-7xl mx-auto">
 
     <!-- Encabezado -->
-    <div class="mb-6">
-        <h2 class="text-2xl font-bold text-gray-800">
-            👥 Estudiantes asignados
-        </h2>
-        <p class="text-gray-600 mt-1">
-            {{ asignacion.asignatura.nombre }} —
-            {{ asignacion.grado.nombre }} {{ asignacion.seccion.nombre }}
-        </p>
+    <div class="flex justify-between items-center mb-6">
+
+        <div>
+            <h2 class="text-2xl font-bold text-gray-800">
+                👥 Estudiantes Asignados
+            </h2>
+
+            <p class="text-gray-600 mt-1">
+                {{ asignacion.asignatura.nombre }}
+            </p>
+        </div>
+
+        <a href="{% url 'dashboard_docente' %}"
+           class="bg-gray-200 text-gray-700 px-4 py-2 rounded hover:bg-gray-300">
+            ← Volver
+        </a>
+
+    </div>
+
+    <!-- Resumen -->
+    <div class="bg-white shadow rounded-lg p-4 mb-6">
+
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+
+            <div>
+                <span class="text-sm text-gray-500">
+                    Grado
+                </span>
+
+                <div class="font-semibold">
+                    {{ asignacion.grado.nombre }}
+                </div>
+            </div>
+
+            <div>
+                <span class="text-sm text-gray-500">
+                    Sección
+                </span>
+
+                <div class="font-semibold">
+                    {{ asignacion.seccion.nombre }}
+                </div>
+            </div>
+
+            <div>
+                <span class="text-sm text-gray-500">
+                    Año Escolar
+                </span>
+
+                <div class="font-semibold">
+                    {{ asignacion.anio_escolar.nombre }}
+                </div>
+            </div>
+
+            <div>
+                <span class="text-sm text-gray-500">
+                    Estudiantes
+                </span>
+
+                <div class="font-semibold">
+                    {{ total_estudiantes }}
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- Buscador -->
+    <div class="bg-white shadow rounded-lg p-4 mb-6">
+
+        <form method="get">
+
+            <div class="flex gap-3">
+
+                <input
+                    type="text"
+                    name="q"
+                    value="{{ q }}"
+                    placeholder="Buscar por matrícula o nombre..."
+                    class="flex-1 border rounded px-3 py-2"
+                >
+
+                <button
+                    type="submit"
+                    class="bg-blue-600 text-white px-5 py-2 rounded hover:bg-blue-700">
+                    🔍 Buscar
+                </button>
+
+                <a
+                    href="{% url 'docente_estudiantes' asignacion.id %}"
+                    class="bg-gray-200 px-5 py-2 rounded hover:bg-gray-300">
+                    Limpiar
+                </a>
+
+            </div>
+
+        </form>
+
     </div>
 
     <!-- Tabla -->
-    <div class="bg-white rounded-lg shadow-md p-6">
-        <div class="overflow-x-auto">
-            <table class="min-w-full border border-gray-200 rounded-lg">
-                <thead class="bg-gray-100 text-gray-700">
-                    <tr>
-                        <th class="px-4 py-2 text-left">Matrícula</th>
-                        <th class="px-4 py-2 text-left">Nombre</th>
-                        <th class="px-4 py-2 text-left">Sexo</th>
-                        <th class="px-4 py-2 text-center">Acciones</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-200">
-                    {% for e in inscripciones %}
-                    <tr class="hover:bg-gray-50">
-                        <td class="px-4 py-2">{{ e.estudiante.matricula }}</td>
-                        <td class="px-4 py-2">{{ e.estudiante.nombre_completo  }}</td>
-                        <td class="px-4 py-2">{{ e.estudiante.sexo }}</td>
-                        <td class="px-4 py-2 text-center">
-                            <a href="#"
-                               class="text-indigo-600 hover:underline text-sm">
-                                Ver ficha
-                            </a>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="4" class="px-4 py-6 text-center text-gray-500">
-                            No hay estudiantes asignados.
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        
+    <div class="bg-white shadow rounded-lg overflow-hidden">
 
-        <!-- Volver -->
-        <div class="mt-6">
-            <a href="{% url 'dashboard_docente' %}"
-               class="inline-block bg-gray-200 text-gray-700 px-4 py-2 rounded hover:bg-gray-300 transition">
-                ← Volver
-            </a>
-        </div>
+        <table class="min-w-full">
+
+            <thead class="bg-gray-100">
+
+                <tr>
+                    <th class="px-4 py-3 text-left">
+                        Matrícula
+                    </th>
+
+                    <th class="px-4 py-3 text-left">
+                        Nombre
+                    </th>
+
+                    <th class="px-4 py-3 text-left">
+                        Sexo
+                    </th>
+
+                    <th class="px-4 py-3 text-center">
+                        Acciones
+                    </th>
+                </tr>
+
+            </thead>
+
+            <tbody class="divide-y divide-gray-200">
+
+                {% for i in inscripciones %}
+
+                <tr class="hover:bg-gray-50">
+
+                    <td class="px-4 py-3">
+                        {{ i.estudiante.matricula }}
+                    </td>
+
+                    <td class="px-4 py-3">
+                        {{ i.estudiante.nombre_completo }}
+                    </td>
+
+                    <td class="px-4 py-3">
+
+                        {% if i.estudiante.sexo == "M" %}
+                            <span class="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs">
+                                Masculino
+                            </span>
+                        {% else %}
+                            <span class="bg-pink-100 text-pink-700 px-2 py-1 rounded text-xs">
+                                Femenino
+                            </span>
+                        {% endif %}
+
+                    </td>
+
+                    <td class="px-4 py-3 text-center">
+
+                        <a
+                            href="{% url 'estudiante_detail' i.estudiante.id %}"
+                            class="text-blue-600 hover:underline">
+                            👁 Ver ficha
+                        </a>
+
+                    </td>
+
+                </tr>
+
+                {% empty %}
+
+                <tr>
+
+                    <td colspan="4"
+                        class="text-center py-8 text-gray-500">
+
+                        No se encontraron estudiantes.
+
+                    </td>
+
+                </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
     </div>
 
 </div>
+
 {% endblock %}

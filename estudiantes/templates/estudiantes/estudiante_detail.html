@@ -4,72 +4,311 @@
 
 {% block content %}
 
-<div class="max-w-4xl mx-auto">
+<div class="max-w-6xl mx-auto">
 
     <!-- Encabezado -->
-    <div class="flex justify-between items-center mb-6">
+    <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6">
+
         <div>
             <h2 class="text-2xl font-semibold">
                 🎓 {{ estudiante.nombre_completo }}
             </h2>
+
             <p class="text-gray-600">
                 Matrícula: {{ estudiante.matricula }}
             </p>
         </div>
 
-        <div class="space-x-2">
+        <div class="flex flex-wrap gap-2">
+
             <a href="{% url 'estudiante_update' estudiante.id %}"
                class="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600">
                 ✏️ Editar
             </a>
+
+            <a href="{% url 'inscribir_estudiante' estudiante.id %}"
+               class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                📝 Inscribir (básico)
+            </a>
+
+            <a href="{% url 'inscribir_estudiante_avanzado' estudiante.id %}"
+               class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+                🎯 Inscribir en año activo
+            </a>
+
         </div>
-    </div>
-
-    <!-- Acciones -->
-    <div class="bg-white shadow rounded p-4 mb-6 flex flex-wrap gap-3">
-
-        <a href="{% url 'inscribir_estudiante' estudiante.id %}"
-           class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-            📝 Inscribir (básico)
-        </a>
-
-        <a href="{% url 'inscribir_estudiante_avanzado' estudiante.id %}"
-           class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
-            🎯 Inscribir en año activo
-        </a>
 
     </div>
 
-    <!-- Inscripciones -->
+    <!-- Información General -->
+    <div class="bg-white shadow rounded p-6 mb-6">
+
+        <h3 class="text-lg font-semibold mb-4">
+            👤 Información General
+        </h3>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+            <div>
+                <strong>Matrícula:</strong>
+                {{ estudiante.matricula }}
+            </div>
+
+            <div>
+                <strong>Sexo:</strong>
+                {{ estudiante.get_sexo_display }}
+            </div>
+
+            <div>
+                <strong>Fecha de nacimiento:</strong>
+                {{ estudiante.fecha_nacimiento|default:"No registrada" }}
+            </div>
+
+            <div>
+                <strong>Lugar de nacimiento:</strong>
+                {{ estudiante.lugar_nacimiento|default:"No registrado" }}
+            </div>
+
+            <div>
+                <strong>Nacionalidad:</strong>
+                {{ estudiante.nacionalidad|default:"No registrada" }}
+            </div>
+
+            <div>
+                <strong>Teléfono:</strong>
+                {{ estudiante.telefono|default:"No registrado" }}
+            </div>
+
+            <div class="md:col-span-2">
+                <strong>Dirección:</strong>
+                {{ estudiante.direccion|default:"No registrada" }}
+            </div>
+
+            <div>
+                <strong>Estado:</strong>
+
+                {% if estudiante.estado %}
+                    <span class="bg-green-100 text-green-700 px-2 py-1 rounded text-sm">
+                        {{ estudiante.estado }}
+                    </span>
+                {% else %}
+                    No definido
+                {% endif %}
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- Tutor -->
+    <div class="bg-white shadow rounded p-6 mb-6">
+
+        <h3 class="text-lg font-semibold mb-4">
+            👨‍👩‍👦 Información del Tutor
+        </h3>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+            <div>
+                <strong>Nombre:</strong>
+                {{ estudiante.nombre_tutor|default:"No registrado" }}
+            </div>
+
+            <div>
+                <strong>Cédula:</strong>
+                {{ estudiante.cedula_tutor|default:"No registrada" }}
+            </div>
+
+            <div>
+                <strong>Teléfono:</strong>
+                {{ estudiante.telefono_tutor|default:"No registrado" }}
+            </div>
+
+            <div>
+                <strong>Parentesco:</strong>
+                {{ estudiante.parentesco_tutor|default:"No registrado" }}
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- Inscripción Actual -->
+    <div class="bg-white shadow rounded p-6 mb-6">
+
+        <h3 class="text-lg font-semibold mb-4">
+            🎯 Inscripción Actual
+        </h3>
+
+        {% if inscripcion_actual %}
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                <div>
+                    <strong>Año escolar:</strong>
+                    {{ inscripcion_actual.anio_escolar.nombre }}
+                </div>
+
+                <div>
+                    <strong>Grado:</strong>
+                    {{ inscripcion_actual.grado.nombre }}
+                </div>
+
+                <div>
+                    <strong>Sección:</strong>
+                    {{ inscripcion_actual.seccion.nombre }}
+                </div>
+
+                <div>
+                    <strong>Promedio final:</strong>
+                    {{ inscripcion_actual.promedio_final|default:"N/A" }}
+                </div>
+
+                <div>
+                    <strong>Estado académico:</strong>
+
+                    {% if inscripcion_actual.estado_final == "aprobado" %}
+                        <span class="bg-green-100 text-green-700 px-2 py-1 rounded text-sm">
+                            Aprobado
+                        </span>
+
+                    {% elif inscripcion_actual.estado_final == "recuperacion" %}
+                        <span class="bg-yellow-100 text-yellow-700 px-2 py-1 rounded text-sm">
+                            Recuperación
+                        </span>
+
+                    {% elif inscripcion_actual.estado_final == "reprobado" %}
+                        <span class="bg-red-100 text-red-700 px-2 py-1 rounded text-sm">
+                            Reprobado
+                        </span>
+
+                    {% elif inscripcion_actual.estado_final == "sin_calificacion" %}
+                        <span class="bg-gray-100 text-gray-700 px-2 py-1 rounded text-sm">
+                            Sin calificación
+                        </span>
+
+                    {% else %}
+                        <span class="bg-blue-100 text-blue-700 px-2 py-1 rounded text-sm">
+                            Pendiente
+                        </span>
+                    {% endif %}
+
+                </div>
+
+            </div>
+
+        {% else %}
+
+            <div class="text-gray-500 italic">
+                Este estudiante no posee inscripción activa.
+            </div>
+
+        {% endif %}
+
+    </div>
+
+    <!-- Historial de Inscripciones -->
     <div class="bg-white shadow rounded overflow-hidden">
+
         <div class="px-4 py-3 border-b">
             <h3 class="text-lg font-semibold">
-                📚 Inscripciones
+                📚 Historial de Inscripciones
             </h3>
         </div>
 
-  <ul class="divide-y">
-    {% for i in inscripciones %}
-    <li class="px-4 py-3 flex justify-between items-center">
-        <div>
-            <span class="font-semibold">
-                {{ i.anio_escolar }}
-            </span>
-            —
-            {{ i.grado.nombre }} {{ i.seccion.nombre }}
-        </div>
+        <div class="overflow-x-auto">
 
-        <a href="{% url 'inscripcion_asignaturas' i.id %}"
-           class="bg-indigo-600 text-white px-3 py-1 rounded text-sm hover:bg-indigo-700">
-            📘 Ver materias
-        </a>
-    </li>
-    {% empty %}
-    <li class="px-4 py-3 text-gray-500">
-        No tiene inscripciones registradas
-    </li>
-    {% endfor %}
-</ul>
+            <table class="min-w-full divide-y divide-gray-200">
+
+                <thead class="bg-gray-50">
+
+                    <tr>
+
+                        <th class="px-4 py-3 text-left text-sm font-semibold">
+                            Año Escolar
+                        </th>
+
+                        <th class="px-4 py-3 text-left text-sm font-semibold">
+                            Grado
+                        </th>
+
+                        <th class="px-4 py-3 text-left text-sm font-semibold">
+                            Sección
+                        </th>
+
+                        <th class="px-4 py-3 text-center text-sm font-semibold">
+                            Promedio
+                        </th>
+
+                        <th class="px-4 py-3 text-center text-sm font-semibold">
+                            Estado
+                        </th>
+
+                        <th class="px-4 py-3 text-center text-sm font-semibold">
+                            Acciones
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+                <tbody class="divide-y divide-gray-100">
+
+                    {% for i in inscripciones %}
+
+                    <tr class="hover:bg-gray-50">
+
+                        <td class="px-4 py-3">
+                            {{ i.anio_escolar.nombre }}
+                        </td>
+
+                        <td class="px-4 py-3">
+                            {{ i.grado.nombre }}
+                        </td>
+
+                        <td class="px-4 py-3">
+                            {{ i.seccion.nombre }}
+                        </td>
+
+                        <td class="px-4 py-3 text-center">
+                            {{ i.promedio_final|default:"-" }}
+                        </td>
+
+                        <td class="px-4 py-3 text-center">
+                            {{ i.estado_final|default:"-" }}
+                        </td>
+
+                        <td class="px-4 py-3 text-center">
+
+                            <a href="{% url 'inscripcion_asignaturas' i.id %}"
+                               class="text-indigo-600 hover:underline">
+                                📘 Materias
+                            </a>
+
+                        </td>
+
+                    </tr>
+
+                    {% empty %}
+
+                    <tr>
+
+                        <td colspan="6"
+                            class="px-4 py-6 text-center text-gray-500">
+
+                            No tiene inscripciones registradas.
+
+                        </td>
+
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
 
     </div>
 

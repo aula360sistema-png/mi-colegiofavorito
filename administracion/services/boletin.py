@@ -91,6 +91,7 @@ def construir_boletin_estudiante(inscripcion, centro, anio):
             "competencias": competencias_data,
             "pf": pf
         }
+        
 
     return {
         "centro": centro.nombre,

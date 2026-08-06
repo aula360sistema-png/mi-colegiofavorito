@@ -1,0 +1,144 @@
+.historial-container{
+    padding:25px;
+}
+
+.historial-card{
+    background:#fff;
+    border-radius:12px;
+    box-shadow:0 4px 15px rgba(0,0,0,.08);
+    overflow:hidden;
+}
+
+.historial-header{
+    background:#0d6efd;
+    color:white;
+    padding:20px;
+}
+
+.historial-header h2{
+    margin:0;
+    font-size:24px;
+}
+
+.historial-filtros{
+    padding:20px;
+    display:flex;
+    flex-wrap:wrap;
+    gap:15px;
+    align-items:flex-end;
+}
+
+.historial-grupo{
+    display:flex;
+    flex-direction:column;
+    min-width:250px;
+}
+
+.historial-grupo label{
+    margin-bottom:5px;
+    font-weight:600;
+    color:#444;
+}
+
+.historial-grupo select{
+    height:42px;
+    border:1px solid #dcdcdc;
+    border-radius:8px;
+    padding:0 10px;
+}
+
+.historial-grupo select:focus{
+    outline:none;
+    border-color:#0d6efd;
+}
+
+.historial-botones{
+    display:flex;
+    gap:10px;
+}
+
+.historial-btn{
+    padding:10px 20px;
+    border:none;
+    border-radius:8px;
+    cursor:pointer;
+    text-decoration:none;
+    font-weight:600;
+}
+
+.historial-btn-filtrar{
+    background:#198754;
+    color:white;
+}
+
+.historial-btn-filtrar:hover{
+    background:#157347;
+}
+
+.historial-btn-limpiar{
+    background:#6c757d;
+    color:white;
+}
+
+.historial-btn-limpiar:hover{
+    background:#565e64;
+}
+
+.historial-resumen{
+    margin:0 20px 20px;
+    padding:15px;
+    background:#f8f9fa;
+    border-radius:8px;
+    display:flex;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:10px;
+}
+
+.historial-tabla-contenedor{
+    padding:0 20px 20px;
+    overflow-x:auto;
+}
+
+.historial-tabla{
+    width:100%;
+    border-collapse:collapse;
+}
+
+.historial-tabla thead{
+    background:#212529;
+    color:white;
+}
+
+.historial-tabla th{
+    padding:12px;
+    text-align:left;
+}
+
+.historial-tabla td{
+    padding:12px;
+    border-bottom:1px solid #e5e5e5;
+}
+
+.historial-tabla tbody tr:hover{
+    background:#f8f9fa;
+}
+
+.historial-accion{
+    background:#0d6efd;
+    color:white;
+    text-decoration:none;
+    padding:7px 12px;
+    border-radius:6px;
+    display:inline-block;
+}
+
+.historial-accion:hover{
+    background:#0b5ed7;
+}
+
+.historial-vacio{
+    text-align:center;
+    padding:25px;
+    color:#888;
+}

@@ -1,7 +1,4 @@
 from django.db import models
-
-# Create your models here.
-from django.db import models
 from django.conf import settings
 
 
@@ -107,6 +104,10 @@ class Bitacora(models.Model):
         ordering = ['-fecha']
         verbose_name = 'Bitácora'
         verbose_name_plural = 'Bitácoras'
+        indexes = [
+            models.Index(fields=['fecha']),
+            models.Index(fields=['usuario', 'fecha']),
+        ]
 
     def __str__(self):
         return f"{self.accion} - {self.modulo}"

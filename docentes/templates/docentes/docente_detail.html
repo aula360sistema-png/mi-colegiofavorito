@@ -1,33 +1,297 @@
 {% extends "home.html" %}
 
+{% block title %}
+Detalle del Docente
+{% endblock %}
+
 {% block content %}
-<div class="max-w-3xl mx-auto p-6 bg-white rounded-lg shadow-md">
 
-    <h1 class="text-2xl font-bold mb-6">Detalle de Docente</h1>
+<div class="max-w-7xl mx-auto">
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+    <!-- Encabezado -->
+    <div class="flex justify-between items-center mb-6">
+
         <div>
-            <p class="text-gray-700"><span class="font-medium">Nombre:</span> {{ docente.nombre_completo }}</p>
-            <p class="text-gray-700"><span class="font-medium">Cédula:</span> {{ docente.cedula }}</p>
-            <p class="text-gray-700"><span class="font-medium">Centro:</span> {{ docente.centro.nombre }}</p>
-            <p class="text-gray-700"><span class="font-medium">Sexo:</span> {{ docente.get_sexo_display }}</p>
+            <h2 class="text-3xl font-bold">
+                👨‍🏫 {{ docente.nombre_completo }}
+            </h2>
+
+            <p class="text-gray-600">
+                Código MINERD:
+                {{ docente.codigo_docente_minerd }}
+            </p>
         </div>
-        <div>
-            <p class="text-gray-700"><span class="font-medium">Correo:</span> {{ docente.correo_personal|default:"-" }}</p>
-            <p class="text-gray-700"><span class="font-medium">Área:</span> {{ docente.area_especialidad }}</p>
-            <p class="text-gray-700"><span class="font-medium">Estado:</span> {{ docente.estado }}</p>
-            <p class="text-gray-700"><span class="font-medium">Tanda:</span> {{ docente.tanda }}</p>
+
+        <div class="space-x-2">
+
+            <a href="{% url 'docente_update' docente.pk %}"
+               class="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600">
+
+                ✏️ Editar
+
+            </a>
+
+            <a href="{% url 'docente_list' %}"
+               class="bg-gray-200 px-4 py-2 rounded hover:bg-gray-300">
+
+                ← Volver
+
+            </a>
+
         </div>
+
     </div>
 
-    <div class="flex space-x-2">
-        <a href="{% url 'docente_update' docente.pk %}" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 transition">
-            Editar
-        </a>
-        <a href="{% url 'docente_list' %}" class="bg-gray-200 text-gray-700 px-4 py-2 rounded hover:bg-gray-300 transition">
-            Volver al listado
-        </a>
+    <!-- Información general -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+
+        <!-- Datos personales -->
+        <div class="bg-white shadow rounded">
+
+            <div class="border-b px-4 py-3">
+                <h3 class="font-semibold text-lg">
+                    🧍 Datos Personales
+                </h3>
+            </div>
+
+            <div class="p-4 space-y-2">
+
+                <p>
+                    <strong>Nombre:</strong>
+                    {{ docente.nombre_completo }}
+                </p>
+
+                <p>
+                    <strong>Cédula:</strong>
+                    {{ docente.cedula }}
+                </p>
+
+                <p>
+                    <strong>Sexo:</strong>
+                    {{ docente.get_sexo_display }}
+                </p>
+
+                <p>
+                    <strong>Fecha nacimiento:</strong>
+                    {{ docente.fecha_nacimiento|date:"d/m/Y" }}
+                </p>
+
+                <p>
+                    <strong>Nacionalidad:</strong>
+                    {{ docente.nacionalidad }}
+                </p>
+
+            </div>
+
+        </div>
+
+        <!-- Contacto -->
+        <div class="bg-white shadow rounded">
+
+            <div class="border-b px-4 py-3">
+                <h3 class="font-semibold text-lg">
+                    📞 Contacto
+                </h3>
+            </div>
+
+            <div class="p-4 space-y-2">
+
+                <p>
+                    <strong>Teléfono:</strong>
+                    {{ docente.telefono }}
+                </p>
+
+                <p>
+                    <strong>Correo:</strong>
+                    {{ docente.correo_personal|default:"No registrado" }}
+                </p>
+
+                <p>
+                    <strong>Dirección:</strong>
+                    {{ docente.direccion }}
+                </p>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- Información laboral -->
+    <div class="bg-white shadow rounded mb-6">
+
+        <div class="border-b px-4 py-3">
+            <h3 class="font-semibold text-lg">
+                🏫 Información Laboral
+            </h3>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 p-4">
+
+            <div>
+                <p class="text-gray-500 text-sm">
+                    Centro
+                </p>
+
+                <p>
+                    {{ docente.centro.nombre }}
+                </p>
+            </div>
+
+            <div>
+                <p class="text-gray-500 text-sm">
+                    Área Especialidad
+                </p>
+
+                <p>
+                    {{ docente.area_especialidad }}
+                </p>
+            </div>
+
+            <div>
+                <p class="text-gray-500 text-sm">
+                    Tipo Contrato
+                </p>
+
+                <p>
+                    {{ docente.get_tipo_contrato_display }}
+                </p>
+            </div>
+
+            <div>
+                <p class="text-gray-500 text-sm">
+                    Tanda
+                </p>
+
+                <p>
+                    {{ docente.get_tanda_display }}
+                </p>
+            </div>
+
+            <div>
+                <p class="text-gray-500 text-sm">
+                    Estado
+                </p>
+
+                <p>
+                    {{ docente.get_estado_display }}
+                </p>
+            </div>
+
+            <div>
+                <p class="text-gray-500 text-sm">
+                    Fecha ingreso
+                </p>
+
+                <p>
+                    {{ docente.fecha_ingreso|date:"d/m/Y" }}
+                </p>
+            </div>
+
+            <div>
+                <p class="text-gray-500 text-sm">
+                    Años de servicio
+                </p>
+
+                <p>
+                    {{ anios_servicio }}
+                </p>
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- Carga académica -->
+    <div class="bg-white shadow rounded">
+
+        <div class="border-b px-4 py-3 flex justify-between items-center">
+
+            <h3 class="font-semibold text-lg">
+                📚 Carga Académica
+            </h3>
+
+            <span class="text-sm text-gray-500">
+                {{ asignaciones|length }} asignaciones
+            </span>
+
+        </div>
+
+        <div class="overflow-x-auto">
+
+            <table class="min-w-full">
+
+                <thead class="bg-gray-50">
+
+                    <tr>
+
+                        <th class="px-4 py-3 text-left">
+                            Asignatura
+                        </th>
+
+                        <th class="px-4 py-3 text-left">
+                            Grado
+                        </th>
+
+                        <th class="px-4 py-3 text-left">
+                            Sección
+                        </th>
+
+                        <th class="px-4 py-3 text-left">
+                            Año Escolar
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+                <tbody class="divide-y">
+
+                    {% for a in asignaciones %}
+
+                    <tr class="hover:bg-gray-50">
+
+                        <td class="px-4 py-3">
+                            {{ a.asignatura.nombre }}
+                        </td>
+
+                        <td class="px-4 py-3">
+                            {{ a.grado.nombre }}
+                        </td>
+
+                        <td class="px-4 py-3">
+                            {{ a.seccion.nombre }}
+                        </td>
+
+                        <td class="px-4 py-3">
+                            {{ a.anio_escolar.nombre }}
+                        </td>
+
+                    </tr>
+
+                    {% empty %}
+
+                    <tr>
+
+                        <td colspan="4"
+                            class="px-4 py-6 text-center text-gray-500">
+
+                            No existen asignaciones para este docente.
+
+                        </td>
+
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
     </div>
 
 </div>
+
 {% endblock %}

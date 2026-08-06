@@ -1,5 +1,11 @@
 from django.shortcuts import render
+from django.http import JsonResponse
+import logging
 
+logger = logging.getLogger(__name__)
+
+from academico.models import Grado, Seccion
+from django.contrib.auth.decorators import login_required
 # Create your views here.
 from django.shortcuts import render, redirect
 
@@ -26,22 +32,42 @@ from django.shortcuts import render, redirect
 from django.utils.crypto import get_random_string
 from usuarios.models import Usuario
 from django.db.models import Prefetch
+
 from core.utils.session import get_centro_activo
+from .utils import validar_promocion_estudiante
+
+
+@login_required
+def estudiante_inicio(request):
+    if request.user.rol != 'estudiante':
+        return redirect('core:home')
+
+    estudiante = get_object_or_404(
+        Estudiante,
+        usuario=request.user
+    )
+
+    return render(request, 'estudiantes/estudiante_inicio.html', {
+        'estudiante': estudiante,
+    })
 
 
 @login_required
 def estudiante_create(request):
     centro = get_centro_activo(request)
+
     if not centro:
-        return redirect('seleccionar_centro')
+        return redirect('core:seleccionar_centro')
 
     if request.method == 'POST':
+
         form = EstudianteForm(request.POST)
+
         if form.is_valid():
+
             estudiante = form.save(commit=False)
             estudiante.centro = centro
 
-            # 🔐 Crear usuario automático
             password = get_random_string(8)
 
             usuario = Usuario.objects.create_user(
@@ -50,26 +76,36 @@ def estudiante_create(request):
                 password=password
             )
 
-            # 🏷 Asignar rol estudiante
             usuario.rol = 'estudiante'
             usuario.save()
 
-            # 🔗 Vincular usuario con estudiante
             estudiante.usuario = usuario
             estudiante.save()
 
-            return render(request, 'estudiantes/credenciales.html', {
-                'usuario': usuario.username,
-                'password': password
-            })
+            return render(
+                request,
+                'estudiantes/credenciales.html',
+                {
+                    'usuario': usuario.username,
+                    'password': password
+                }
+            )
+
     else:
         form = EstudianteForm()
 
-    return render(request, 'estudiantes/estudiante_form.html', {'form': form})
-
+    return render(
+        request,
+        'estudiantes/estudiante_form.html',
+        {
+            'form': form,
+            'estudiante': None
+        }
+    )
 
 @login_required
 def estudiante_update(request, pk):
+
     centro = get_centro_activo(request)
 
     estudiante = get_object_or_404(
@@ -79,18 +115,43 @@ def estudiante_update(request, pk):
     )
 
     if request.method == 'POST':
-        form = EstudianteForm(request.POST, instance=estudiante)
+
+        form = EstudianteForm(
+            request.POST,
+            instance=estudiante
+        )
+
         if form.is_valid():
             form.save()
-            return redirect('estudiante_list')
+
+            messages.success(
+                request,
+                "Estudiante actualizado correctamente."
+            )
+
+            return redirect(
+                'estudiante_detail',
+                pk=estudiante.pk
+            )
+
     else:
-        form = EstudianteForm(instance=estudiante)
 
-    return render(request, 'estudiantes/estudiante_form.html', {'form': form})
+        form = EstudianteForm(
+            instance=estudiante
+        )
 
+    return render(
+        request,
+        'estudiantes/estudiante_form.html',
+        {
+            'form': form,
+            'estudiante': estudiante
+        }
+    )
 
 @login_required
 def estudiante_detail(request, pk):
+
     centro = get_centro_activo(request)
 
     estudiante = get_object_or_404(
@@ -99,17 +160,32 @@ def estudiante_detail(request, pk):
         centro=centro
     )
 
-    inscripciones = Inscripcion.objects.filter(estudiante=estudiante)
+    inscripciones = (
+        Inscripcion.objects
+        .filter(estudiante=estudiante)
+        .select_related(
+            'grado',
+            'seccion',
+            'anio_escolar'
+        )
+        .order_by('-anio_escolar__fecha_inicio')
+    )
+
+    inscripcion_actual = inscripciones.filter(
+        anio_escolar__activo=True
+    ).first()
+
+    context = {
+        'estudiante': estudiante,
+        'inscripciones': inscripciones,
+        'inscripcion_actual': inscripcion_actual,
+    }
 
     return render(
         request,
         'estudiantes/estudiante_detail.html',
-        {
-            'estudiante': estudiante,
-            'inscripciones': inscripciones
-        }
+        context
     )
-
 @login_required
 def estudiante_delete(request, pk):
     centro = get_centro_activo(request)
@@ -132,6 +208,7 @@ def estudiante_delete(request, pk):
 
 @login_required
 def inscribir_estudiante(request, estudiante_id):
+
     centro = get_centro_activo(request)
 
     estudiante = get_object_or_404(
@@ -140,30 +217,62 @@ def inscribir_estudiante(request, estudiante_id):
         centro=centro
     )
 
+    inscripciones_previas = (
+        Inscripcion.objects
+        .filter(estudiante=estudiante)
+        .select_related(
+            'anio_escolar',
+            'grado',
+            'seccion'
+        )
+        .order_by('-anio_escolar__fecha_inicio')
+    )
+
     if request.method == 'POST':
+
         form = InscripcionForm(request.POST)
+
         if form.is_valid():
+
             inscripcion = form.save(commit=False)
             inscripcion.estudiante = estudiante
             inscripcion.centro = centro
             inscripcion.save()
-            return redirect('estudiante_detail', pk=estudiante.id)
+
+            messages.success(
+                request,
+                'Estudiante inscrito correctamente.'
+            )
+
+            return redirect(
+                'estudiante_detail',
+                pk=estudiante.id
+            )
+
     else:
         form = InscripcionForm()
 
     return render(
         request,
         'estudiantes/inscripcion_form.html',
-        {'form': form, 'estudiante': estudiante}
+        {
+            'form': form,
+            'estudiante': estudiante,
+            'inscripciones_previas': inscripciones_previas,
+        }
     )
 
 
-
+from django.contrib.auth.decorators import login_required
+from django.db.models import Q, Prefetch
 
 @login_required
 @centro_required
 def estudiante_list(request):
+
     centro = request.centro
+
+    q = request.GET.get("q", "").strip()
 
     anio_activo = AnioEscolar.objects.filter(
         centro=centro,
@@ -172,12 +281,33 @@ def estudiante_list(request):
 
     estudiantes = Estudiante.objects.filter(
         centro=centro
-    ).prefetch_related(
+    )
+
+    if q:
+        estudiantes = estudiantes.filter(
+            Q(matricula__icontains=q) |
+            Q(primer_nombre__icontains=q) |
+            Q(segundo_nombre__icontains=q) |
+            Q(primer_apellido__icontains=q) |
+            Q(segundo_apellido__icontains=q)
+        )
+
+    estudiantes = estudiantes.prefetch_related(
         Prefetch(
             'inscripcion_set',
-            queryset=Inscripcion.objects.filter(anio_escolar=anio_activo),
+            queryset=Inscripcion.objects.filter(
+                anio_escolar=anio_activo
+            ).select_related(
+                'grado',
+                'seccion',
+                'anio_escolar'
+            ),
             to_attr='inscripcion_actual'
         )
+    ).order_by(
+        'primer_apellido',
+        'segundo_apellido',
+        'primer_nombre'
     )
 
     return render(
@@ -186,13 +316,10 @@ def estudiante_list(request):
         {
             'estudiantes': estudiantes,
             'centro': centro,
-            'anio_activo': anio_activo
+            'anio_activo': anio_activo,
+            'q': q,
         }
     )
-
-from django.http import JsonResponse
-from academico.models import Seccion
-from django.contrib.auth.decorators import login_required
 
 
 @login_required
@@ -206,94 +333,195 @@ def ajax_cargar_secciones(request):
     return JsonResponse(list(secciones), safe=False)
 
 
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import get_object_or_404, redirect, render
+
+from core.models import AnioEscolar
+from core.utils.session import get_centro_activo
+
+from .forms import InscripcionAvanzadaForm
+from .models import Estudiante, Inscripcion
+from .utils import validar_promocion_estudiante
+
+
 @login_required
 def inscribir_estudiante_avanzado(request, estudiante_id):
-    print("🟢 Entrando a inscribir_estudiante_avanzado")
-    print("➡️ Usuario:", request.user)
-    print("➡️ Estudiante ID recibido:", estudiante_id)
+
+ 
+
+    # ======================================
+    # CENTRO ACTIVO
+    # ======================================
 
     centro = get_centro_activo(request)
-    print("➡️ Centro activo desde sesión:", centro)
 
     if not centro:
-        print("❌ No hay centro activo en sesión")
-        return redirect('seleccionar_centro')
+        messages.error(
+            request,
+            'Debe seleccionar un centro educativo.'
+        )
+        return redirect('core:seleccionar_centro')
+
+    # ======================================
+    # ESTUDIANTE
+    # ======================================
 
     estudiante = get_object_or_404(
         Estudiante,
         id=estudiante_id,
         centro=centro
     )
-    print("✅ Estudiante encontrado:", estudiante)
 
-    # 🔒 Año escolar activo
+    # ======================================
+    # AÑO ESCOLAR ACTIVO
+    # ======================================
+
     try:
+
         anio_escolar = AnioEscolar.objects.get(
             centro=centro,
             activo=True
         )
-        print("✅ Año escolar activo:", anio_escolar)
+
     except AnioEscolar.DoesNotExist:
-        print("❌ No existe año escolar activo para este centro")
+
         messages.error(
             request,
-            'No hay un año escolar activo para este centro'
+            'No existe un año escolar activo.'
         )
-        return redirect('estudiante_detail', pk=estudiante.id)
 
-    # ❌ Validar doble inscripción
+        return redirect(
+            'estudiante_detail',
+            pk=estudiante.id
+        )
+
+    # ======================================
+    # VALIDAR PROMOCIÓN
+    # ======================================
+
+    resultado = validar_promocion_estudiante(
+        estudiante,
+        anio_escolar
+    )
+
+    if not resultado['permitido']:
+
+        messages.error(
+            request,
+            resultado['mensaje']
+        )
+
+        return redirect(
+            'estudiante_detail',
+            pk=estudiante.id
+        )
+
+    if resultado['mensaje']:
+
+        messages.info(
+            request,
+            resultado['mensaje']
+        )
+
+    # ======================================
+    # VALIDAR DOBLE INSCRIPCIÓN
+    # ======================================
+
     ya_inscrito = Inscripcion.objects.filter(
         estudiante=estudiante,
         anio_escolar=anio_escolar
     ).exists()
 
-    print("➡️ ¿Ya está inscrito en este año?:", ya_inscrito)
-
     if ya_inscrito:
-        print("⚠️ Inscripción duplicada detectada")
+
         messages.warning(
             request,
-            'Este estudiante ya está inscrito en el año escolar activo'
+            'Este estudiante ya está inscrito en el año escolar activo.'
         )
-        return redirect('estudiante_detail', pk=estudiante.id)
+
+        return redirect(
+            'estudiante_detail',
+            pk=estudiante.id
+        )
+
+    # ======================================
+    # POST
+    # ======================================
 
     if request.method == 'POST':
-        print("📨 Request POST recibido")
-        print("➡️ POST data:", request.POST)
 
         form = InscripcionAvanzadaForm(
             request.POST,
             centro=centro
         )
 
-        print("➡️ Formulario válido?:", form.is_valid())
-
         if form.is_valid():
+
             inscripcion = form.save(commit=False)
 
-            print("➡️ Grado seleccionado:", inscripcion.grado)
-            print("➡️ Sección seleccionada:", inscripcion.seccion)
+            # ==================================
+            # VALIDAR GRADO PERMITIDO
+            # ==================================
+
+            grado_permitido = resultado.get(
+                'grado_permitido'
+            )
+
+            if grado_permitido:
+
+                if inscripcion.grado != grado_permitido:
+
+                    messages.error(
+                        request,
+                        (
+                            f'El estudiante solamente puede '
+                            f'inscribirse en '
+                            f'{grado_permitido}.'
+                        )
+                    )
+
+                    return redirect(
+                        'inscribir_estudiante_avanzado',
+                        estudiante_id=estudiante.id
+                    )
 
             inscripcion.estudiante = estudiante
             inscripcion.centro = centro
             inscripcion.anio_escolar = anio_escolar
 
             inscripcion.save()
-            print("✅ Inscripción guardada con ID:", inscripcion.id)
+
+            logger.debug(
+                "Inscripción guardada: %s",
+                inscripcion.id
+            )
 
             messages.success(
                 request,
-                'Estudiante inscrito correctamente'
+                'Estudiante inscrito correctamente.'
             )
-            return redirect('estudiante_detail', pk=estudiante.id)
-        else:
-            print("❌ Errores del formulario:", form.errors)
+
+            return redirect(
+                'estudiante_detail',
+                pk=estudiante.id
+            )
+
+        logger.warning("Errores del formulario: %s", form.errors)
 
     else:
-        print("📄 Request GET – mostrando formulario")
-        form = InscripcionAvanzadaForm(centro=centro)
 
-    print("🟢 Renderizando template de inscripción avanzada")
+        form = InscripcionAvanzadaForm(
+            centro=centro
+        )
+
+    # ======================================
+    # RENDER
+    # ======================================
+    inscripcion_actual = Inscripcion.objects.filter(
+        estudiante=estudiante,
+        anio_escolar=anio_escolar
+    ).first()
 
     return render(
         request,
@@ -301,18 +529,22 @@ def inscribir_estudiante_avanzado(request, estudiante_id):
         {
             'form': form,
             'estudiante': estudiante,
-            'anio_escolar': anio_escolar
+            'anio_escolar': anio_escolar,
+            'resultado_promocion': resultado,
+            'inscripcion_actual' : inscripcion_actual
+
         }
     )
 
 
 
-
 @login_required
 def inscripcion_asignaturas(request, inscripcion_id):
+
     centro = get_centro_activo(request)
+
     if not centro:
-        return redirect('seleccionar_centro')
+        return redirect('core:seleccionar_centro')
 
     inscripcion = get_object_or_404(
         Inscripcion,
@@ -320,27 +552,132 @@ def inscripcion_asignaturas(request, inscripcion_id):
         centro=centro
     )
 
-    asignaciones = DocenteMateria.objects.filter(
-        grado=inscripcion.grado,
-        seccion=inscripcion.seccion,
-        anio_escolar=inscripcion.anio_escolar
-    ).select_related('asignatura', 'docente')
-
-    print("INSCRIPCIÓN:", inscripcion.id)
-    print("GRADO:", inscripcion.grado_id)
-    print("SECCIÓN:", inscripcion.seccion_id)
-    print("AÑO:", inscripcion.anio_escolar_id)
-
-    print("DOCENTE MATERIA DISPONIBLES:")
-    print(DocenteMateria.objects.values(
-        'grado_id', 'seccion_id', 'anio_escolar_id'
-    ))
+    asignaciones = (
+        DocenteMateria.objects
+        .filter(
+            grado=inscripcion.grado,
+            seccion=inscripcion.seccion,
+            anio_escolar=inscripcion.anio_escolar
+        )
+        .select_related(
+            'asignatura',
+            'docente'
+        )
+        .order_by('asignatura__nombre')
+    )
 
     return render(
         request,
         'estudiantes/inscripcion_asignaturas.html',
         {
             'inscripcion': inscripcion,
-            'asignaciones': asignaciones
+            'asignaciones': asignaciones,
+            'total_materias': asignaciones.count()
         }
+    )
+
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.db.models import Q
+from django.shortcuts import render, redirect
+
+@login_required
+def historial_estudiantes(request):
+
+    centro = get_centro_activo(request)
+
+    if not centro:
+        messages.error(
+            request,
+            'Debe seleccionar un centro educativo.'
+        )
+        return redirect('core:seleccionar_centro')
+
+    q = request.GET.get('q', '').strip()
+    anio_id = request.GET.get('anio', '').strip()
+    grado_id = request.GET.get('grado', '').strip()
+    seccion_id = request.GET.get('seccion', '').strip()
+    estado = request.GET.get('estado', '').strip()
+
+    anios = AnioEscolar.objects.filter(
+        centro=centro
+    ).order_by('-fecha_inicio')
+
+    grados = Grado.objects.filter(
+        nivel__centro=centro
+    ).order_by('nombre')
+
+    secciones = Seccion.objects.filter(
+        grado__nivel__centro=centro
+    ).order_by('nombre')
+
+    inscripciones = (
+        Inscripcion.objects
+        .filter(centro=centro)
+        .select_related(
+            'estudiante',
+            'grado',
+            'seccion',
+            'anio_escolar'
+        )
+    )
+
+    if q:
+        inscripciones = inscripciones.filter(
+            Q(estudiante__primer_nombre__icontains=q) |
+            Q(estudiante__primer_apellido__icontains=q) |
+            Q(estudiante__matricula__icontains=q)
+        )
+
+    if anio_id:
+        inscripciones = inscripciones.filter(
+            anio_escolar_id=anio_id
+        )
+
+    if grado_id:
+        inscripciones = inscripciones.filter(
+            grado_id=grado_id
+        )
+
+    if seccion_id:
+        inscripciones = inscripciones.filter(
+            seccion_id=seccion_id
+        )
+
+    if estado:
+        inscripciones = inscripciones.filter(
+            estado_final=estado
+        )
+
+    inscripciones = inscripciones.order_by(
+        '-anio_escolar__fecha_inicio',
+        'grado__nombre',
+        'seccion__nombre',
+        'estudiante__primer_apellido'
+    )
+
+    total_registros = inscripciones.count()
+
+    context = {
+        'centro': centro,
+        'inscripciones': inscripciones,
+
+        'anios': anios,
+        'grados': grados,
+        'secciones': secciones,
+
+        'q': q,
+        'estado': estado,
+
+        'anio_seleccionado': anio_id,
+        'grado_seleccionado': grado_id,
+        'seccion_seleccionada': seccion_id,
+
+        'total_registros': total_registros,
+    }
+
+    return render(
+        request,
+        'estudiantes/historial_estudiantes.html',
+        context
     )

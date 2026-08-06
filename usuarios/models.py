@@ -46,8 +46,7 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
 
     rol = models.CharField(
         max_length=20,
-        choices=ROLES,
-       # editable=False
+        choices=ROLES
     )
 
     is_active = models.BooleanField(default=True)

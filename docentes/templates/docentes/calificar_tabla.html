@@ -206,17 +206,18 @@ function guardarEstudiante(inscripcionId, btn = null) {
         }
     });
 
-    fetch("{% url 'guardar_notas_ajax' asignacion.id %}", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "X-CSRFToken": getCookie('csrftoken')
-        },
-        body: JSON.stringify({
-            inscripcion: inscripcionId,
-            notas: notas
-        })
+ fetch("{% url 'guardar_notas_ajax' asignacion.id %}", {
+    method: "POST",
+    headers: {
+        "Content-Type": "application/json",
+        "X-CSRFToken": getCookie('csrftoken'),
+        "X-Requested-With": "XMLHttpRequest"
+    },
+    body: JSON.stringify({
+        inscripcion: inscripcionId,
+        notas: notas
     })
+})
     .then(res => res.json())
     .then(data => {
         if (data.ok && btn) {

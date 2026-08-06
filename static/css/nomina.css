@@ -1,23 +1,480 @@
+/* =========================
+   NOMINA MODULE STYLES
+   Estilos para todos los templates del módulo de nómina
+   Paleta coherente con dashboard.css (indigo)
+========================= */
+
+/* =========================
+   PAGE HEADER
+========================= */
+
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+}
+
+.page-title {
+    margin: 0;
+    font-size: 26px;
+    font-weight: 700;
+    color: #111827;
+    letter-spacing: -.3px;
+}
+
+.page-subtitle {
+    margin: 6px 0 0;
+    font-size: 14px;
+    color: #6b7280;
+}
+
+/* =========================
+   BUTTONS
+========================= */
+
+.btn-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: linear-gradient(135deg, #4f46e5, #6366f1);
+    color: #ffffff;
+    padding: 11px 20px;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all .2s ease;
+    box-shadow: 0 6px 16px rgba(79, 70, 229, .25);
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 22px rgba(79, 70, 229, .35);
+}
+
+.btn-primary:active {
+    transform: translateY(0);
+}
+
+.btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: #f3f4f6;
+    color: #374151;
+    padding: 11px 20px;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all .2s ease;
+}
+
+.btn-secondary:hover {
+    background: #e5e7eb;
+}
+
 .btn-nomina {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
     background: #16a34a;
     color: white;
-    padding: 8px 12px;
-    border-radius: 6px;
+    padding: 9px 14px;
+    border-radius: 8px;
     font-size: 13px;
+    font-weight: 600;
+    font-family: inherit;
     border: none;
     cursor: pointer;
-    transition: 0.2s;
+    transition: all .2s ease;
 }
 
 .btn-nomina:hover {
     background: #15803d;
+    transform: translateY(-1px);
 }
 
 .btn-disabled {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
     background: #9ca3af;
     color: white;
-    padding: 8px 12px;
-    border-radius: 6px;
+    padding: 9px 14px;
+    border-radius: 8px;
     font-size: 13px;
+    font-weight: 600;
+    font-family: inherit;
     border: none;
+    cursor: not-allowed;
+}
+
+/* =========================
+   TABLES
+========================= */
+
+.table-card {
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 2px 14px rgba(0, 0, 0, .05);
+    border: 1px solid #edf2f7;
+    overflow: hidden;
+    overflow-x: auto;
+}
+
+.custom-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 600px;
+}
+
+.custom-table thead th {
+    background: #f8fafc;
+    color: #475569;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .6px;
+    padding: 14px 18px;
+    text-align: left;
+    border-bottom: 1px solid #e5e7eb;
+    white-space: nowrap;
+}
+
+.custom-table tbody td {
+    padding: 14px 18px;
+    border-bottom: 1px solid #f1f5f9;
+    color: #334155;
+    font-size: 14px;
+    vertical-align: middle;
+}
+
+.custom-table tbody tr {
+    transition: background .15s ease;
+}
+
+.custom-table tbody tr:hover {
+    background: #fafbff;
+}
+
+.custom-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* =========================
+   BADGES
+========================= */
+
+.badge-success,
+.badge-danger,
+.badge-warning {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.badge-success {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+.badge-danger {
+    background: #fee2e2;
+    color: #b91c1c;
+}
+
+.badge-warning {
+    background: #fef3c7;
+    color: #b45309;
+}
+
+/* =========================
+   EMPTY STATE
+========================= */
+
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 48px 20px;
+    color: #9ca3af;
+}
+
+.empty-state i {
+    font-size: 42px;
+    color: #cbd5e1;
+}
+
+.empty-state p {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 500;
+}
+
+/* =========================
+   FORMS
+========================= */
+
+.form-card {
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 2px 14px rgba(0, 0, 0, .05);
+    border: 1px solid #edf2f7;
+    padding: 32px;
+    max-width: 720px;
+}
+
+.form-header {
+    margin-bottom: 24px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.form-header h1 {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 700;
+    color: #111827;
+}
+
+.form-card h2 {
+    margin: 0 0 22px;
+    font-size: 22px;
+    font-weight: 700;
+    color: #111827;
+    padding-bottom: 18px;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px;
+}
+
+@media (max-width: 640px) {
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #374151;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 11px 14px;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    font-size: 14px;
+    font-family: inherit;
+    color: #111827;
+    background: #ffffff;
+    box-sizing: border-box;
+    transition: all .2s ease;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, .15);
+}
+
+.form-group select {
+    cursor: pointer;
+}
+
+.form-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 28px;
+    padding-top: 20px;
+    border-top: 1px solid #f1f5f9;
+}
+
+.error-text {
+    margin: 0;
+    color: #dc2626;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+/* =========================
+   HISTORIAL / ACORDEON
+========================= */
+
+.history-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.year-block,
+.month-block {
+    background: #ffffff;
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, .06);
+    border: 1px solid #edf2f7;
+}
+
+.year-header,
+.month-header {
+    width: 100%;
+    border: none;
+    padding: 18px 22px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    transition: .3s;
+    font-size: 16px;
+    font-weight: 600;
+    font-family: inherit;
+}
+
+.year-header {
+    background: linear-gradient(135deg, #1e293b, #334155);
+    color: white;
+}
+
+.month-header {
+    background: #f8fafc;
+    color: #334155;
+}
+
+.left-section {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.year-header:hover,
+.month-header:hover {
+    opacity: .95;
+}
+
+.year-content,
+.month-content {
+    display: none;
+}
+
+.payroll-item {
+    padding: 18px 22px;
+    border-top: 1px solid #e5e7eb;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    transition: .3s;
+    color: #334155;
+}
+
+.payroll-item:hover {
+    background: #f9fafb;
+}
+
+.payroll-item p {
+    margin-top: 5px;
+    color: #64748b;
+    font-size: 14px;
+}
+
+/* =========================
+   MODAL DETALLE NOMINA
+========================= */
+
+.modal-payroll table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+.modal-payroll table th {
+    background: #f1f5f9;
+    padding: 12px;
+    text-align: left;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    color: #475569;
+}
+
+.modal-payroll table td {
+    padding: 12px;
+    border-bottom: 1px solid #e5e7eb;
+    color: #334155;
+}
+
+.modal-payroll-title {
+    margin: 0 0 20px;
+    font-size: 20px;
+    font-weight: 700;
+    color: #111827;
+}
+
+.modal-payroll-total {
+    margin-top: 20px;
+    text-align: right;
+    font-size: 18px;
+    font-weight: 700;
+    color: #111827;
+}
+
+/* =========================
+   RESPONSIVE
+========================= */
+
+@media (max-width: 768px) {
+    .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .form-card {
+        padding: 20px;
+    }
+
+    .form-actions {
+        flex-direction: column;
+    }
+
+    .form-actions .btn-primary,
+    .form-actions .btn-secondary {
+        width: 100%;
+    }
 }

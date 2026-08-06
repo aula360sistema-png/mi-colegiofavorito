@@ -23,6 +23,15 @@
                 {{ total_asignaciones }}
             </p>
         </div>
+        <div class="bg-white shadow rounded-lg p-5">
+    <p class="text-sm text-gray-500">
+        Total estudiantes
+    </p>
+
+    <p class="text-3xl font-bold text-purple-600">
+        {{ total_estudiantes }}
+    </p>
+</div>
 
         <div class="bg-white shadow rounded-lg p-5">
             <p class="text-sm text-gray-500">Períodos activos</p>
@@ -63,53 +72,84 @@
         {% if asignaciones %}
         <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
 
-            {% for a in asignaciones %}
-            <div class="border rounded-lg p-5 hover:shadow transition">
+           {% for a in asignaciones %}
+<div class="border rounded-lg p-5 hover:shadow-lg transition">
 
-                <h4 class="text-lg font-semibold mb-1">
-                    {{ a.obj.asignatura.nombre }}
-                </h4>
+    <h4 class="text-lg font-semibold mb-1">
+        {{ a.obj.asignatura.nombre }}
+    </h4>
 
-                <p class="text-sm text-gray-600">
-                    🎓 {{ a.obj.grado.nombre }} - {{ a.obj.seccion.nombre }}
-                </p>
+    <p class="text-sm text-gray-600">
+        🎓 {{ a.obj.grado.nombre }} - {{ a.obj.seccion.nombre }}
+    </p>
 
-                <p class="text-sm text-gray-500 mb-2">
-                    Año: {{ anio.nombre }}
-                </p>
+    <p class="text-sm text-gray-500">
+        Año: {{ anio.nombre }}
+    </p>
 
-                <!-- ===== ESTADO ===== -->
-                {% if a.estado == "pendiente" %}
-                    <span class="text-xs text-red-600">⚠️ Sin calificar</span>
-                {% elif a.estado == "progreso" %}
-                    <span class="text-xs text-yellow-600">🟡 En progreso</span>
-                {% else %}
-                    <span class="text-xs text-green-600">✅ Completado</span>
-                {% endif %}
+    <div class="mt-3 space-y-1 text-sm">
 
-                <!-- ===== BOTONES ===== -->
-                <div class="flex gap-2 mt-4">
+        <p>
+            👥 Estudiantes:
+            <span class="font-semibold">
+                {{ a.cantidad_estudiantes }}
+            </span>
+        </p>
 
-                    {% if periodos %}
-                    <a href="{% url 'calificar_tabla' a.obj.id %}"
-                       class="flex-1 text-center bg-green-600 text-white text-sm py-2 rounded hover:bg-green-700">
-                        ✏️ Calificar
-                    </a>
-                    {% else %}
-                    <button disabled
-                        class="flex-1 bg-gray-300 text-gray-600 text-sm py-2 rounded cursor-not-allowed">
-                        🔒 Período cerrado
-                    </button>
-                    {% endif %}
+        <p>
+            📚 Asignatura:
+            <span class="font-semibold">
+                {{ a.obj.asignatura.nombre }}
+            </span>
+        </p>
 
-                    <a href="{% url 'docente_estudiantes' a.obj.id %}"
-                       class="flex-1 text-center bg-indigo-600 text-white text-sm py-2 rounded hover:bg-indigo-700">
-                        👥 Estudiantes
-                    </a>
-                </div>
+    </div>
 
-            </div>
-            {% endfor %}
+    <!-- Estado -->
+    <div class="mt-3">
+
+        {% if a.estado == "pendiente" %}
+            <span class="px-2 py-1 bg-red-100 text-red-700 rounded text-xs">
+                ⚠️ Sin calificar
+            </span>
+
+        {% elif a.estado == "progreso" %}
+            <span class="px-2 py-1 bg-yellow-100 text-yellow-700 rounded text-xs">
+                🟡 En progreso
+            </span>
+
+        {% else %}
+            <span class="px-2 py-1 bg-green-100 text-green-700 rounded text-xs">
+                ✅ Completado
+            </span>
+        {% endif %}
+
+    </div>
+
+    <!-- Botones -->
+    <div class="grid grid-cols-2 gap-2 mt-4">
+
+        {% if periodos %}
+        <a href="{% url 'calificar_tabla' a.obj.id %}"
+           class="text-center bg-green-600 text-white text-sm py-2 rounded hover:bg-green-700">
+            ✏️ Calificar
+        </a>
+        {% else %}
+        <button disabled
+            class="bg-gray-300 text-gray-600 text-sm py-2 rounded cursor-not-allowed">
+            🔒 Cerrado
+        </button>
+        {% endif %}
+
+        <a href="{% url 'docente_estudiantes' a.obj.id %}"
+           class="text-center bg-indigo-600 text-white text-sm py-2 rounded hover:bg-indigo-700">
+            👥 Estudiantes
+        </a>
+
+    </div>
+
+</div>
+{% endfor %}
 
         </div>
         {% else %}

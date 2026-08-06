@@ -1,0 +1,204 @@
+{% extends 'home.html' %}
+
+{% block title %}
+Resumen de Asistencia
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">
+            Resumen de Asistencia
+        </h1>
+
+        <p class="page-subtitle">
+            Año escolar {{ anio.nombre }} · Promedio de asistencia por estudiante
+        </p>
+    </div>
+</div>
+
+{% if not grados_secciones %}
+
+<div class="asistencia-banner alert-warning">
+    <i class="fas fa-info-circle"></i>
+    <span>
+        No tiene grados o secciones asignadas para el año escolar activo,
+        o no hay estudiantes inscritos todavía.
+    </span>
+</div>
+
+{% else %}
+
+<div class="asistencia-selector">
+
+    <form method="get" class="asistencia-filtros">
+
+        <div class="form-group">
+            <label>Grado</label>
+            <select id="grado" name="grado">
+                <option value="">-- Seleccionar --</option>
+                {% for gid, grado, sid, seccion in grados_secciones %}
+                    {% ifchanged gid %}
+                        <option value="{{ gid }}" {% if gid == grado_id %}selected{% endif %}>
+                            {{ grado.nombre }}
+                        </option>
+                    {% endifchanged %}
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Sección</label>
+            <select id="seccion" name="seccion">
+                <option value="">-- Seleccionar --</option>
+                {% for gid, grado, sid, seccion in grados_secciones %}
+                    <option
+                        value="{{ sid }}"
+                        data-grado="{{ gid }}"
+                        {% if sid == seccion_id and gid == grado_id %}selected{% endif %}
+                    >
+                        {{ seccion.nombre }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Hasta</label>
+            <input
+                type="date"
+                name="hasta"
+                value="{{ hasta|date:'Y-m-d' }}"
+                max="{{ anio.fecha_fin|date:'Y-m-d' }}"
+            >
+        </div>
+
+        <button type="submit" class="btn-primary">
+            <i class="fas fa-search"></i>
+            Consultar
+        </button>
+
+    </form>
+
+</div>
+
+{% if resumen %}
+
+<div class="table-card">
+
+    <table class="custom-table">
+
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Estudiante</th>
+                <th>Matrícula</th>
+                <th>Días lectivos</th>
+                <th>Asistencias</th>
+                <th>Ausencias</th>
+                <th>% Asistencia</th>
+            </tr>
+        </thead>
+
+        <tbody>
+
+            {% for fila in resumen %}
+
+            {% with p=fila.porcentaje %}
+
+            <tr>
+
+                <td>{{ forloop.counter }}</td>
+
+                <td>
+                    <strong>{{ fila.inscripcion.estudiante.nombre_completo }}</strong>
+                </td>
+
+                <td>{{ fila.inscripcion.estudiante.matricula }}</td>
+
+                <td>{{ fila.dias_lectivos }}</td>
+
+                <td>{{ fila.asistencias }}</td>
+
+                <td>{{ fila.ausencias }}</td>
+
+                <td>
+                    {% if p is None %}
+                        <span class="badge-warning">Sin días</span>
+                    {% elif p >= 90 %}
+                        <span class="badge-success">{{ p }}%</span>
+                    {% elif p >= 70 %}
+                        <span class="badge-warning">{{ p }}%</span>
+                    {% else %}
+                        <span class="badge-danger">{{ p }}%</span>
+                    {% endif %}
+                </td>
+
+            </tr>
+
+            {% endwith %}
+
+            {% endfor %}
+
+        </tbody>
+
+        {% if promedio_general %}
+
+        <tfoot>
+            <tr>
+                <td colspan="6" class="text-right">
+                    <strong>Promedio de asistencia de la sección</strong>
+                </td>
+                <td>
+                    <span class="badge-info">{{ promedio_general }}%</span>
+                </td>
+            </tr>
+        </tfoot>
+
+        {% endif %}
+
+    </table>
+
+</div>
+
+{% elif grado_id and seccion_id and not resumen %}
+
+<div class="asistencia-banner alert-warning">
+    <i class="fas fa-users-slash"></i>
+    <span>
+        No hay estudiantes activos inscritos en esta sección para el año escolar activo.
+    </span>
+</div>
+
+{% endif %}
+
+{% endif %}
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const grado = document.getElementById('grado');
+        const seccion = document.getElementById('seccion');
+
+        if (!grado || !seccion) return;
+
+        function filtrarSecciones() {
+            const gid = grado.value;
+
+            seccion.querySelectorAll('option').forEach(function (op) {
+                if (!op.value) return;
+
+                op.style.display = (op.dataset.grado === gid) ? '' : 'none';
+            });
+        }
+
+        grado.addEventListener('change', function () {
+            seccion.value = '';
+            filtrarSecciones();
+        });
+
+        filtrarSecciones();
+    });
+</script>
+
+{% endblock %}

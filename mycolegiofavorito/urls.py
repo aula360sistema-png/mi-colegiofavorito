@@ -33,6 +33,7 @@ urlpatterns = [
     path('administracion/', include('administracion.urls', namespace='administracion')),
      path('ia/', include('ia.urls')),
     path('nomina/', include('nomina.urls', namespace='nomina')),
+    path('asistencia/', include('asistencia.urls', namespace='asistencia')),
 
 ]
 

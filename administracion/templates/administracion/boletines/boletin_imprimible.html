@@ -124,11 +124,13 @@
 
 <p>
     <strong>Situación del/de la estudiante:</strong>
-    {% if datos.promovido %}
-        Promovido/a
-    {% else %}
-        Repitente
-    {% endif %}
+   {% if datos.estado_final == "aprobado" %}
+    Promovido/a
+{% elif datos.estado_final == "recuperacion" %}
+    En recuperación
+{% else %}
+    Repitente
+{% endif %}
 </p>
 
 <!-- ================= FIRMAS ================= -->

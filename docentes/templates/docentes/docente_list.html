@@ -1,46 +1,180 @@
 {% extends "home.html" %}
 
+{% block title %}
+Docentes
+{% endblock %}
+
 {% block content %}
-<div class="p-6 bg-white rounded-lg shadow-md">
 
-    <h2 class="text-2xl font-bold mb-4">Centro activo: <span class="text-indigo-600">{{ centro.nombre }}</span></h2>
+<div class="max-w-7xl mx-auto">
 
-    <div class="mb-4">
-        <a href="{% url 'docente_create' %}" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 transition">
-            Crear Docente
+    <!-- Encabezado -->
+    <div class="flex justify-between items-center mb-6">
+
+        <div>
+            <h2 class="text-2xl font-bold">
+                👨‍🏫 Docentes
+            </h2>
+
+            <p class="text-gray-500">
+                {{ centro.nombre }}
+            </p>
+        </div>
+
+        <a href="{% url 'docente_create' %}"
+           class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+            ➕ Nuevo docente
         </a>
+
     </div>
 
-    <div class="overflow-x-auto">
-        <table class="min-w-full border border-gray-200 divide-y divide-gray-200">
+    <!-- Resumen -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+
+        <div class="bg-white shadow rounded p-4">
+            <div class="text-gray-500">
+                Total docentes
+            </div>
+
+            <div class="text-2xl font-bold">
+                {{ total_docentes }}
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Buscador -->
+    <div class="bg-white shadow rounded p-4 mb-6">
+
+        <form method="get">
+
+            <div class="flex gap-2">
+
+                <input
+                    type="text"
+                    name="q"
+                    value="{{ q }}"
+                    placeholder="Buscar por nombre o cédula..."
+                    class="border rounded px-3 py-2 flex-1"
+                >
+
+                <button
+                    type="submit"
+                    class="bg-blue-600 text-white px-4 py-2 rounded"
+                >
+                    🔍 Buscar
+                </button>
+
+                <a
+                    href="{% url 'docente_list' %}"
+                    class="bg-gray-200 px-4 py-2 rounded"
+                >
+                    Limpiar
+                </a>
+
+            </div>
+
+        </form>
+
+    </div>
+
+    <!-- Tabla -->
+    <div class="bg-white shadow rounded overflow-hidden">
+
+        <table class="min-w-full">
+
             <thead class="bg-gray-100">
+
                 <tr>
-                    <th class="px-6 py-3 text-left text-sm font-medium text-gray-700">Nombre</th>
-                    <th class="px-6 py-3 text-left text-sm font-medium text-gray-700">Cédula</th>
-                    <th class="px-6 py-3 text-left text-sm font-medium text-gray-700">Centro</th>
-                    <th class="px-6 py-3 text-left text-sm font-medium text-gray-700">Acciones</th>
+
+                    <th class="px-4 py-3 text-left">
+                        Docente
+                    </th>
+
+                    <th class="px-4 py-3 text-left">
+                        Cédula
+                    </th>
+
+                    <th class="px-4 py-3 text-left">
+                        Centro
+                    </th>
+
+                    <th class="px-4 py-3 text-center">
+                        Acciones
+                    </th>
+
                 </tr>
+
             </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
+
+            <tbody class="divide-y">
+
                 {% for docente in docentes %}
+
                 <tr class="hover:bg-gray-50">
-                    <td class="px-6 py-4 whitespace-nowrap">{{ docente.nombre_completo }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">{{ docente.cedula }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">{{ docente.centro.nombre }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap space-x-2">
-                        <a href="{% url 'docente_detail' docente.pk %}" class="text-blue-600 hover:underline">Ver</a>
-                        <a href="{% url 'docente_update' docente.pk %}" class="text-yellow-600 hover:underline">Editar</a>
-                        <a href="{% url 'docente_delete' docente.pk %}" class="text-red-600 hover:underline">Eliminar</a>
+
+                    <td class="px-4 py-3">
+
+                        <div class="font-semibold">
+                            {{ docente.nombre_completo }}
+                        </div>
+
                     </td>
+
+                    <td class="px-4 py-3">
+                        {{ docente.cedula }}
+                    </td>
+
+                    <td class="px-4 py-3">
+                        {{ docente.centro.nombre }}
+                    </td>
+
+                    <td class="px-4 py-3 text-center">
+
+                        <div class="flex justify-center gap-3">
+
+                            <a href="{% url 'docente_detail' docente.id %}"
+                               class="text-blue-600 hover:underline">
+                                👁 Ver
+                            </a>
+
+                            <a href="{% url 'docente_update' docente.id %}"
+                               class="text-yellow-600 hover:underline">
+                                ✏ Editar
+                            </a>
+
+                            <a href="{% url 'docente_delete' docente.id %}"
+                               class="text-red-600 hover:underline">
+                                🗑 Eliminar
+                            </a>
+
+                        </div>
+
+                    </td>
+
                 </tr>
+
                 {% empty %}
+
                 <tr>
-                    <td colspan="4" class="px-6 py-4 text-center text-gray-500">No hay docentes registrados.</td>
+
+                    <td colspan="4"
+                        class="text-center py-6 text-gray-500">
+
+                        No hay docentes registrados.
+
+                    </td>
+
                 </tr>
+
                 {% endfor %}
+
             </tbody>
+
         </table>
+
     </div>
 
 </div>
+
 {% endblock %}

@@ -1,0 +1,202 @@
+/* =========================
+   ASISTENCIA MODULE STYLES
+   Estilos para los templates del módulo de asistencia
+   Reutiliza la paleta de dashboard.css / nomina.css (indigo)
+========================= */
+
+/* =========================
+   SELECTOR (filtros)
+========================= */
+
+.asistencia-selector {
+    background: #ffffff;
+    border: 1px solid #edf2f7;
+    border-radius: 16px;
+    box-shadow: 0 2px 14px rgba(0, 0, 0, .05);
+    padding: 22px;
+    margin-bottom: 24px;
+}
+
+.asistencia-filtros {
+    display: flex;
+    gap: 16px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+}
+
+.asistencia-filtros .form-group {
+    margin-bottom: 0;
+    min-width: 180px;
+    flex: 1;
+}
+
+/* =========================
+   BANNERS
+========================= */
+
+.asistencia-banner {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 18px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 20px;
+    border: 1px solid transparent;
+}
+
+.asistencia-banner i {
+    font-size: 18px;
+}
+
+.alert-warning {
+    background: #fef3c7;
+    color: #92400e;
+    border-color: #fde68a;
+}
+
+.alert-info {
+    background: #e0e7ff;
+    color: #3730a3;
+    border-color: #c7d2fe;
+}
+
+/* =========================
+   RESUMEN DEL DIA
+========================= */
+
+.resumen-dia {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+}
+
+.badge-info {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    background: #e0e7ff;
+    color: #3730a3;
+    white-space: nowrap;
+}
+
+.text-right {
+    text-align: right;
+}
+
+/* =========================
+   RADIOS DE ASISTENCIA
+========================= */
+
+.asistencia-radios {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.asistencia-radio {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 12px;
+    border: 1px solid #e5e7eb;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #6b7280;
+    background: #ffffff;
+    cursor: pointer;
+    transition: all .2s ease;
+    user-select: none;
+}
+
+.asistencia-radio input {
+    display: none;
+}
+
+.asistencia-radio:hover {
+    border-color: #6366f1;
+    color: #4f46e5;
+}
+
+.asistencia-radio.activo {
+    background: linear-gradient(135deg, #4f46e5, #6366f1);
+    border-color: #4f46e5;
+    color: #ffffff;
+    box-shadow: 0 4px 10px rgba(79, 70, 229, .25);
+}
+
+.asistencia-radio.activo[data-estado='ausente'] {
+    background: linear-gradient(135deg, #dc2626, #ef4444);
+    border-color: #dc2626;
+    box-shadow: 0 4px 10px rgba(220, 38, 38, .25);
+}
+
+/* =========================
+   ACCIONES DEL FORM
+========================= */
+
+.asistencia-actions {
+    padding: 18px 20px;
+    border-top: 1px solid #f1f5f9;
+    display: flex;
+    justify-content: flex-end;
+}
+
+/* =========================
+   DIAS DE NO DOCENCIA
+========================= */
+
+.asistencia-grid {
+    display: grid;
+    grid-template-columns: 380px 1fr;
+    gap: 24px;
+    align-items: start;
+}
+
+@media (max-width: 1024px) {
+    .asistencia-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.inline-form {
+    display: inline;
+    margin: 0;
+}
+
+.btn-icon-danger {
+    background: #fef2f2;
+    color: #dc2626;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 11px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all .2s ease;
+}
+
+.btn-icon-danger:hover {
+    background: #fee2e2;
+}
+
+/* =========================
+   RESPONSIVE
+========================= */
+
+@media (max-width: 768px) {
+    .asistencia-filtros {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .asistencia-filtros .form-group {
+        min-width: 0;
+    }
+}

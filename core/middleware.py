@@ -34,6 +34,6 @@ class CentroMiddleware:
             return self.get_response(request)
 
         if not request.session.get('centro_id'):
-            return redirect('seleccionar_centro')
+            return redirect('core:seleccionar_centro')
 
         return self.get_response(request)
