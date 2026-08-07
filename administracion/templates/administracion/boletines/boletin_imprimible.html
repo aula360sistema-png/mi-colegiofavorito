@@ -67,6 +67,8 @@
     <strong>Grado:</strong> {{ datos.estudiante.grado }}
     &nbsp;&nbsp;&nbsp;
     <strong>Sección:</strong> {{ datos.estudiante.seccion }}
+    &nbsp;&nbsp;&nbsp;
+    <strong>Año escolar:</strong> {{ datos.anio_escolar }}
 </p>
 
 <div class="titulo">
@@ -104,13 +106,13 @@
             <td>{{ asignatura.pf|default:"" }}</td>
 
             <td>
-                {% if asignatura.pf >= 70 %}
+                {% if asignatura.pf >= nota_minima %}
                     ✔
                 {% endif %}
             </td>
 
             <td>
-                {% if asignatura.pf < 70 %}
+                {% if asignatura.pf < nota_minima %}
                     ✔
                 {% endif %}
             </td>
@@ -131,7 +133,24 @@
 {% else %}
     Repitente
 {% endif %}
+
+    &nbsp;&nbsp;&nbsp;
+    <strong>Promedio general:</strong> {{ datos.promedio_general|default:"—" }}
+    &nbsp;&nbsp;&nbsp;
+    <strong>Nota mínima:</strong> {{ nota_minima }}
 </p>
+
+{% if datos.completivo %}
+<p>
+    <strong>Resultado del completivo:</strong>
+    {% if datos.completivo.aprobado %}Aprobado{% else %}Reprobado{% endif %}
+    {% if datos.completivo.detalle %} —
+        {% for d in datos.completivo.detalle %}
+            {{ d.asignatura }} ({{ d.nota_completivo|default:"—" }}){% if not forloop.last %}, {% endif %}
+        {% endfor %}
+    {% endif %}
+</p>
+{% endif %}
 
 <!-- ================= FIRMAS ================= -->
 <div class="firma">

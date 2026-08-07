@@ -34,6 +34,7 @@ urlpatterns = [
      path('ia/', include('ia.urls')),
     path('nomina/', include('nomina.urls', namespace='nomina')),
     path('asistencia/', include('asistencia.urls', namespace='asistencia')),
+    path('caja/', include('caja.urls', namespace='caja')),
 
 ]
 

@@ -26,9 +26,12 @@ from .models import Nivel
 class NivelForm(forms.ModelForm):
     class Meta:
         model = Nivel
-        fields = ['nombre']
+        fields = ['nombre', 'tipo']
         widgets = {
             'nombre': forms.TextInput(attrs={
+                'class': 'w-full border rounded px-3 py-2 text-sm'
+            }),
+            'tipo': forms.Select(attrs={
                 'class': 'w-full border rounded px-3 py-2 text-sm'
             })
         }
@@ -43,13 +46,17 @@ from .models import Nivel, Grado,Seccion, AreaCurricular
 class GradoForm(forms.ModelForm):
     class Meta:
         model = Grado
-        fields = ['nivel', 'nombre']
+        fields = ['nivel', 'nombre', 'orden']
         widgets = {
             'nivel': forms.Select(attrs={
                 'class': 'w-full border rounded px-3 py-2 text-sm'
             }),
             'nombre': forms.TextInput(attrs={
                 'class': 'w-full border rounded px-3 py-2 text-sm'
+            }),
+            'orden': forms.NumberInput(attrs={
+                'class': 'w-full border rounded px-3 py-2 text-sm',
+                'min': 0
             }),
         }
 

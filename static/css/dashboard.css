@@ -47,6 +47,84 @@ body.dashboard-body {
 
     box-shadow:
         0 0 30px rgba(0,0,0,.04);
+
+    transition: width .25s ease;
+}
+
+/* Toggle button */
+
+.sidebar-toggle {
+
+    margin-left: auto;
+
+    border: none;
+
+    background: #f1f5f9;
+
+    color: #64748b;
+
+    width: 32px;
+
+    height: 32px;
+
+    border-radius: 8px;
+
+    cursor: pointer;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    font-size: 13px;
+
+    transition: background .2s, color .2s;
+}
+
+.sidebar-toggle:hover {
+
+    background: #e2e8f0;
+
+    color: #4f46e5;
+}
+
+/* Collapsed state */
+
+.dashboard-layout.sidebar-collapsed .sidebar {
+
+    width: 84px;
+}
+
+.dashboard-layout.sidebar-collapsed .sidebar-title,
+.dashboard-layout.sidebar-collapsed .sidebar-user,
+.dashboard-layout.sidebar-collapsed .sidebar-role,
+.dashboard-layout.sidebar-collapsed .sidebar-section span,
+.dashboard-layout.sidebar-collapsed .sidebar-link span,
+.dashboard-layout.sidebar-collapsed .menu-toggle span,
+.dashboard-layout.sidebar-collapsed .sidebar-sublink span,
+.dashboard-layout.sidebar-collapsed .logout-btn span,
+.dashboard-layout.sidebar-collapsed .submenu {
+
+    display: none;
+}
+
+.dashboard-layout.sidebar-collapsed .sidebar-header {
+
+    justify-content: center;
+
+    padding: 24px 12px;
+}
+
+.dashboard-layout.sidebar-collapsed .sidebar-header > div:nth-child(2) {
+
+    display: none;
+}
+
+.dashboard-layout.sidebar-collapsed .sidebar-link,
+.dashboard-layout.sidebar-collapsed .menu-toggle {
+
+    justify-content: center;
 }
 
 /* Header */

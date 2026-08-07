@@ -1,0 +1,137 @@
+{% extends "home.html" %}
+
+{% block title %}Caja - Pagos{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+
+    <div class="flex justify-between items-center mb-6">
+
+        <div>
+            <h2 class="text-2xl font-semibold">
+                💰 Pagos
+            </h2>
+
+            <p class="text-gray-600">
+                Matrícula, mensualidades y demás cobros del centro.
+            </p>
+        </div>
+
+        <a href="{% url 'caja:registrar_pago' %}"
+           class="bg-green-600 text-white px-4 py-2 rounded shadow hover:bg-green-700">
+            + Registrar pago
+        </a>
+
+    </div>
+
+    <!-- Resumen -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+
+        <div class="bg-white shadow rounded p-4">
+            <p class="text-sm text-gray-500">Total recaudado</p>
+            <p class="text-xl font-bold text-green-700">RD$ {{ total_general }}</p>
+        </div>
+
+        {% for m in por_metodo %}
+            <div class="bg-white shadow rounded p-4">
+                <p class="text-sm text-gray-500">
+                    {{ m.metodo_pago|default:"—" }}
+                </p>
+                <p class="text-lg font-bold">RD$ {{ m.total }}</p>
+                <p class="text-xs text-gray-400">{{ m.cantidad }} pago(s)</p>
+            </div>
+        {% endfor %}
+
+    </div>
+
+    <!-- Filtros -->
+    <form method="GET" class="mb-4 bg-white shadow rounded p-4 flex gap-3 items-end flex-wrap">
+
+        <div class="flex-1 min-w-40">
+            <label class="text-sm text-gray-600">Buscar</label>
+            <input type="text" name="q" value="{{ q }}"
+                   placeholder="Matrícula o nombre del estudiante"
+                   class="w-full border rounded px-3 py-2 text-sm mt-1">
+        </div>
+
+        <div>
+            <label class="text-sm text-gray-600">Concepto</label>
+            <select name="concepto" class="border rounded px-3 py-2 text-sm mt-1">
+                <option value="">Todos</option>
+                {% for c in conceptos %}
+                    <option value="{{ c.id }}"
+                        {% if concepto_seleccionado == c.id|stringformat:"s" %}selected{% endif %}>
+                        {{ c.nombre }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div>
+            <label class="text-sm text-gray-600">Año</label>
+            <select name="anio" class="border rounded px-3 py-2 text-sm mt-1">
+                <option value="">Todos</option>
+                {% for a in anios_disponibles %}
+                    <option value="{{ a }}"
+                        {% if anio_seleccionado == a|stringformat:"s" %}selected{% endif %}>
+                        {{ a }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <button class="bg-blue-600 text-white px-4 py-2 rounded text-sm">
+            Filtrar
+        </button>
+
+    </form>
+
+    <!-- Tabla -->
+    <div class="bg-white shadow rounded overflow-x-auto">
+
+        <table class="w-full text-sm">
+
+            <thead class="bg-gray-100 text-left">
+                <tr>
+                    <th class="px-4 py-2">Recibo</th>
+                    <th class="px-4 py-2">Fecha</th>
+                    <th class="px-4 py-2">Estudiante</th>
+                    <th class="px-4 py-2">Concepto</th>
+                    <th class="px-4 py-2">Método</th>
+                    <th class="px-4 py-2 text-right">Monto</th>
+                    <th class="px-4 py-2 text-center">Recibo</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for pago in pagos %}
+                    <tr class="border-t hover:bg-gray-50">
+                        <td class="px-4 py-2 font-mono">#{{ pago.recibo }}</td>
+                        <td class="px-4 py-2">{{ pago.fecha|date:"d/m/Y" }}</td>
+                        <td class="px-4 py-2">{{ pago.estudiante.nombre_completo }}</td>
+                        <td class="px-4 py-2">{{ pago.concepto.nombre }}</td>
+                        <td class="px-4 py-2">{{ pago.get_metodo_pago_display }}</td>
+                        <td class="px-4 py-2 text-right font-semibold">RD$ {{ pago.monto }}</td>
+                        <td class="px-4 py-2 text-center">
+                            <a href="{% url 'caja:recibo_pago' pago.id %}"
+                               target="_blank"
+                               class="text-blue-600 hover:underline">
+                                🖨️ Recibo
+                            </a>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="7" class="px-4 py-6 text-center text-gray-500">
+                            No hay pagos registrados.
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+{% endblock %}

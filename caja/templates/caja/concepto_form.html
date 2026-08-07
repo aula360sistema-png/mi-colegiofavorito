@@ -1,0 +1,79 @@
+{% extends "home.html" %}
+
+{% block title %}Nuevo Concepto{% endblock %}
+
+{% block content %}
+<div class="max-w-xl mx-auto">
+
+    <div class="flex justify-between items-center mb-6">
+
+        <div>
+            <h2 class="text-2xl font-semibold">
+                ➕ Nuevo Concepto de Pago
+            </h2>
+
+            <p class="text-gray-600">
+                Ej: Matrícula 2025-2026, Mensualidad, Uniformes, etc.
+            </p>
+        </div>
+
+        <a href="{% url 'caja:lista_conceptos' %}"
+           class="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded">
+            ⬅ Volver
+        </a>
+
+    </div>
+
+    <div class="bg-white shadow rounded p-6">
+
+        <form method="post">
+
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+                <div class="mb-4 bg-red-50 border border-red-200 rounded p-3 text-red-700">
+                    {{ form.non_field_errors }}
+                </div>
+            {% endif %}
+
+            <div class="mb-4">
+                <label class="block text-sm font-medium mb-1">Nombre</label>
+                {{ form.nombre }}
+                {% if form.nombre.errors %}
+                    <div class="text-red-600 text-sm mt-1">{{ form.nombre.errors }}</div>
+                {% endif %}
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-sm font-medium mb-1">Monto (RD$)</label>
+                {{ form.monto }}
+                {% if form.monto.errors %}
+                    <div class="text-red-600 text-sm mt-1">{{ form.monto.errors }}</div>
+                {% endif %}
+            </div>
+
+            <div class="grid grid-cols-2 gap-4 mb-6">
+                <label class="flex items-center gap-2 text-sm">
+                    {{ form.es_recurrente }}
+                    Recurrente (mensual)
+                </label>
+
+                <label class="flex items-center gap-2 text-sm">
+                    {{ form.activo }}
+                    Activo
+                </label>
+            </div>
+
+            <div class="border-t pt-4 flex justify-end">
+                <button type="submit"
+                        class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded">
+                    ✅ Guardar concepto
+                </button>
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+{% endblock %}

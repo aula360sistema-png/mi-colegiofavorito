@@ -83,7 +83,7 @@ def login_view(request):
             if user.rol == 'docente' and hasattr(user, 'docente'):
                 centro_id = user.docente.centro_id
 
-            elif user.rol in ['director', 'administrativo'] and hasattr(user, 'administrativo'):
+            elif user.rol in ['director', 'administrativo', 'cajero'] and hasattr(user, 'administrativo'):
                 centro_id = user.administrativo.centro_id
 
             elif user.rol == 'estudiante' and hasattr(user, 'estudiante'):

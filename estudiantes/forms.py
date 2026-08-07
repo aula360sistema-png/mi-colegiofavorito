@@ -1,7 +1,5 @@
 from django import forms
-from django.http import JsonResponse
-from .models import Estudiante, Inscripcion
-from django.contrib.auth.decorators import login_required
+from .models import Estudiante
 
 class EstudianteForm(forms.ModelForm):
     class Meta:
@@ -25,27 +23,10 @@ class EstudianteForm(forms.ModelForm):
             self.fields['fecha_nacimiento'].widget.attrs['type'] = 'date'
 
 
-
-class InscripcionForm(forms.ModelForm):
-    class Meta:
-        model = Inscripcion
-        exclude = ('estudiante', 'centro', 'fecha')
-
 from django import forms
 from .models import Inscripcion
 from academico.models import Grado, Seccion
 
-@login_required
-def cargar_secciones(request):
-    grado_id = request.GET.get('grado')
-    secciones = []
-
-    if grado_id:
-        secciones = Seccion.objects.filter(
-            grado_id=grado_id
-        ).values('id', 'nombre')
-
-    return JsonResponse(list(secciones), safe=False)
 class InscripcionAvanzadaForm(forms.ModelForm):
     class Meta:
         model = Inscripcion

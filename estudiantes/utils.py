@@ -1,3 +1,4 @@
+from academico.models import Grado
 from .models import Inscripcion
 
 def validar_promocion_estudiante(estudiante, anio_actual):
@@ -26,22 +27,40 @@ def validar_promocion_estudiante(estudiante, anio_actual):
             "mensaje": f"El año escolar {ultima.anio_escolar} aún no ha sido cerrado."
         }
 
-    if ultima.estado_final == 'reprobado':
+    if ultima.estado_final in ('reprobado', 'recuperacion'):
         return {
             "permitido": True,
             "grado_permitido": ultima.grado,
-            "mensaje": f'Debe repetir {ultima.grado}.'
+            "mensaje": f"Debe repetir {ultima.grado}."
         }
 
-    if ultima.estado_final == 'promovido':
+    if ultima.estado_final == 'sin_calificacion':
         return {
             "permitido": True,
-            "grado_permitido_id": ultima.grado_id + 1,
-            "mensaje": "Puede pasar al grado siguiente."
+            "grado_permitido": ultima.grado,
+            "mensaje": f"Debe repetir {ultima.grado} (no posee calificación final)."
+        }
+
+    # ✅ APROBADO: pasa al grado siguiente según el orden del nivel
+    siguiente = (
+        Grado.objects
+        .filter(
+            nivel=ultima.grado.nivel,
+            orden__gt=ultima.grado.orden
+        )
+        .order_by('orden', 'nombre')
+        .first()
+    )
+
+    if siguiente:
+        return {
+            "permitido": True,
+            "grado_permitido": siguiente,
+            "mensaje": f"Puede pasar a {siguiente}."
         }
 
     return {
         "permitido": True,
         "grado_permitido": None,
-        "mensaje": ""
+        "mensaje": "Último grado del nivel. Sin restricción de grado."
     }

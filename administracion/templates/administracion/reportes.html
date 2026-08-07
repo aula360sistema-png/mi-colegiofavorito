@@ -1,0 +1,147 @@
+{% extends "home.html" %}
+
+{% block title %}Reportes{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+
+    <h2 class="text-2xl font-semibold mb-6">
+        📊 Reportes
+    </h2>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+        <!-- Matrícula por grado y sección -->
+        <div class="bg-white shadow rounded overflow-hidden">
+            <div class="px-4 py-3 border-b bg-gray-50">
+                <h3 class="font-semibold">
+                    Matrícula por grado y sección
+                </h3>
+                <p class="text-xs text-gray-500">
+                    Año escolar {% if anio_actual %}{{ anio_actual.nombre }}{% else %}activo{% endif %}
+                </p>
+            </div>
+
+            <table class="w-full text-sm">
+                <thead class="text-left text-gray-500">
+                    <tr>
+                        <th class="px-4 py-2">Grado</th>
+                        <th class="px-4 py-2">Sección</th>
+                        <th class="px-4 py-2 text-center">Estudiantes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for fila in matricula_por_grado %}
+                        <tr class="border-t">
+                            <td class="px-4 py-2">{{ fila.grado__nombre }}</td>
+                            <td class="px-4 py-2">{{ fila.seccion__nombre }}</td>
+                            <td class="px-4 py-2 text-center font-semibold">{{ fila.total }}</td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="3" class="px-4 py-6 text-center text-gray-500">
+                                Sin datos para el año activo.
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Estados académicos -->
+        <div class="bg-white shadow rounded overflow-hidden">
+            <div class="px-4 py-3 border-b bg-gray-50">
+                <h3 class="font-semibold">Estados académicos</h3>
+                <p class="text-xs text-gray-500">
+                    Matrícula del año {% if anio_actual %}{{ anio_actual.nombre }}{% else %}activo{% endif %}
+                </p>
+            </div>
+
+            <table class="w-full text-sm">
+                <thead class="text-left text-gray-500">
+                    <tr>
+                        <th class="px-4 py-2">Estado</th>
+                        <th class="px-4 py-2 text-center">Estudiantes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for fila in estados_academicos %}
+                        <tr class="border-t">
+                            <td class="px-4 py-2">{{ fila.estado_final|default:"—" }}</td>
+                            <td class="px-4 py-2 text-center font-semibold">{{ fila.total }}</td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="2" class="px-4 py-6 text-center text-gray-500">
+                                Sin datos.
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Estudiantes por estado general -->
+        <div class="bg-white shadow rounded overflow-hidden">
+            <div class="px-4 py-3 border-b bg-gray-50">
+                <h3 class="font-semibold">Estudiantes por estado general</h3>
+            </div>
+
+            <table class="w-full text-sm">
+                <thead class="text-left text-gray-500">
+                    <tr>
+                        <th class="px-4 py-2">Estado</th>
+                        <th class="px-4 py-2 text-center">Estudiantes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for fila in estudiantes_por_estado %}
+                        <tr class="border-t">
+                            <td class="px-4 py-2">{{ fila.estado|default:"—" }}</td>
+                            <td class="px-4 py-2 text-center font-semibold">{{ fila.total }}</td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="2" class="px-4 py-6 text-center text-gray-500">
+                                Sin datos.
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Matrícula por año -->
+        <div class="bg-white shadow rounded overflow-hidden">
+            <div class="px-4 py-3 border-b bg-gray-50">
+                <h3 class="font-semibold">Matrícula por año escolar</h3>
+            </div>
+
+            <table class="w-full text-sm">
+                <thead class="text-left text-gray-500">
+                    <tr>
+                        <th class="px-4 py-2">Año escolar</th>
+                        <th class="px-4 py-2 text-center">Estudiantes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for fila in matricula_por_anio %}
+                        <tr class="border-t">
+                            <td class="px-4 py-2">{{ fila.anio_escolar__nombre }}</td>
+                            <td class="px-4 py-2 text-center font-semibold">{{ fila.total }}</td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="2" class="px-4 py-6 text-center text-gray-500">
+                                Sin datos.
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+
+</div>
+{% endblock %}

@@ -30,6 +30,22 @@
                 {% endif %}
             </div>
 
+            <div class="mb-4">
+                <label class="block text-sm font-medium mb-1">
+                    Tipo de plantilla (boletín)
+                </label>
+                {{ form.tipo }}
+                <p class="text-xs text-gray-500 mt-1">
+                    Define qué plantilla de boletín MINERD se usa:
+                    Inicial, Primaria o Secundaria.
+                </p>
+                {% if form.tipo.errors %}
+                    <p class="text-red-600 text-sm mt-1">
+                        {{ form.tipo.errors.0 }}
+                    </p>
+                {% endif %}
+            </div>
+
             <div class="flex justify-end gap-3 mt-6">
                 <a href="{% url 'nivel_list' %}"
                    class="px-4 py-2 rounded border text-gray-700 hover:bg-gray-100">

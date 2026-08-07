@@ -1,0 +1,94 @@
+{% extends "home.html" %}
+
+{% block title %}Constancias de Estudios{% endblock %}
+
+{% block content %}
+
+<div class="max-w-6xl mx-auto">
+
+    <div class="flex justify-between items-center mb-6">
+
+        <div>
+            <h2 class="text-2xl font-semibold">
+                📜 Constancias de Estudios
+            </h2>
+
+            <p class="text-gray-600">
+                Emite constancias del año escolar
+                {% if anio_actual %}{{ anio_actual.nombre }}{% else %}activo{% endif %}.
+            </p>
+        </div>
+
+    </div>
+
+    <!-- Búsqueda -->
+    <form method="GET" class="mb-6 bg-white shadow rounded p-4 flex gap-3 items-end">
+
+        <div class="flex-1">
+            <label class="text-sm text-gray-600">Buscar por matrícula o nombre</label>
+            <input type="text" name="q" value="{{ q }}"
+                   placeholder="Ej: 2024001 o Juan Pérez"
+                   class="w-full border rounded px-3 py-2 text-sm mt-1">
+        </div>
+
+        <button class="bg-blue-600 text-white px-4 py-2 rounded text-sm">
+            Buscar
+        </button>
+
+        {% if q %}
+            <a href="{% url 'constancias' %}"
+               class="ml-2 text-gray-500 underline text-sm self-center">
+                Limpiar
+            </a>
+        {% endif %}
+
+    </form>
+
+    <div class="bg-white shadow rounded overflow-hidden">
+
+        <table class="w-full text-sm">
+
+            <thead class="bg-gray-100 text-left">
+                <tr>
+                    <th class="px-4 py-2">Matrícula</th>
+                    <th class="px-4 py-2">Estudiante</th>
+                    <th class="px-4 py-2">Grado</th>
+                    <th class="px-4 py-2">Sección</th>
+                    <th class="px-4 py-2 text-center">Acción</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for e in estudiantes %}
+                    <tr class="border-t hover:bg-gray-50">
+                        <td class="px-4 py-2">{{ e.matricula }}</td>
+                        <td class="px-4 py-2">{{ e.nombre_completo }}</td>
+                        <td class="px-4 py-2">
+                            {{ e.constancia_grado|default:"—" }}
+                        </td>
+                        <td class="px-4 py-2">
+                            {{ e.constancia_seccion|default:"—" }}
+                        </td>
+                        <td class="px-4 py-2 text-center">
+                            <a href="{% url 'constancia_estudiante' e.id %}"
+                               target="_blank"
+                               class="bg-green-600 text-white px-3 py-1 rounded text-xs hover:bg-green-700">
+                                🖨️ Imprimir constancia
+                            </a>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="5" class="px-4 py-6 text-center text-gray-500">
+                            No hay estudiantes que coincidan con la búsqueda.
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+{% endblock %}

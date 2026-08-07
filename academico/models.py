@@ -1,16 +1,33 @@
 from django.db import models
 class Nivel(models.Model):
+    TIPOS = (
+        ('inicial', 'Nivel Inicial'),
+        ('primaria', 'Nivel Primario'),
+        ('secundaria', 'Nivel Secundario'),
+    )
+
     centro = models.ForeignKey('core.CentroEducativo', on_delete=models.CASCADE)
     nombre = models.CharField(max_length=50)
+    tipo = models.CharField(
+        "Tipo de plantilla",
+        max_length=20,
+        choices=TIPOS,
+        default='primaria'
+    )
+
     def __str__(self):
-            return self.nombre
+        return self.nombre
 
 
 class Grado(models.Model):
     nivel = models.ForeignKey(Nivel, on_delete=models.CASCADE)
     nombre = models.CharField(max_length=50)
+    orden = models.PositiveIntegerField(default=0)
     def __str__(self):
             return self.nombre
+
+    class Meta:
+        ordering = ['nivel', 'orden', 'nombre']
 
 
 class Seccion(models.Model):

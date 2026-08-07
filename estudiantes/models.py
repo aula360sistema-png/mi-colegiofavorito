@@ -96,9 +96,10 @@ class DocumentoEstudiante(models.Model):
 
 class Inscripcion(models.Model):
     ESTADO_FINALES = [
-        ('pendiente', 'Pendiente'), 
-        ('aprobado', 'Aprobado'), 
-        ('reprobado', 'Reprobado'), 
+        ('pendiente', 'Pendiente'),
+        ('aprobado', 'Aprobado'),
+        ('reprobado', 'Reprobado'),
+        ('recuperacion', 'Recuperación'),
         ('retirado', 'Retirado'),
         ('sin_calificacion', 'Sin Calificación'),
     ]

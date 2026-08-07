@@ -35,7 +35,7 @@ class Administrativo(models.Model):
     CARGOS = (
         ('director', 'Director'),
         ('secretaria', 'Secretaria'),
-    
+        ('cajero', 'Cajero'),
     )
     cargo = models.CharField(max_length=20, choices=CARGOS)
     fecha_ingreso = models.DateField()

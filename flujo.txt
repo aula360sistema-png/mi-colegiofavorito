@@ -1,0 +1,409 @@
+# FLUJO OPERATIVO COMPLETO DEL SISTEMA ESCOLAR
+
+## OBJETIVO
+
+Definir paso a paso cómo se utilizará el sistema durante todo el ciclo escolar, desde la configuración inicial hasta el cierre del año académico.
+
+---
+
+# FASE 1: CONFIGURACIÓN INICIAL DEL SISTEMA
+
+Esta fase se realiza una sola vez cuando el colegio comienza a utilizar el sistema.
+
+## Administrador General
+
+### Configuración institucional
+
+* Registrar centro educativo.
+* Configurar logo institucional.
+* Configurar datos generales del centro.
+* Configurar dirección, teléfonos y correos.
+* Configurar director y personal administrativo.
+
+### Configuración académica
+
+* Crear año escolar.
+* Configurar períodos académicos.
+* Crear niveles educativos.
+* Crear grados.
+* Crear secciones.
+* Crear áreas curriculares.
+* Crear asignaturas.
+* Configurar competencias.
+
+### Configuración de usuarios
+
+* Crear usuarios administradores.
+* Crear usuarios de secretaría.
+* Crear usuarios docentes.
+* Crear usuarios de dirección.
+
+---
+
+# FASE 2: PREPARACIÓN DEL AÑO ESCOLAR
+
+Se realiza antes del inicio de las clases.
+
+## Secretaría Académica
+
+### Registro de docentes
+
+* Crear expedientes docentes.
+* Registrar datos personales.
+* Registrar información laboral.
+* Crear usuarios de acceso.
+
+### Registro de estudiantes
+
+* Crear expedientes estudiantiles.
+* Registrar datos personales.
+* Registrar información familiar.
+* Registrar información médica.
+* Generar matrícula.
+
+### Inscripción estudiantil
+
+* Seleccionar estudiante.
+* Seleccionar año escolar.
+* Seleccionar grado.
+* Seleccionar sección.
+* Confirmar inscripción.
+
+### Organización académica
+
+* Asignar asignaturas a cada grado.
+* Asignar docentes a asignaturas.
+* Asignar docentes a secciones.
+* Verificar carga académica.
+
+---
+
+# FASE 3: INICIO DEL AÑO ESCOLAR
+
+Una vez iniciadas las clases.
+
+## Director
+
+* Verificar estudiantes inscritos.
+* Verificar docentes asignados.
+* Verificar carga académica.
+* Validar estructura escolar.
+
+## Secretaría
+
+* Imprimir listados oficiales.
+* Entregar listados a docentes.
+* Entregar horarios.
+
+---
+
+# FASE 4: OPERACIÓN DIARIA DEL DOCENTE
+
+Proceso que se realiza todos los días.
+
+## Inicio de sesión
+
+El docente ingresa al sistema.
+
+### Visualiza
+
+* Materias asignadas.
+* Grados asignados.
+* Secciones asignadas.
+* Año escolar activo.
+
+---
+
+## Registro de asistencia
+
+Para cada grupo:
+
+* Marcar presente.
+* Marcar ausente.
+* Marcar tardanza.
+* Registrar observaciones.
+
+---
+
+## Registro de actividades
+
+* Tareas.
+* Prácticas.
+* Exámenes.
+* Proyectos.
+* Participaciones.
+
+---
+
+## Registro de calificaciones
+
+* Seleccionar período.
+* Seleccionar asignatura.
+* Registrar notas.
+* Guardar calificaciones.
+
+---
+
+## Consulta de historial
+
+El docente puede visualizar:
+
+* Calificaciones registradas.
+* Promedios.
+* Rendimiento del curso.
+
+---
+
+# FASE 5: OPERACIÓN DIARIA DE SECRETARÍA
+
+Proceso administrativo continuo.
+
+## Gestión de estudiantes
+
+* Registrar nuevos estudiantes.
+* Actualizar información.
+* Cambiar grado.
+* Cambiar sección.
+* Reinscribir estudiantes.
+
+---
+
+## Emisión de documentos
+
+Generar:
+
+* Constancias de estudio.
+* Certificaciones.
+* Récord académico.
+* Historial académico.
+* Listados oficiales.
+
+---
+
+## Consultas
+
+* Estudiantes por grado.
+* Estudiantes por sección.
+* Estudiantes por año escolar.
+* Historial de inscripciones.
+
+---
+
+# FASE 6: OPERACIÓN DIARIA DE DIRECCIÓN
+
+Supervisión institucional.
+
+## Dashboard institucional
+
+Visualizar:
+
+* Total de estudiantes.
+* Total de docentes.
+* Total de secciones.
+* Total de grados.
+* Año escolar activo.
+
+---
+
+## Seguimiento académico
+
+Consultar:
+
+* Promedio por grado.
+* Promedio por sección.
+* Rendimiento institucional.
+* Estudiantes en riesgo.
+* Estudiantes sobresalientes.
+
+---
+
+## Auditoría
+
+Verificar:
+
+* Acciones realizadas.
+* Cambios efectuados.
+* Usuarios conectados.
+* Actividades del sistema.
+
+---
+
+# FASE 7: CIERRE DE PERÍODO ACADÉMICO
+
+Al finalizar cada período.
+
+## Docentes
+
+* Completar notas pendientes.
+* Revisar calificaciones.
+* Confirmar registros.
+
+---
+
+## Dirección
+
+* Revisar resultados.
+* Validar calificaciones.
+* Autorizar cierre.
+
+---
+
+## Sistema
+
+* Cerrar período.
+* Bloquear modificaciones.
+* Registrar fecha de cierre.
+
+---
+
+# FASE 8: GENERACIÓN DE REPORTES
+
+Durante todo el año.
+
+## Reportes académicos
+
+* Listado de estudiantes.
+* Promedio por asignatura.
+* Promedio por grado.
+* Promedio por sección.
+* Ranking académico.
+
+---
+
+## Reportes administrativos
+
+* Docentes activos.
+* Estudiantes activos.
+* Matrícula por grado.
+* Matrícula por sección.
+
+---
+
+## Reportes históricos
+
+* Historial académico.
+* Historial de inscripciones.
+* Historial de calificaciones.
+
+---
+
+# FASE 9: CIERRE DEL AÑO ESCOLAR
+
+Al finalizar el año académico.
+
+## Generación de resultados finales
+
+* Calcular promedios finales.
+* Determinar promoción.
+* Determinar reprobación.
+* Determinar honores académicos.
+
+---
+
+## Generación de documentos finales
+
+* Boletines.
+* Actas.
+* Certificaciones.
+* Récord académico.
+
+---
+
+## Promoción estudiantil
+
+Promover automáticamente:
+
+* Preprimario → siguiente nivel.
+* 1ro → 2do.
+* 2do → 3ro.
+* 3ro → 4to.
+* 4to → 5to.
+* 5to → 6to.
+* 6to → siguiente nivel.
+
+---
+
+# FASE 10: APERTURA DEL NUEVO AÑO ESCOLAR
+
+## Dirección
+
+* Crear nuevo año escolar.
+* Definir períodos académicos.
+* Activar nuevo ciclo.
+
+---
+
+## Secretaría
+
+* Reinscribir estudiantes.
+* Registrar nuevos ingresos.
+* Actualizar expedientes.
+
+---
+
+# FUNCIONALIDADES FUTURAS RECOMENDADAS
+
+## Portal de Padres
+
+* Consulta de notas.
+* Consulta de asistencia.
+* Descarga de boletines.
+* Seguimiento académico.
+
+---
+
+## Portal del Estudiante
+
+* Consulta de materias.
+* Consulta de notas.
+* Consulta de tareas.
+* Historial académico.
+
+---
+
+## Módulo Financiero
+
+* Inscripción.
+* Mensualidades.
+* Recibos.
+* Caja.
+* Estados de cuenta.
+
+---
+
+## Comunicación
+
+* WhatsApp.
+* Correo electrónico.
+* Notificaciones automáticas.
+
+---
+
+## Inteligencia Artificial
+
+* Generación automática de observaciones.
+* Comentarios para boletines.
+* Asistente académico.
+* Análisis de rendimiento.
+
+---
+
+# PRINCIPIO GENERAL DEL SISTEMA
+
+Todo el sistema gira alrededor de la siguiente secuencia:
+
+1. Configurar centro educativo.
+2. Crear año escolar.
+3. Configurar estructura académica.
+4. Registrar docentes.
+5. Registrar estudiantes.
+6. Inscribir estudiantes.
+7. Asignar docentes.
+8. Registrar asistencia.
+9. Registrar calificaciones.
+10. Cerrar períodos.
+11. Generar boletines.
+12. Generar actas.
+13. Promover estudiantes.
+14. Crear nuevo año escolar.
+15. Repetir ciclo académico.

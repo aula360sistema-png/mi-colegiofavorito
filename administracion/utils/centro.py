@@ -17,8 +17,8 @@ def resolver_centro_para_usuario(request):
 
     user = request.user
 
-    # Director o Secretaria → Administrativo
-    if user.rol in ['director', 'secretaria']:
+    # Director, Secretaria o Cajero → Administrativo
+    if user.rol in ['director', 'secretaria', 'cajero']:
         admin = Administrativo.objects.filter(usuario=user).select_related('centro').first()
         if admin:
             request.session['centro_id'] = admin.centro.id

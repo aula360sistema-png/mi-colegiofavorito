@@ -24,6 +24,7 @@
             <thead class="bg-gray-50">
                 <tr>
                     <th class="px-4 py-2 text-left">Nombre</th>
+                    <th class="px-4 py-2 text-left">Plantilla</th>
                     <th class="px-4 py-2 text-right">Acciones</th>
                 </tr>
             </thead>
@@ -31,6 +32,7 @@
                 {% for nivel in niveles %}
                 <tr class="border-t">
                     <td class="px-4 py-2">{{ nivel.nombre }}</td>
+                    <td class="px-4 py-2">{{ nivel.get_tipo_display }}</td>
                     <td class="px-4 py-2 text-right space-x-2">
                         <a type="button"  href="{% url 'nivel_update' nivel.id %}"
                            class="text-yellow-600 hover:underline">
@@ -47,7 +49,7 @@
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="2"
+                    <td colspan="3"
                         class="px-4 py-6 text-center text-gray-500">
                         No hay niveles registrados
                     </td>

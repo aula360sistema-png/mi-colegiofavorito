@@ -47,7 +47,7 @@ class AdministrativoForm(forms.ModelForm):
 
     # Cargo / rol (un solo campo)
     cargo = forms.ChoiceField(
-        choices=[('director', 'Director'), ('secretaria', 'Secretaria')],
+        choices=[('director', 'Director'), ('secretaria', 'Secretaria'), ('cajero', 'Cajero')],
         widget=forms.Select(attrs={'class': 'form-input'})
     )
 

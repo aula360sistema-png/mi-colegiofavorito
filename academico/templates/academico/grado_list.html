@@ -20,6 +20,7 @@
                 <tr>
                     <th class="px-4 py-2">Grado</th>
                     <th class="px-4 py-2">Nivel</th>
+                    <th class="px-4 py-2">Orden</th>
                     <th class="px-4 py-2 w-40">Acciones</th>
                 </tr>
             </thead>
@@ -28,6 +29,7 @@
                 <tr class="border-t">
                     <td class="px-4 py-2">{{ grado.nombre }}</td>
                     <td class="px-4 py-2">{{ grado.nivel.nombre }}</td>
+                    <td class="px-4 py-2">{{ grado.orden }}</td>
                  <td class="px-4 py-2 flex gap-2">
 
   <a href="{% url 'grado_estudiantes' grado.id %}"

@@ -1,0 +1,245 @@
+{% extends "home.html" %}
+
+{% block title %}Asignar Conceptos{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-6">
+
+    <div>
+        <h2 class="text-2xl font-bold text-gray-800">Asignar conceptos por estudiante</h2>
+        <p class="text-gray-500">
+            Selecciona el concepto, filtra por grado/sección si quieres y marca los estudiantes. Esto alimenta las cuentas por cobrar.
+        </p>
+    </div>
+
+    <!-- ================= ASIGNACIÓN MASIVA ================= -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="accion" value="asignar">
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Año escolar</label>
+                    <select name="anio_escolar" class="w-full border rounded px-3 py-2 text-sm">
+                        {% for a in anios %}
+                            <option value="{{ a.id }}" {% if a.id|stringformat:"s" == anio_seleccionado %}selected{% endif %}>
+                                {{ a.nombre }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Concepto</label>
+                    <select name="concepto" class="w-full border rounded px-3 py-2 text-sm">
+                        <option value="">— Selecciona —</option>
+                        {% for c in conceptos %}
+                            <option value="{{ c.id }}" {% if c.id|stringformat:"s" == concepto_seleccionado %}selected{% endif %}>
+                                {{ c.nombre }} · RD$ {{ c.monto|floatformat:2 }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Grado (filtro)</label>
+                    <select name="grado" id="filtro-grado" class="w-full border rounded px-3 py-2 text-sm">
+                        <option value="">Todos</option>
+                        {% for g in grados %}
+                            <option value="{{ g.id }}" {% if g.id|stringformat:"s" == grado_seleccionado %}selected{% endif %}>
+                                {{ g.nombre }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Sección (filtro)</label>
+                    <select name="seccion" id="filtro-seccion" class="w-full border rounded px-3 py-2 text-sm">
+                        <option value="">Todas</option>
+                        {% for s in secciones %}
+                            <option value="{{ s.id }}" data-grado="{{ s.grado_id }}"
+                                    {% if s.id|stringformat:"s" == seccion_seleccionada %}selected{% endif %}>
+                                {{ s.nombre }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="flex gap-2">
+                    <button type="submit" formmethod="get"
+                            class="inline-flex items-center gap-2 bg-gray-700 hover:bg-gray-800 text-white px-4 py-2 rounded-lg text-sm font-medium">
+                        <i class="fas fa-filter"></i> Filtrar
+                    </button>
+                    <a href="{% url 'caja:asignaciones_conceptos' %}"
+                       class="inline-flex items-center gap-2 bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium">
+                        <i class="fas fa-rotate-left"></i>
+                    </a>
+                </div>
+            </div>
+
+            <!-- ESTUDIANTES -->
+            <div class="mt-6">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="font-semibold text-gray-700">
+                        Estudiantes <span class="text-gray-400 font-normal">({{ filas|length }})</span>
+                    </h3>
+                    <label class="inline-flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+                        <input type="checkbox" id="seleccionar-todos" class="rounded">
+                        Seleccionar todos
+                    </label>
+                </div>
+
+                {% if filas %}
+                <div class="border rounded-xl overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead class="bg-gray-50 text-left text-xs uppercase text-gray-500">
+                            <tr>
+                                <th class="px-4 py-2.5 w-10"></th>
+                                <th class="px-4 py-2.5">Estudiante</th>
+                                <th class="px-4 py-2.5">Matrícula</th>
+                                <th class="px-4 py-2.5">Grado</th>
+                                <th class="px-4 py-2.5">Sección</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for f in filas %}
+                            <tr class="border-t hover:bg-gray-50">
+                                <td class="px-4 py-2">
+                                    <input type="checkbox" name="estudiantes" value="{{ f.estudiante.id }}"
+                                           class="rounded checkbox-estudiante"
+                                           {% if not f.asignado %}checked{% endif %}>
+                                </td>
+                                <td class="px-4 py-2 font-medium text-gray-800">
+                                    {{ f.estudiante.nombre_completo }}
+                                    {% if f.asignado %}
+                                        <span class="ml-2 px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full text-[11px] font-medium">
+                                            Ya asignado
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-4 py-2 text-gray-500">{{ f.estudiante.matricula }}</td>
+                                <td class="px-4 py-2">{{ f.grado.nombre|default:"—" }}</td>
+                                <td class="px-4 py-2">{{ f.seccion.nombre|default:"—" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="border border-dashed rounded-xl py-10 text-center text-gray-400">
+                    No hay estudiantes que coincidan. Ajusta los filtros.
+                </div>
+                {% endif %}
+
+                <div class="mt-5 flex items-center justify-between">
+                    <p class="text-sm text-gray-500">
+                        <span id="contador-seleccionados" class="font-semibold text-indigo-600">0</span> estudiante(s) seleccionado(s).
+                    </p>
+                    <button type="submit"
+                            class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-lg font-medium">
+                        <i class="fas fa-user-tag"></i> Asignar a los seleccionados
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- ================= ASIGNACIONES ACTUALES ================= -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-x-auto">
+        <div class="flex items-center justify-between px-6 pt-5 pb-3">
+            <h3 class="font-semibold text-gray-700">Asignaciones actuales</h3>
+            {% if anio %}
+                <span class="text-sm text-gray-500">{{ anio.nombre }}</span>
+            {% endif %}
+        </div>
+        <table class="w-full text-sm">
+            <thead class="bg-gray-50 text-left text-xs uppercase text-gray-500">
+                <tr>
+                    <th class="px-6 py-3">Estudiante</th>
+                    <th class="px-4 py-3">Concepto</th>
+                    <th class="px-4 py-3 text-right">Monto</th>
+                    <th class="px-4 py-3">Año</th>
+                    <th class="px-4 py-3 text-center">Estado</th>
+                    <th class="px-4 py-3 text-center">Eliminar</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for asig in asignaciones %}
+                    <tr class="border-t hover:bg-gray-50">
+                        <td class="px-6 py-2.5 font-medium text-gray-800">{{ asig.estudiante.nombre_completo }}</td>
+                        <td class="px-4 py-2.5">{{ asig.concepto.nombre }}</td>
+                        <td class="px-4 py-2.5 text-right">RD$ {{ asig.concepto.monto|floatformat:2 }}</td>
+                        <td class="px-4 py-2.5 text-gray-500">{{ asig.anio_escolar.nombre }}</td>
+                        <td class="px-4 py-2.5 text-center">
+                            {% if asig.activo %}
+                                <span class="px-2 py-1 bg-emerald-100 text-emerald-700 rounded-full text-xs font-medium">Activa</span>
+                            {% else %}
+                                <span class="px-2 py-1 bg-gray-100 text-gray-500 rounded-full text-xs font-medium">Inactiva</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-2.5 text-center">
+                            <form method="post" class="inline"
+                                  onsubmit="return confirm('¿Eliminar esta asignación?');">
+                                {% csrf_token %}
+                                <input type="hidden" name="accion" value="eliminar">
+                                <input type="hidden" name="asignacion_id" value="{{ asig.id }}">
+                                <button type="submit" class="text-red-500 hover:text-red-700">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="6" class="px-6 py-8 text-center text-gray-500">
+                            No hay conceptos asignados.
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+</div>
+
+<script>
+(function () {
+    const grado = document.getElementById('filtro-grado');
+    const seccion = document.getElementById('filtro-seccion');
+    if (!grado || !seccion) return;
+
+    function filtrarSecciones() {
+        const g = grado.value;
+        [...seccion.options].forEach(opt => {
+            if (opt.value === '') return;
+            opt.hidden = g !== '' && opt.dataset.grado !== g;
+        });
+        if (g !== '' && seccion.value !== '' && seccion.options[seccion.selectedIndex].hidden) {
+            seccion.value = '';
+        }
+    }
+    grado.addEventListener('change', filtrarSecciones);
+    filtrarSecciones();
+
+    const todos = document.getElementById('seleccionar-todos');
+    const cajas = [...document.querySelectorAll('.checkbox-estudiante')];
+    const contador = document.getElementById('contador-seleccionados');
+
+    function actualizarContador() {
+        const n = cajas.filter(c => c.checked).length;
+        contador.textContent = n;
+        if (todos) todos.checked = n > 0 && n === cajas.length;
+    }
+    if (todos) {
+        todos.addEventListener('change', () => {
+            cajas.forEach(c => { c.checked = todos.checked; });
+            actualizarContador();
+        });
+    }
+    cajas.forEach(c => c.addEventListener('change', actualizarContador));
+    actualizarContador();
+})();
+</script>
+{% endblock %}

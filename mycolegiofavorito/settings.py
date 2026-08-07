@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'ia',
     'nomina',
     'asistencia',
+    'caja',
 ]
 
 MIDDLEWARE = [

@@ -10,7 +10,7 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect
 
 from academico.models import DocenteMateria
-from core.decorators import centro_required
+from core.decorators import centro_required, role_required
 from .models import Estudiante
 from usuarios.models import Usuario
 from core.models import CentroEducativo
@@ -19,7 +19,7 @@ from core.models import CentroEducativo
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
 from .models import Estudiante, Inscripcion
-from .forms import EstudianteForm, InscripcionForm
+from .forms import EstudianteForm
 from core.models import CentroEducativo
 
 from core.models import AnioEscolar
@@ -35,6 +35,8 @@ from django.db.models import Prefetch
 
 from core.utils.session import get_centro_activo
 from .utils import validar_promocion_estudiante
+from core.utils.anio import obtener_anio_activo
+from django.utils import timezone
 
 
 @login_required
@@ -205,63 +207,6 @@ def estudiante_delete(request, pk):
         'estudiantes/estudiante_confirm_delete.html',
         {'estudiante': estudiante}
     )
-
-@login_required
-def inscribir_estudiante(request, estudiante_id):
-
-    centro = get_centro_activo(request)
-
-    estudiante = get_object_or_404(
-        Estudiante,
-        id=estudiante_id,
-        centro=centro
-    )
-
-    inscripciones_previas = (
-        Inscripcion.objects
-        .filter(estudiante=estudiante)
-        .select_related(
-            'anio_escolar',
-            'grado',
-            'seccion'
-        )
-        .order_by('-anio_escolar__fecha_inicio')
-    )
-
-    if request.method == 'POST':
-
-        form = InscripcionForm(request.POST)
-
-        if form.is_valid():
-
-            inscripcion = form.save(commit=False)
-            inscripcion.estudiante = estudiante
-            inscripcion.centro = centro
-            inscripcion.save()
-
-            messages.success(
-                request,
-                'Estudiante inscrito correctamente.'
-            )
-
-            return redirect(
-                'estudiante_detail',
-                pk=estudiante.id
-            )
-
-    else:
-        form = InscripcionForm()
-
-    return render(
-        request,
-        'estudiantes/inscripcion_form.html',
-        {
-            'form': form,
-            'estudiante': estudiante,
-            'inscripciones_previas': inscripciones_previas,
-        }
-    )
-
 
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q, Prefetch
@@ -482,7 +427,7 @@ def inscribir_estudiante_avanzado(request, estudiante_id):
                     )
 
                     return redirect(
-                        'inscribir_estudiante_avanzado',
+                        'inscribir_estudiante',
                         estudiante_id=estudiante.id
                     )
 
@@ -582,6 +527,8 @@ from django.db.models import Q
 from django.shortcuts import render, redirect
 
 @login_required
+@centro_required
+@role_required('director', 'secretaria', 'admin', 'superadmin')
 def historial_estudiantes(request):
 
     centro = get_centro_activo(request)
@@ -681,3 +628,129 @@ def historial_estudiantes(request):
         'estudiantes/historial_estudiantes.html',
         context
     )
+
+
+@login_required
+@centro_required
+@role_required('director', 'secretaria', 'admin', 'superadmin')
+def constancias(request):
+    centro = get_centro_activo(request)
+
+    anio_actual = obtener_anio_activo(centro)
+
+    q = request.GET.get('q', '').strip()
+
+    estudiantes = Estudiante.objects.filter(centro=centro)
+
+    if q:
+        estudiantes = estudiantes.filter(
+            Q(matricula__icontains=q) |
+            Q(primer_nombre__icontains=q) |
+            Q(primer_apellido__icontains=q)
+        )
+
+    estudiantes = estudiantes.order_by('primer_apellido', 'primer_nombre')
+
+    inscripciones = {
+        i.estudiante_id: i
+        for i in (
+            Inscripcion.objects
+            .filter(
+                centro=centro,
+                anio_escolar=anio_actual
+            )
+            .select_related('grado', 'seccion')
+        )
+    }
+
+    for e in estudiantes:
+        i = inscripciones.get(e.id)
+        e.constancia_grado = i.grado if i and i.grado else None
+        e.constancia_seccion = i.seccion if i and i.seccion else None
+
+    return render(request, 'estudiantes/constancias.html', {
+        'centro': centro,
+        'anio_actual': anio_actual,
+        'estudiantes': estudiantes,
+        'q': q,
+    })
+
+
+@login_required
+@centro_required
+@role_required('director', 'secretaria', 'admin', 'superadmin')
+def constancia_estudiante(request, pk):
+    centro = get_centro_activo(request)
+
+    estudiante = get_object_or_404(
+        Estudiante,
+        pk=pk,
+        centro=centro
+    )
+
+    anio_actual = obtener_anio_activo(centro)
+
+    inscripcion = (
+        Inscripcion.objects
+        .filter(
+            estudiante=estudiante,
+            centro=centro,
+            anio_escolar=anio_actual
+        )
+        .select_related('grado', 'seccion')
+        .first()
+    )
+
+    return render(request, 'estudiantes/constancia_imprimir.html', {
+        'centro': centro,
+        'estudiante': estudiante,
+        'anio_actual': anio_actual,
+        'inscripcion': inscripcion,
+    })
+
+
+@login_required
+@centro_required
+@role_required('director', 'secretaria', 'admin', 'superadmin')
+def cambiar_estado_estudiante(request, pk):
+    """
+    Flujo de retiro/traslado/egreso: actualiza el estado del estudiante
+    y, si es retirado, marca la matrícula del año activo como retirada.
+    """
+
+    if request.method != 'POST':
+        return redirect('estudiante_detail', pk=pk)
+
+    centro = get_centro_activo(request)
+
+    estudiante = get_object_or_404(
+        Estudiante,
+        pk=pk,
+        centro=centro
+    )
+
+    estado = request.POST.get('estado')
+
+    estados_validos = ['activo', 'retirado', 'egresado']
+
+    if estado not in estados_validos:
+        messages.error(request, "Estado inválido.")
+        return redirect('estudiante_detail', pk=pk)
+
+    estudiante.estado = estado
+    estudiante.save()
+
+    if estado == 'retirado':
+        Inscripcion.objects.filter(
+            estudiante=estudiante,
+            centro=centro,
+            anio_escolar__activo=True
+        ).update(estado_final='retirado', fecha_cierre=timezone.now().date())
+
+    messages.success(
+        request,
+        f"Estado del estudiante actualizado a "
+        f"{estudiante.get_estado_display().lower()}."
+    )
+
+    return redirect('estudiante_detail', pk=pk)

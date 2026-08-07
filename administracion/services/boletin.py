@@ -13,13 +13,90 @@ def redondear(valor):
     )
 
 
+def _normalizar_periodo(nombre):
+    """Convierte 'p1' -> 'P1' para mostrar de forma consistente."""
+    texto = (nombre or "").strip()
+    if texto[:1].lower() == "p" and texto[1:].isdigit():
+        return f"P{texto[1:]}"
+    return texto
+
+
+def enriquecer_boletin_para_vista(datos):
+    """
+    Prepara el snapshot del Acta para MOSTRAR (no modifica la BD).
+    Agrega:
+      - etiquetas de período normalizadas (P1, P2...)
+      - 'promedios': promedio de cada período sobre las competencias del área
+      - 'nota_completivo' y 'completivo_aprueba' por área
+      - 'semestres': agrupación de los períodos en semestres
+    """
+    datos = dict(datos or {})
+
+    periodos = datos.get("periodos", [])
+    n_periodos = len(periodos)
+
+    semestre = {}
+    mitad = n_periodos // 2
+    if n_periodos:
+        if mitad >= 1:
+            semestre["1"] = list(range(0, mitad))
+        if n_periodos - mitad >= 1:
+            semestre["2"] = list(range(mitad, n_periodos))
+    datos["semestres"] = [
+        {"nombre": f"Semestre {clave}", "indices": indices}
+        for clave, indices in semestre.items()
+    ]
+
+    completivo = datos.get("completivo") or {}
+    completivo_map = {}
+    for det in (completivo.get("detalle") or []):
+        completivo_map[det.get("asignatura")] = {
+            "nota": det.get("nota_completivo"),
+            "aprueba": det.get("aprueba"),
+        }
+
+    asignaturas_raw = datos.get("asignaturas", [])
+
+    asignaturas = []
+    for asignatura in asignaturas_raw:
+        asignatura = dict(asignatura)
+        competencias = asignatura.get("competencias", [])
+
+        promedios = []
+        for idx in range(n_periodos):
+            valores = []
+            for c in competencias:
+                per = c.get("periodos", [])
+                if idx < len(per):
+                    nota = per[idx].get("nota")
+                    if nota is not None:
+                        valores.append(float(nota))
+            promedios.append(
+                redondear(sum(valores) / len(valores)) if valores else None
+            )
+
+        asignatura["promedios"] = promedios
+
+        detalle = completivo_map.get(asignatura.get("asignatura"))
+        asignatura["nota_completivo"] = detalle.get("nota") if detalle else None
+        asignatura["completivo_aprueba"] = detalle.get("aprueba") if detalle else None
+
+        asignaturas.append(asignatura)
+
+    datos["asignaturas"] = asignaturas
+    datos["periodos"] = [_normalizar_periodo(p) for p in periodos]
+    return datos
+
+
 def construir_boletin_estudiante(inscripcion, centro, anio):
 
+    # 🔒 Los períodos de completivo NO entran en el promedio base
     periodos = list(
         Periodo.objects.filter(
             centro=centro,
             anio_escolar=anio,
-            cerrado=True
+            cerrado=True,
+            es_completivo=False
         ).order_by("orden")
     )
 
@@ -87,6 +164,7 @@ def construir_boletin_estudiante(inscripcion, centro, anio):
         pf = redondear(sum(pcs) / len(pcs)) if pcs else None
 
         asignaturas_map[asignatura.id] = {
+            "asignatura_id": asignatura.id,
             "asignatura": asignatura.nombre,
             "competencias": competencias_data,
             "pf": pf
@@ -105,3 +183,84 @@ def construir_boletin_estudiante(inscripcion, centro, anio):
         "periodos": [p.nombre for p in periodos],
         "asignaturas": list(asignaturas_map.values())  # 👈 sin duplicados
     }
+
+
+def resultado_completivo_estudiante(inscripcion, centro, anio, nota_minima):
+    """
+    Evalúa el período de completivo (es_completivo=True) para una inscripción.
+
+    Solo se toman en cuenta los períodos de completivo cerrados. Si no existe
+    ninguno, devuelve None. El estudiante aprueba el completivo cuando TODAS
+    las asignaturas reprobadas en el promedio base alcanzan la nota mínima
+    dentro del completivo.
+    """
+
+    completivo_periodos = list(
+        Periodo.objects.filter(
+            centro=centro,
+            anio_escolar=anio,
+            cerrado=True,
+            es_completivo=True
+        ).order_by("orden")
+    )
+
+    if not completivo_periodos:
+        return None
+
+    base = construir_boletin_estudiante(inscripcion, centro, anio)
+
+    reprobadas = [
+        a for a in base["asignaturas"]
+        if a.get("pf") is not None and a["pf"] < nota_minima
+    ]
+
+    if not reprobadas:
+        return {"aprobado": True, "detalle": []}
+
+    # Notas del completivo por asignatura (promedio de calificaciones)
+    completivo_notas = {}
+
+    asignaciones = DocenteMateria.objects.filter(
+        grado=inscripcion.grado,
+        seccion=inscripcion.seccion,
+        anio_escolar=anio
+    ).select_related("asignatura")
+
+    for asignacion in asignaciones:
+        asignatura = asignacion.asignatura
+
+        if asignatura.id in completivo_notas:
+            continue
+
+        calificaciones = Calificacion.objects.filter(
+            inscripcion=inscripcion,
+            asignatura=asignatura,
+            periodo__in=completivo_periodos,
+            nota__isnull=False
+        )
+
+        if calificaciones.exists():
+            promedio = (
+                sum(float(c.nota) for c in calificaciones)
+                / calificaciones.count()
+            )
+            completivo_notas[asignatura.id] = redondear(promedio)
+
+    detalle = []
+    aprobado = True
+
+    for a in reprobadas:
+        nota_completivo = completivo_notas.get(a["asignatura_id"])
+        aprueba = nota_completivo is not None and nota_completivo >= nota_minima
+
+        if not aprueba:
+            aprobado = False
+
+        detalle.append({
+            "asignatura": a["asignatura"],
+            "pf": a["pf"],
+            "nota_completivo": nota_completivo,
+            "aprueba": aprueba
+        })
+
+    return {"aprobado": aprobado, "detalle": detalle}

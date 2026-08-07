@@ -1,0 +1,88 @@
+{% extends "home.html" %}
+
+{% block title %}Cerrar Caja{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto space-y-6">
+
+    <div class="flex justify-between items-center">
+        <div>
+            <h2 class="text-2xl font-bold text-gray-800">Arqueo y cierre de caja</h2>
+            <p class="text-gray-500">Cuenta el efectivo en caja y cierra la sesión.</p>
+        </div>
+        <a href="{% url 'caja:caja_inicio' %}" class="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded text-sm">
+            <i class="fas fa-arrow-left mr-1"></i> Volver
+        </a>
+    </div>
+
+    <!-- RESUMEN DE LA SESIÓN -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+        <h3 class="font-semibold text-gray-700 mb-4 flex items-center gap-2">
+            <i class="fas fa-receipt text-indigo-500"></i> Resumen de la caja
+        </h3>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="bg-gray-50 rounded-xl p-4">
+                <p class="text-xs text-gray-400 uppercase">Monto inicial</p>
+                <p class="text-lg font-bold text-gray-800 mt-1">RD$ {{ sesion.monto_inicial|floatformat:2 }}</p>
+            </div>
+            <div class="bg-emerald-50 rounded-xl p-4">
+                <p class="text-xs text-emerald-600 uppercase">Entradas</p>
+                <p class="text-lg font-bold text-emerald-700 mt-1">RD$ {{ sesion.total_entradas|floatformat:2 }}</p>
+            </div>
+            <div class="bg-rose-50 rounded-xl p-4">
+                <p class="text-xs text-rose-600 uppercase">Salidas</p>
+                <p class="text-lg font-bold text-rose-700 mt-1">RD$ {{ sesion.total_salidas|floatformat:2 }}</p>
+            </div>
+            <div class="bg-indigo-50 rounded-xl p-4">
+                <p class="text-xs text-indigo-600 uppercase">Saldo esperado</p>
+                <p class="text-lg font-bold text-indigo-700 mt-1">RD$ {{ sesion.saldo_esperado|floatformat:2 }}</p>
+            </div>
+        </div>
+
+        <div class="mt-4 bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800 flex items-center gap-2">
+            <i class="fas fa-coins"></i>
+            Efectivo esperado en caja:
+            <strong>RD$ {{ sesion.efectivo_esperado|floatformat:2 }}</strong>
+            <span class="text-amber-600">(inicial + entradas/salidas en efectivo)</span>
+        </div>
+    </div>
+
+    <!-- FORM DE CIERRE -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+        <form method="post" class="space-y-5">
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+            <div class="bg-red-50 border border-red-200 rounded p-3 text-red-700 text-sm">
+                {{ form.non_field_errors }}
+            </div>
+            {% endif %}
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Arqueo — efectivo contado (RD$)</label>
+                {{ form.arqueo }}
+                {% if form.arqueo.errors %}
+                    <div class="text-red-600 text-sm mt-1">{{ form.arqueo.errors }}</div>
+                {% endif %}
+                <p class="text-xs text-gray-400 mt-1">La diferencia se calculará automáticamente al cerrar.</p>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Nota de cierre (opcional)</label>
+                {{ form.nota_cierre }}
+                {% if form.nota_cierre.errors %}
+                    <div class="text-red-600 text-sm mt-1">{{ form.nota_cierre.errors }}</div>
+                {% endif %}
+            </div>
+
+            <div class="border-t pt-4 flex justify-end">
+                <button type="submit"
+                        class="inline-flex items-center gap-2 bg-gray-800 hover:bg-gray-900 text-white px-6 py-2.5 rounded-lg font-medium">
+                    <i class="fas fa-lock"></i> Cerrar caja
+                </button>
+            </div>
+        </form>
+    </div>
+
+</div>
+{% endblock %}

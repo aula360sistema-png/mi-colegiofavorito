@@ -9,6 +9,24 @@
         📑 Boletines Oficiales
     </h1>
 
+    <!-- 🔥 ACCIONES -->
+    <div class="mb-4 flex gap-3">
+        <form method="POST" action="{% url 'administracion:generar_boletines' %}">
+            {% csrf_token %}
+            <button class="bg-green-600 text-white px-4 py-2 rounded shadow hover:bg-green-700">
+                🔄 Generar / Actualizar boletines
+            </button>
+        </form>
+        {% if es_director %}
+        <form method="POST" action="{% url 'administracion:cerrar_completivo' %}">
+            {% csrf_token %}
+            <button class="bg-amber-600 text-white px-4 py-2 rounded shadow hover:bg-amber-700">
+                🎓 Cerrar completivo
+            </button>
+        </form>
+        {% endif %}
+    </div>
+
     <!-- 🔥 FILTROS -->
     <form method="GET" class="mb-4 flex gap-3 items-end bg-white p-3 rounded shadow">
 
@@ -36,6 +54,9 @@
                 </option>
                 <option value="reprobado" {% if filtro_estado == "reprobado" %}selected{% endif %}>
                     Reprobado
+                </option>
+                <option value="recuperacion" {% if filtro_estado == "recuperacion" %}selected{% endif %}>
+                    Recuperación
                 </option>
             </select>
         </div>
@@ -99,6 +120,8 @@
                                 <span class="text-green-600 font-semibold">Aprobado</span>
                             {% elif acta.datos.estado_final == "reprobado" %}
                                 <span class="text-red-600 font-semibold">Reprobado</span>
+                            {% elif acta.datos.estado_final == "recuperacion" %}
+                                <span class="text-amber-600 font-semibold">Recuperación</span>
                             {% else %}
                                 <span class="text-gray-500">Pendiente</span>
                             {% endif %}

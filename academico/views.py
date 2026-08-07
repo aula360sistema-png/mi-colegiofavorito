@@ -206,6 +206,8 @@ def get_centro_activo(request):
 
 # LISTAR
 @login_required
+@centro_required
+@role_required('director', 'secretaria', 'admin', 'superadmin')
 def nivel_list(request):
     centro = get_centro_activo(request)
     if not centro:
@@ -221,6 +223,8 @@ def nivel_list(request):
 
 # CREAR
 @login_required
+@centro_required
+@role_required('director', 'secretaria', 'admin', 'superadmin')
 def nivel_create(request):
     centro = get_centro_activo(request)
     if not centro:
@@ -245,6 +249,8 @@ def nivel_create(request):
 
 # EDITAR
 @login_required
+@centro_required
+@role_required('director', 'secretaria', 'admin', 'superadmin')
 def nivel_update(request, pk):
     centro = get_centro_activo(request)
     nivel = get_object_or_404(Nivel, pk=pk, centro=centro)
@@ -266,6 +272,8 @@ from django.views.decorators.http import require_POST
 
 @login_required
 @require_POST
+@centro_required
+@role_required('director', 'secretaria', 'admin', 'superadmin')
 def nivel_delete(request, pk):
     centro = get_centro_activo(request)
     if not centro:
@@ -288,6 +296,8 @@ from academico.models import Grado, DocenteMateria
 from core.models import AnioEscolar
 
 @login_required
+@centro_required
+@role_required('director', 'secretaria', 'admin', 'superadmin')
 def grado_asignaturas(request, grado_id):
     centro = get_centro_activo(request)
 
@@ -338,6 +348,8 @@ from academico.models import Grado
 from core.models import AnioEscolar
 from django.utils.timezone import now
 @login_required
+@centro_required
+@role_required('director', 'secretaria', 'admin', 'superadmin')
 def grado_estudiantes(request, grado_id):
     centro = get_centro_activo(request)
 
@@ -376,6 +388,8 @@ def grado_estudiantes(request, grado_id):
     })
 
 @login_required
+@centro_required
+@role_required('director', 'secretaria', 'admin', 'superadmin')
 def cerrar_todos_los_periodos(request):
     centro = get_centro_activo(request)
     if not centro:
@@ -393,6 +407,8 @@ def cerrar_todos_los_periodos(request):
 
 # LISTAR
 @login_required
+@centro_required
+@role_required('director', 'secretaria', 'admin', 'superadmin')
 def grado_list(request):
     centro = get_centro_activo(request)
 
@@ -407,6 +423,8 @@ def grado_list(request):
 
 # CREAR
 @login_required
+@centro_required
+@role_required('director', 'secretaria', 'admin', 'superadmin')
 def grado_create(request):
     centro = get_centro_activo(request)
 
@@ -433,6 +451,8 @@ def grado_create(request):
 
 # EDITAR
 @login_required
+@centro_required
+@role_required('director', 'secretaria', 'admin', 'superadmin')
 def grado_update(request, pk):
     centro = get_centro_activo(request)
     grado = get_object_or_404(
@@ -460,6 +480,8 @@ def grado_update(request, pk):
 
 # ELIMINAR
 @login_required
+@centro_required
+@role_required('director', 'secretaria', 'admin', 'superadmin')
 def grado_delete(request, pk):
     grado = get_object_or_404(Grado, pk=pk)
 
@@ -477,6 +499,8 @@ def grado_delete(request, pk):
 
 
 @login_required
+@centro_required
+@role_required('director', 'secretaria', 'admin', 'superadmin')
 def seccion_list(request):
     centro = get_centro_activo(request)
 
@@ -490,6 +514,8 @@ def seccion_list(request):
 
 
 @login_required
+@centro_required
+@role_required('director', 'secretaria', 'admin', 'superadmin')
 def seccion_create(request):
     centro = get_centro_activo(request)
 
@@ -516,6 +542,8 @@ def seccion_create(request):
 
 
 @login_required
+@centro_required
+@role_required('director', 'secretaria', 'admin', 'superadmin')
 def seccion_update(request, pk):
     centro = get_centro_activo(request)
     seccion = get_object_or_404(
@@ -544,6 +572,8 @@ def seccion_update(request, pk):
 
 
 @login_required
+@centro_required
+@role_required('director', 'secretaria', 'admin', 'superadmin')
 def seccion_delete(request, pk):
     seccion = get_object_or_404(Seccion, pk=pk)
 
@@ -557,6 +587,8 @@ def seccion_delete(request, pk):
 
 
 @login_required
+@centro_required
+@role_required('director', 'secretaria', 'admin', 'superadmin')
 def area_list(request):
     centro = get_centro_activo(request)
 
@@ -568,6 +600,8 @@ def area_list(request):
 
 
 @login_required
+@centro_required
+@role_required('director', 'secretaria', 'admin', 'superadmin')
 def area_create(request):
     centro = get_centro_activo(request)
 
@@ -588,6 +622,8 @@ def area_create(request):
 
 
 @login_required
+@centro_required
+@role_required('director', 'secretaria', 'admin', 'superadmin')
 def area_update(request, pk):
     centro = get_centro_activo(request)
     area = get_object_or_404(AreaCurricular, pk=pk, centro=centro)
@@ -607,6 +643,8 @@ def area_update(request, pk):
 
 
 @login_required
+@centro_required
+@role_required('director', 'secretaria', 'admin', 'superadmin')
 def area_delete(request, pk):
     area = get_object_or_404(AreaCurricular, pk=pk)
 
@@ -619,6 +657,8 @@ def area_delete(request, pk):
 
 
 @login_required
+@centro_required
+@role_required('director', 'secretaria', 'admin', 'superadmin')
 def asignatura_list(request):
     centro = get_centro_activo(request)
 
@@ -659,6 +699,8 @@ def ajax_asignaturas_por_grado(request, grado_id):
 
 
 @login_required
+@centro_required
+@role_required('director', 'secretaria', 'admin', 'superadmin')
 def asignatura_create(request):
     centro = get_centro_activo(request)
 
@@ -694,6 +736,8 @@ def asignatura_create(request):
 
 
 @login_required
+@centro_required
+@role_required('director', 'secretaria', 'admin', 'superadmin')
 def asignatura_update(request, pk):
     centro = get_centro_activo(request)
     asignatura = get_object_or_404(Asignatura, pk=pk, centro=centro)
@@ -714,6 +758,8 @@ def asignatura_update(request, pk):
 
 
 @login_required
+@centro_required
+@role_required('director', 'secretaria', 'admin', 'superadmin')
 def asignatura_delete(request, pk):
     centro = get_centro_activo(request)
 
@@ -729,6 +775,8 @@ def asignatura_delete(request, pk):
 
 
 @login_required
+@centro_required
+@role_required('director', 'secretaria', 'admin', 'superadmin')
 def grado_asignatura_list(request):
     centro = get_centro_activo(request)
 
@@ -756,6 +804,8 @@ def grado_asignatura_list(request):
 
 
 @login_required
+@centro_required
+@role_required('director', 'secretaria', 'admin', 'superadmin')
 def grado_asignatura_create(request):
     centro = get_centro_activo(request)
 
@@ -796,6 +846,8 @@ def grado_asignatura_create(request):
 
 
 @login_required
+@centro_required
+@role_required('director', 'secretaria', 'admin', 'superadmin')
 def grado_asignatura_delete(request, pk):
     centro = get_centro_activo(request)
     relacion = get_object_or_404(
@@ -817,6 +869,8 @@ def grado_asignatura_delete(request, pk):
 
 
 @login_required
+@centro_required
+@role_required('director', 'secretaria', 'admin', 'superadmin')
 def competencia_list(request):
     
     competencias = Competencia.objects.all().order_by('nombre')
@@ -826,6 +880,8 @@ def competencia_list(request):
 
 
 @login_required
+@centro_required
+@role_required('director', 'secretaria', 'admin', 'superadmin')
 def competencia_create(request):
     form = CompetenciaForm(request.POST or None)
 
@@ -840,6 +896,8 @@ def competencia_create(request):
 
 
 @login_required
+@centro_required
+@role_required('director', 'secretaria', 'admin', 'superadmin')
 def competencia_update(request, pk):
     competencia = get_object_or_404(Competencia, pk=pk)
     form = CompetenciaForm(request.POST or None, instance=competencia)
@@ -855,6 +913,8 @@ def competencia_update(request, pk):
 
 
 @login_required
+@centro_required
+@role_required('director', 'secretaria', 'admin', 'superadmin')
 def competencia_delete(request, pk):
     competencia = get_object_or_404(Competencia, pk=pk)
 
@@ -872,6 +932,8 @@ from .forms import AreaCompetenciaForm
 
 
 @login_required
+@centro_required
+@role_required('director', 'secretaria', 'admin', 'superadmin')
 def area_competencia_list(request):
     relaciones = AreaCompetencia.objects.select_related(
         'area', 'competencia'
@@ -883,6 +945,8 @@ def area_competencia_list(request):
 
 
 @login_required
+@centro_required
+@role_required('director', 'secretaria', 'admin', 'superadmin')
 def area_competencia_create(request):
     centro = get_centro_activo(request)
     if not centro:
@@ -922,6 +986,8 @@ def area_competencia_create(request):
 
 
 @login_required
+@centro_required
+@role_required('director', 'secretaria', 'admin', 'superadmin')
 def area_competencia_delete(request, pk):
     relacion = get_object_or_404(AreaCompetencia, pk=pk)
 
@@ -940,6 +1006,9 @@ from .forms import PeriodoForm
 
 
 
+@login_required
+@centro_required
+@role_required('director', 'secretaria', 'admin', 'superadmin')
 def periodo_list(request):
     centro = get_centro_activo(request)
 
@@ -953,6 +1022,8 @@ def periodo_list(request):
 
 
 @login_required
+@centro_required
+@role_required('director', 'secretaria', 'admin', 'superadmin')
 def periodo_create(request):
     centro = get_centro_activo(request)
     if request.method == 'POST':
@@ -973,6 +1044,8 @@ def periodo_create(request):
 
 
 @login_required
+@centro_required
+@role_required('director', 'secretaria', 'admin', 'superadmin')
 def periodo_update(request, pk):
     centro = get_centro_activo(request)
     periodo = get_object_or_404(Periodo, pk=pk, centro=centro)
@@ -994,6 +1067,8 @@ def periodo_update(request, pk):
 
 @login_required
 @require_POST
+@centro_required
+@role_required('director', 'secretaria', 'admin', 'superadmin')
 def periodo_delete(request, pk):
     centro = get_centro_activo(request)
     periodo = get_object_or_404(Periodo, pk=pk, centro=centro)
@@ -1008,6 +1083,9 @@ from .forms import DocenteMateriaForm
 
 
 
+@login_required
+@centro_required
+@role_required('director', 'secretaria', 'admin', 'superadmin')
 def docentemateria_list(request):
     centro = get_centro_activo(request)
 
@@ -1027,6 +1105,9 @@ def docentemateria_list(request):
     })
 
 
+@login_required
+@centro_required
+@role_required('director', 'secretaria', 'admin', 'superadmin')
 def docentemateria_create(request):
     centro = get_centro_activo(request)
 
@@ -1043,6 +1124,9 @@ def docentemateria_create(request):
     })
 
 
+@login_required
+@centro_required
+@role_required('director', 'secretaria', 'admin', 'superadmin')
 def docentemateria_update(request, pk):
     centro = get_centro_activo(request)
 
@@ -1073,6 +1157,8 @@ def docentemateria_update(request, pk):
 
 
 @login_required
+@centro_required
+@role_required('director', 'secretaria', 'admin', 'superadmin')
 def docentemateria_delete(request, pk):
     centro = get_centro_activo(request)
 
@@ -1098,6 +1184,8 @@ from academico.forms import AnioEscolarForm
 
 
 @login_required
+@centro_required
+@role_required('director', 'secretaria', 'admin', 'superadmin')
 def anio_escolar_list(request):
     centro = get_centro_activo(request)
 
@@ -1111,6 +1199,8 @@ def anio_escolar_list(request):
 
 
 @login_required
+@centro_required
+@role_required('director', 'secretaria', 'admin', 'superadmin')
 def anio_escolar_create(request):
     centro = get_centro_activo(request)
 
@@ -1139,6 +1229,8 @@ def anio_escolar_create(request):
 
 
 @login_required
+@centro_required
+@role_required('director', 'secretaria', 'admin', 'superadmin')
 def anio_escolar_update(request, pk):
     centro = get_centro_activo(request)
 

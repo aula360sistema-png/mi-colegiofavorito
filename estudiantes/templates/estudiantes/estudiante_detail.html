@@ -28,13 +28,15 @@
 
             <a href="{% url 'inscribir_estudiante' estudiante.id %}"
                class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-                📝 Inscribir (básico)
+                🎯 Matricular al año activo
             </a>
 
-            <a href="{% url 'inscribir_estudiante_avanzado' estudiante.id %}"
+            {% if request.user.rol == 'director' or request.user.rol == 'admin' or request.user.rol == 'superadmin' or request.user.is_superuser %}
+            <a href="{% url 'caja:registrar_pago_estudiante' estudiante.id %}"
                class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
-                🎯 Inscribir en año activo
+                💵 Registrar pago
             </a>
+            {% endif %}
 
         </div>
 
@@ -133,11 +135,11 @@
 
     </div>
 
-    <!-- Inscripción Actual -->
+    <!-- Matrícula Actual -->
     <div class="bg-white shadow rounded p-6 mb-6">
 
         <h3 class="text-lg font-semibold mb-4">
-            🎯 Inscripción Actual
+            🎯 Matrícula Actual
         </h3>
 
         {% if inscripcion_actual %}
@@ -200,19 +202,66 @@
         {% else %}
 
             <div class="text-gray-500 italic">
-                Este estudiante no posee inscripción activa.
+                Este estudiante no posee matrícula activa.
             </div>
 
         {% endif %}
 
     </div>
 
-    <!-- Historial de Inscripciones -->
+    <!-- Estado del estudiante (retiro / traslado / egreso) -->
+    {% if request.user.rol == 'director' or request.user.rol == 'secretaria' or request.user.rol == 'admin' or request.user.rol == 'superadmin' or request.user.is_superuser %}
+    <div class="bg-white shadow rounded p-6 mb-6">
+
+        <h3 class="text-lg font-semibold mb-2">
+            🚦 Estado del estudiante
+        </h3>
+
+        <p class="text-sm text-gray-600 mb-4">
+            Estado actual:
+            <strong>{{ estudiante.get_estado_display }}</strong>
+        </p>
+
+        <form method="POST"
+              action="{% url 'cambiar_estado_estudiante' estudiante.id %}"
+              class="flex flex-wrap items-end gap-3">
+
+            {% csrf_token %}
+
+            <div>
+                <label class="block text-sm text-gray-600 mb-1">
+                    Nuevo estado
+                </label>
+
+                <select name="estado" class="border rounded px-3 py-2 text-sm">
+                    <option value="activo" {% if estudiante.estado == "activo" %}selected{% endif %}>
+                        Activo
+                    </option>
+                    <option value="retirado" {% if estudiante.estado == "retirado" %}selected{% endif %}>
+                        Retirado (retiro / traslado)
+                    </option>
+                    <option value="egresado" {% if estudiante.estado == "egresado" %}selected{% endif %}>
+                        Egresado
+                    </option>
+                </select>
+            </div>
+
+            <button type="submit"
+                    class="bg-gray-800 text-white px-4 py-2 rounded text-sm hover:bg-gray-900">
+                Actualizar estado
+            </button>
+
+        </form>
+
+    </div>
+    {% endif %}
+
+    <!-- Historial de Matrículas -->
     <div class="bg-white shadow rounded overflow-hidden">
 
         <div class="px-4 py-3 border-b">
             <h3 class="text-lg font-semibold">
-                📚 Historial de Inscripciones
+                📚 Historial de Matrículas
             </h3>
         </div>
 
@@ -296,7 +345,7 @@
                         <td colspan="6"
                             class="px-4 py-6 text-center text-gray-500">
 
-                            No tiene inscripciones registradas.
+                            No tiene matrículas registradas.
 
                         </td>
 

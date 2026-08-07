@@ -293,57 +293,6 @@ from academico.models import DocenteMateria, Periodo
 from core.models import AnioEscolar
 
 @login_required
-def dashboard_docente2(request):
-    docente = request.user.docente
-    if request.user.rol != 'docente':
-        return redirect('usuarios:logout')
-    centro = get_centro_activo(request)
-
-    anio = obtener_anio_activo(centro)
- 
-
-    asignaciones = DocenteMateria.objects.filter(
-        docente=docente,
-        anio_escolar=anio
-    ).select_related(
-        'asignatura',
-        'grado',
-        'seccion'
-    )
-
-    periodos = Periodo.objects.filter(
-        centro=centro,
-        anio_escolar=anio,
-        activo=True
-    ).order_by('orden')
-
-    total_asignaciones = asignaciones.count()
-
-    asignaciones_con_notas = Acta.objects.filter(
-        docente_materia__in=asignaciones,
-        datos__isnull=False
-    ).values('docente_materia').distinct().count()
-
-    asignaciones_completas = Acta.objects.filter(
-        docente_materia__in=asignaciones,
-        completo=True  # o tu lógica de PF
-    ).values('docente_materia').distinct().count()
-
-    return render(request, 'docentes/dashboard.html', {
-        'docente': docente,
-        'anio': anio,
-        'asignaciones': asignaciones,
-        'periodos': periodos,
-        
-    })
-
-
-from django.contrib.auth.decorators import login_required
-from django.shortcuts import render, redirect
-from django.db.models import Q
-
-
-
 @login_required
 @role_required('docente')
 @centro_required

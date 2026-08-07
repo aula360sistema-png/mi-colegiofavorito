@@ -1,0 +1,53 @@
+{% extends "home.html" %}
+
+{% block title %}{% if caja %}Editar caja{% else %}Nueva caja{% endif %}{% endblock %}
+
+{% block content %}
+<div class="max-w-xl mx-auto space-y-6">
+
+    <div class="flex justify-between items-center">
+        <div>
+            <h2 class="text-2xl font-bold text-gray-800">
+                {% if caja %}Editar caja{% else %}Nueva caja{% endif %}
+            </h2>
+            <p class="text-gray-500">Una caja es una caja registradora del centro.</p>
+        </div>
+        <a href="{% url 'caja:lista_cajas' %}" class="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded text-sm">
+            <i class="fas fa-arrow-left mr-1"></i> Volver
+        </a>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+        <form method="post" class="space-y-5">
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+            <div class="bg-red-50 border border-red-200 rounded p-3 text-red-700 text-sm">
+                {{ form.non_field_errors }}
+            </div>
+            {% endif %}
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
+                {{ form.nombre }}
+                {% if form.nombre.errors %}
+                    <div class="text-red-600 text-sm mt-1">{{ form.nombre.errors }}</div>
+                {% endif %}
+            </div>
+
+            <label class="flex items-center gap-2 text-sm text-gray-700">
+                {{ form.activa }}
+                Caja activa
+            </label>
+
+            <div class="border-t pt-4 flex justify-end">
+                <button type="submit"
+                        class="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-lg font-medium">
+                    <i class="fas fa-save"></i> Guardar caja
+                </button>
+            </div>
+        </form>
+    </div>
+
+</div>
+{% endblock %}

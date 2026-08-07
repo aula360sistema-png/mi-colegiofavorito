@@ -49,453 +49,300 @@
 
             <span class="sidebar-role">{{ request.user.get_rol_display }}</span>
           </div>
+
+          <button type="button" id="sidebar-toggle" class="sidebar-toggle" title="Ocultar menú" onclick="toggleSidebar()">
+            <i class="fas fa-angles-left"></i>
+          </button>
         </div>
 
         <!-- NAVIGATION -->
         <nav class="sidebar-nav">
-          {% if request.user.is_authenticated %}
-
-            <!-- ================= DOCENTE ================= -->
-            {% if request.user.rol == 'docente' %}
-              <div class="sidebar-section">
-                <span>
-                  <i class="fas fa-chalkboard-teacher"></i>
-                  Docente
-                </span>
-              </div>
-
-              <a href="{% url 'dashboard_docente' %}" class="sidebar-link">
-                <i class="fas fa-home"></i>
-                <span>Inicio</span>
-              </a>
-
-              <a class="sidebar-link">
-                <i class="fas fa-book"></i>
-                <span>Mis asignaturas</span>
-              </a>
-
-              <a class="sidebar-link">
-                <i class="fas fa-users"></i>
-                <span>Mis estudiantes</span>
-              </a>
-
-              <a class="sidebar-link">
-                <i class="fas fa-edit"></i>
-                <span>Calificaciones</span>
-              </a>
-
-              {% if configuracion and configuracion.modulo_asistencia %}
-                <div class="sidebar-section">
-                  <span>
-                    <i class="fas fa-calendar-check"></i>
-                    Asistencia
-                  </span>
-                </div>
-
-                <a href="{% url 'asistencia:tomar_asistencia' %}" class="sidebar-link">
-                  <i class="fas fa-user-check"></i>
-                  <span>Tomar asistencia</span>
-                </a>
-
-                <a href="{% url 'asistencia:resumen_asistencia' %}" class="sidebar-link">
-                  <i class="fas fa-chart-pie"></i>
-                  <span>Resumen asistencia</span>
-                </a>
-
-                <a href="{% url 'asistencia:dias_no_docencia' %}" class="sidebar-link">
-                  <i class="fas fa-calendar-xmark"></i>
-                  <span>Días de no docencia</span>
-                </a>
-              {% endif %}
-            {% endif %}
-
-            <!-- ================= ESTUDIANTE ================= -->
-            {% if request.user.rol == 'estudiante' %}
-              <div class="sidebar-section">
-                <span>
-                  <i class="fas fa-user-graduate"></i>
-                  Estudiante
-                </span>
-              </div>
-
-              <a href="{% url 'estudiante_inicio' %}" class="sidebar-link">
-                <i class="fas fa-home"></i>
-                <span>Inicio</span>
-              </a>
-
-              <a class="sidebar-link">
-                <i class="fas fa-edit"></i>
-                <span>Mis calificaciones</span>
-              </a>
-
-              <a class="sidebar-link">
-                <i class="fas fa-user-check"></i>
-                <span>Mi asistencia</span>
-              </a>
-
-              <a class="sidebar-link">
-                <i class="fas fa-file-lines"></i>
-                <span>Mis boletines</span>
-              </a>
-            {% endif %}
-
-            <!-- ================= SECRETARIA ================= -->
-            {% if request.user.rol == 'secretaria' %}
-              <div class="sidebar-section">
-                <span>
-                  <i class="fas fa-user-friends"></i>
-                  Secretaría
-                </span>
-              </div>
-
-              <a href="{% url 'core:home' %}" class="sidebar-link">
-                <i class="fas fa-home"></i>
-                <span>Inicio</span>
-              </a>
-
-              <a href="{% url 'estudiante_list' %}" class="sidebar-link">
-                <i class="fas fa-user-graduate"></i>
-                <span>Estudiantes</span>
-              </a>
-
-              <a class="sidebar-link">
-                <i class="fas fa-receipt"></i>
-                <span>Inscripciones</span>
-              </a>
-
-              <a class="sidebar-link">
-                <i class="fas fa-file-alt"></i>
-                <span>Constancias</span>
-              </a>
-
-              <a class="sidebar-link">
-                <i class="fas fa-chart-line"></i>
-                <span>Reportes</span>
-              </a>
-
-              <a href="{% url 'administracion:mantenimiento' %}" class="sidebar-link">
-                <i class="fas fa-tools"></i>
-                <span>Mantenimiento</span>
-              </a>
-
-              {% if configuracion and configuracion.modulo_asistencia %}
-                <div class="sidebar-section">
-                  <span>
-                    <i class="fas fa-calendar-check"></i>
-                    Asistencia
-                  </span>
-                </div>
-
-                <a href="{% url 'asistencia:tomar_asistencia' %}" class="sidebar-link">
-                  <i class="fas fa-user-check"></i>
-                  <span>Tomar asistencia</span>
-                </a>
-
-                <a href="{% url 'asistencia:resumen_asistencia' %}" class="sidebar-link">
-                  <i class="fas fa-chart-pie"></i>
-                  <span>Resumen asistencia</span>
-                </a>
-
-                <a href="{% url 'asistencia:dias_no_docencia' %}" class="sidebar-link">
-                  <i class="fas fa-calendar-xmark"></i>
-                  <span>Días de no docencia</span>
-                </a>
-              {% endif %}
-            {% endif %}
-
-            <!-- ================= DIRECTOR ================= -->
-            {% if request.user.rol == 'director' %}
-              <div class="sidebar-section">
-                <span>
-                  <i class="fas fa-building"></i>
-                  Dirección
-                </span>
-              </div>
-
-              <a href="{% url 'core:home' %}" class="sidebar-link">
-                <i class="fas fa-chart-pie"></i>
-                <span>Dashboard</span>
-              </a>
-
-              <!-- ESTUDIANTES -->
-              <button type="button" onclick="toggleMenu('menu-estudiantes')" class="menu-toggle">
-                <div>
-                  <i class="fas fa-user-graduate"></i>
-                  <span>Estudiantes</span>
-                </div>
-
-                <i class="fas fa-chevron-down"></i>
-              </button>
-
-              <div id="menu-estudiantes" class="submenu hidden">
-                <a href="{% url 'estudiante_list' %}" class="sidebar-sublink">
-                  <i class="fas fa-list"></i>
-                  <span>Listado</span>
-                </a>
-
-                <a href="{% url 'administracion:seguimiento_estudiantes' %}" class="sidebar-sublink">
-                  <i class="fas fa-chart-line"></i>
-                  <span>Seguimiento académico</span>
-                </a>
-
-                <a href="{% url 'administracion:lista_boletines' %}" class="sidebar-sublink">
-                  <i class="fas fa-file-lines"></i>
-                  <span>Boletines oficiales</span>
-                </a>
-              </div>
-
-              <!-- INSCRIPCIONES -->
-              <button type="button" onclick="toggleMenu('menu-inscripciones')" class="menu-toggle">
-                <div>
-                  <i class="fas fa-user-check"></i>
-                  <span>Inscripciones</span>
-                </div>
-
-                <i class="fas fa-chevron-down"></i>
-              </button>
-
-              <div id="menu-inscripciones" class="submenu hidden">
-                <a href="" class="sidebar-sublink">
-                  <i class="fas fa-list"></i>
-                  <span>Listado de inscripciones</span>
-                </a>
-
-                <a href="{% url 'historial_estudiantes' %}" class="sidebar-sublink">
-                  <i class="fas fa-history"></i>
-                  <span>Historial de estudiantes</span>
-                </a>
-              </div>
-
-              <!-- DOCENTES -->
-              <button type="button" onclick="toggleMenu('menu-docentes')" class="menu-toggle">
-                <div>
-                  <i class="fas fa-chalkboard-teacher"></i>
-                  <span>Docentes</span>
-                </div>
-
-                <i class="fas fa-chevron-down"></i>
-              </button>
-
-              <div id="menu-docentes" class="submenu hidden">
-                <a href="{% url 'docente_list' %}" class="sidebar-sublink">
-                  <i class="fas fa-list"></i>
-                  <span>Listado de docentes</span>
-                </a>
-              </div>
-
-              <!-- PERSONAL -->
-              <button type="button" onclick="toggleMenu('menu-personal')" class="menu-toggle">
-                <div>
-                  <i class="fas fa-users"></i>
-                  <span>Personal</span>
-                </div>
-
-                <i class="fas fa-chevron-down"></i>
-              </button>
-
-              <div id="menu-personal" class="submenu hidden">
-                <a href="{% url 'administracion:listado_personal' %}" class="sidebar-sublink">
-                  <i class="fas fa-users"></i>
-                  <span>Personal</span>
-                </a>
-
-                <a href="{% url 'administracion:mantenimiento' %}" class="sidebar-sublink">
-                  <i class="fas fa-tools"></i>
-                  <span>Mantenimiento</span>
-                </a>
-              </div>
-            {% endif %}
-
-            <!-- ================= ADMIN / SUPERADMIN ================= -->
-            {% if request.user.rol == 'admin' or request.user.rol == 'superadmin' or request.user.is_superuser %}
-              <div class="sidebar-section">
-                <span>
-                  <i class="fas fa-cog"></i>
-                  Administración
-                </span>
-              </div>
-
-              <a href="{% url 'core:home' %}" class="sidebar-link">
-                <i class="fas fa-home"></i>
-                <span>Inicio</span>
-              </a>
-
-              <a href="{% url 'docente_list' %}" class="sidebar-link">
-                <i class="fas fa-chalkboard-teacher"></i>
-                <span>Docentes</span>
-              </a>
-
-              <a href="{% url 'estudiante_list' %}" class="sidebar-link">
-                <i class="fas fa-user-graduate"></i>
-                <span>Estudiantes</span>
-              </a>
-
-              <a href="{% url 'usuarios:crear_miembro' %}" class="sidebar-link">
-                <i class="fas fa-user-plus"></i>
-                <span>Crear usuario</span>
-              </a>
-
-              {% if request.user.rol == 'superadmin' or request.user.is_superuser %}
-                <a href="{% url 'core:centro_list' %}" class="sidebar-link">
-                  <i class="fas fa-building"></i>
-                  <span>Centros educativos</span>
-                </a>
-              {% endif %}
-
-              <!-- CONFIGURACION GLOBAL -->
-              <button type="button" onclick="toggleMenu('menu-configuracion')" class="menu-toggle">
-                <div>
-                  <i class="fas fa-sliders"></i>
-                  <span>Configuración global</span>
-                </div>
-
-                <i class="fas fa-chevron-down"></i>
-              </button>
-
-              <div id="menu-configuracion" class="submenu hidden">
-                <a href="{% url 'core:seleccionar_centro' %}" class="sidebar-sublink">
-                  <i class="fas fa-school"></i>
-                  <span>Seleccionar centro</span>
-                </a>
-
-                <a href="{% url 'core:configuracion_centro' %}" class="sidebar-sublink">
-                  <i class="fas fa-sliders"></i>
-                  <span>Configuración del centro</span>
-                </a>
-
-                <a href="{% url 'admin:index' %}" class="sidebar-sublink">
-                  <i class="fas fa-shield-halved"></i>
-                  <span>Admin Django</span>
-                </a>
-              </div>
-            {% endif %}
-
-            <!-- ================= MODULOS (director / admin / superadmin) ================= -->
-            {% if request.user.rol == 'director' or request.user.rol == 'admin' or request.user.rol == 'superadmin' or request.user.is_superuser %}
-              <div class="sidebar-section">
-                <span>
-                  <i class="fas fa-cubes"></i>
-                  Módulos
-                </span>
-              </div>
-
-              {% if configuracion and configuracion.modulo_asistencia %}
-                <button type="button" onclick="toggleMenu('menu-asistencia')" class="menu-toggle">
-                  <div>
-                    <i class="fas fa-calendar-check"></i>
-                    <span>Asistencia</span>
-                  </div>
-
-                  <i class="fas fa-chevron-down"></i>
-                </button>
-
-                <div id="menu-asistencia" class="submenu hidden">
-                  <a href="{% url 'asistencia:tomar_asistencia' %}" class="sidebar-sublink">
-                    <i class="fas fa-user-check"></i>
-                    <span>Asistencia estudiantes</span>
-                  </a>
-
-                  <a href="{% url 'asistencia:resumen_asistencia' %}" class="sidebar-sublink">
-                    <i class="fas fa-chart-line"></i>
-                    <span>Resumen de asistencia</span>
-                  </a>
-
-                  <a href="{% url 'asistencia:dias_no_docencia' %}" class="sidebar-sublink">
-                    <i class="fas fa-calendar-xmark"></i>
-                    <span>Días de no docencia</span>
-                  </a>
-
-                  <a href="#" class="sidebar-sublink">
-                    <i class="fas fa-users"></i>
-                    <span>Asistencia personal</span>
-                  </a>
-                </div>
-              {% endif %}
-
-              {% if configuracion and configuracion.modulo_caja %}
-                <button type="button" onclick="toggleMenu('menu-caja')" class="menu-toggle">
-                  <div>
-                    <i class="fas fa-cash-register"></i>
-                    <span>Caja</span>
-                  </div>
-
-                  <i class="fas fa-chevron-down"></i>
-                </button>
-
-                <div id="menu-caja" class="submenu hidden">
-                  <a href="#" class="sidebar-sublink">
-                    <i class="fas fa-money-bill-wave"></i>
-                    <span>Pagos</span>
-                  </a>
-
-                  <a href="#" class="sidebar-sublink">
-                    <i class="fas fa-file-invoice-dollar"></i>
-                    <span>Facturación</span>
-                  </a>
-
-                  <a href="#" class="sidebar-sublink">
-                    <i class="fas fa-receipt"></i>
-                    <span>Recibos</span>
-                  </a>
-
-                  <a href="#" class="sidebar-sublink">
-                    <i class="fas fa-chart-line"></i>
-                    <span>Reporte de ingresos</span>
-                  </a>
-                </div>
-              {% endif %}
-
-              {% if configuracion and configuracion.modulo_nomina %}
-                <button type="button" onclick="toggleMenu('menu-nomina')" class="menu-toggle">
-                  <div>
-                    <i class="fas fa-file-invoice-dollar"></i>
-                    <span>Nómina</span>
-                  </div>
-
-                  <i class="fas fa-chevron-down"></i>
-                </button>
-
-                <div id="menu-nomina" class="submenu hidden">
-                  <a href="{% url 'nomina:configuracion_nomina_list' %}" class="sidebar-sublink">
-                    <i class="fas fa-users-cog"></i>
-                    <span>Configuración Nómina</span>
-                  </a>
-
-                  <a href="{% url 'nomina:cargo_list' %}" class="sidebar-sublink">
-                    <i class="fas fa-briefcase"></i>
-                    <span>Cargos</span>
-                  </a>
-
-                  <a href="{% url 'nomina:afp_list' %}" class="sidebar-sublink">
-                    <i class="fas fa-building-columns"></i>
-                    <span>AFP</span>
-                  </a>
-
-                  <a href="{% url 'nomina:ars_list' %}" class="sidebar-sublink">
-                    <i class="fas fa-heart-pulse"></i>
-                    <span>ARS</span>
-                  </a>
-
-                  <a href="{% url 'nomina:periodo_nomina_list' %}" class="sidebar-sublink">
-                    <i class="fas fa-calendar-alt"></i>
-                    <span>Períodos de pago</span>
-                  </a>
-
-                  <a href="{% url 'nomina:historial_nomina' %}" class="sidebar-sublink">
-                    <i class="fas fa-clock-rotate-left"></i>
-                    <span>Historial Nómina</span>
-                  </a>
-
-                  <a href="#" class="sidebar-sublink">
-                    <i class="fas fa-chart-pie"></i>
-                    <span>Reportes</span>
-                  </a>
-                </div>
-              {% endif %}
-            {% endif %}
-
-          {% endif %}
-        </nav>
+{% if request.user.is_authenticated %}
+
+  <!-- ================= DOCENTE ================= -->
+  {% if request.user.rol == 'docente' %}
+    <div class="sidebar-section">
+      <span>
+        <i class="fas fa-chalkboard-teacher"></i>
+        Docente
+      </span>
+    </div>
+
+    <a href="{% url 'dashboard_docente' %}" class="sidebar-link">
+      <i class="fas fa-home"></i>
+      <span>Inicio</span>
+    </a>
+  {% endif %}
+
+  <!-- ================= ESTUDIANTE ================= -->
+  {% if request.user.rol == 'estudiante' %}
+    <div class="sidebar-section">
+      <span>
+        <i class="fas fa-user-graduate"></i>
+        Estudiante
+      </span>
+    </div>
+
+    <a href="{% url 'estudiante_inicio' %}" class="sidebar-link">
+      <i class="fas fa-home"></i>
+      <span>Inicio</span>
+    </a>
+  {% endif %}
+
+  <!-- ================= SECRETARIA ================= -->
+  {% if request.user.rol == 'secretaria' %}
+    <div class="sidebar-section">
+      <span>
+        <i class="fas fa-user-friends"></i>
+        Secretaría
+      </span>
+    </div>
+
+    <a href="{% url 'core:home' %}" class="sidebar-link">
+      <i class="fas fa-home"></i>
+      <span>Inicio</span>
+    </a>
+
+    <a href="{% url 'estudiante_list' %}" class="sidebar-link">
+      <i class="fas fa-user-graduate"></i>
+      <span>Estudiantes</span>
+    </a>
+
+    <a href="{% url 'historial_estudiantes' %}" class="sidebar-link">
+      <i class="fas fa-file-pen"></i>
+      <span>Matrícula</span>
+    </a>
+
+    <a href="{% url 'constancias' %}" class="sidebar-link">
+      <i class="fas fa-scroll"></i>
+      <span>Constancias</span>
+    </a>
+
+    <a href="{% url 'administracion:reportes' %}" class="sidebar-link">
+      <i class="fas fa-chart-bar"></i>
+      <span>Reportes</span>
+    </a>
+
+    <a href="{% url 'administracion:mantenimiento' %}" class="sidebar-link">
+      <i class="fas fa-tools"></i>
+      <span>Mantenimiento</span>
+    </a>
+  {% endif %}
+
+  <!-- ================= DIRECTOR ================= -->
+  {% if request.user.rol == 'director' %}
+    <div class="sidebar-section">
+      <span>
+        <i class="fas fa-building"></i>
+        Dirección
+      </span>
+    </div>
+
+    <a href="{% url 'core:home' %}" class="sidebar-link">
+      <i class="fas fa-chart-pie"></i>
+      <span>Dashboard</span>
+    </a>
+
+    <!-- ESTUDIANTES -->
+    <button type="button" onclick="toggleMenu('menu-estudiantes')" class="menu-toggle">
+      <div>
+        <i class="fas fa-user-graduate"></i>
+        <span>Estudiantes</span>
+      </div>
+
+      <i class="fas fa-chevron-down"></i>
+    </button>
+
+    <div id="menu-estudiantes" class="submenu hidden">
+      <a href="{% url 'estudiante_list' %}" class="sidebar-sublink">
+        <i class="fas fa-list"></i>
+        <span>Listado</span>
+      </a>
+
+      <a href="{% url 'estudiante_create' %}" class="sidebar-sublink">
+        <i class="fas fa-user-plus"></i>
+        <span>Nuevo estudiante</span>
+      </a>
+
+      <a href="{% url 'administracion:seguimiento_estudiantes' %}" class="sidebar-sublink">
+        <i class="fas fa-chart-line"></i>
+        <span>Seguimiento académico</span>
+      </a>
+
+      <a href="{% url 'administracion:lista_boletines' %}" class="sidebar-sublink">
+        <i class="fas fa-file-lines"></i>
+        <span>Boletines oficiales</span>
+      </a>
+
+      <a href="{% url 'constancias' %}" class="sidebar-sublink">
+        <i class="fas fa-scroll"></i>
+        <span>Constancias</span>
+      </a>
+
+      <a href="{% url 'administracion:reportes' %}" class="sidebar-sublink">
+        <i class="fas fa-chart-bar"></i>
+        <span>Reportes</span>
+      </a>
+    </div>
+
+    <!-- MATRÍCULA -->
+    <button type="button" onclick="toggleMenu('menu-matricula')" class="menu-toggle">
+      <div>
+        <i class="fas fa-file-pen"></i>
+        <span>Matrícula</span>
+      </div>
+
+      <i class="fas fa-chevron-down"></i>
+    </button>
+
+    <div id="menu-matricula" class="submenu hidden">
+      <a href="{% url 'historial_estudiantes' %}" class="sidebar-sublink">
+        <i class="fas fa-history"></i>
+        <span>Historial de matrículas</span>
+      </a>
+    </div>
+
+    <!-- DOCENTES -->
+    <button type="button" onclick="toggleMenu('menu-docentes')" class="menu-toggle">
+      <div>
+        <i class="fas fa-chalkboard-teacher"></i>
+        <span>Docentes</span>
+      </div>
+
+      <i class="fas fa-chevron-down"></i>
+    </button>
+
+    <div id="menu-docentes" class="submenu hidden">
+      <a href="{% url 'docente_list' %}" class="sidebar-sublink">
+        <i class="fas fa-list"></i>
+        <span>Listado de docentes</span>
+      </a>
+    </div>
+
+    <!-- PERSONAL -->
+    <button type="button" onclick="toggleMenu('menu-personal')" class="menu-toggle">
+      <div>
+        <i class="fas fa-users"></i>
+        <span>Personal</span>
+      </div>
+
+      <i class="fas fa-chevron-down"></i>
+    </button>
+
+    <div id="menu-personal" class="submenu hidden">
+      <a href="{% url 'administracion:listado_personal' %}" class="sidebar-sublink">
+        <i class="fas fa-users"></i>
+        <span>Personal</span>
+      </a>
+    </div>
+
+    <a href="{% url 'administracion:mantenimiento' %}" class="sidebar-link">
+      <i class="fas fa-tools"></i>
+      <span>Mantenimiento</span>
+    </a>
+  {% endif %}
+
+  <!-- ================= ADMIN / SUPERADMIN ================= -->
+  {% if request.user.rol == 'admin' or request.user.rol == 'superadmin' or request.user.is_superuser %}
+    <div class="sidebar-section">
+      <span>
+        <i class="fas fa-cog"></i>
+        Administración
+      </span>
+    </div>
+
+    <a href="{% url 'core:home' %}" class="sidebar-link">
+      <i class="fas fa-home"></i>
+      <span>Inicio</span>
+    </a>
+
+    <a href="{% url 'docente_list' %}" class="sidebar-link">
+      <i class="fas fa-chalkboard-teacher"></i>
+      <span>Docentes</span>
+    </a>
+
+    <a href="{% url 'estudiante_list' %}" class="sidebar-link">
+      <i class="fas fa-user-graduate"></i>
+      <span>Estudiantes</span>
+    </a>
+
+    <a href="{% url 'historial_estudiantes' %}" class="sidebar-link">
+      <i class="fas fa-file-pen"></i>
+      <span>Matrícula</span>
+    </a>
+
+    <a href="{% url 'usuarios:crear_miembro' %}" class="sidebar-link">
+      <i class="fas fa-user-plus"></i>
+      <span>Crear usuario</span>
+    </a>
+
+    {% if request.user.rol == 'superadmin' or request.user.is_superuser %}
+      <a href="{% url 'core:centro_list' %}" class="sidebar-link">
+        <i class="fas fa-building"></i>
+        <span>Centros educativos</span>
+      </a>
+    {% endif %}
+
+    <!-- CONFIGURACION GLOBAL -->
+    <button type="button" onclick="toggleMenu('menu-configuracion')" class="menu-toggle">
+      <div>
+        <i class="fas fa-sliders"></i>
+        <span>Configuración global</span>
+      </div>
+
+      <i class="fas fa-chevron-down"></i>
+    </button>
+
+    <div id="menu-configuracion" class="submenu hidden">
+      <a href="{% url 'core:seleccionar_centro' %}" class="sidebar-sublink">
+        <i class="fas fa-school"></i>
+        <span>Seleccionar centro</span>
+      </a>
+
+      <a href="{% url 'core:configuracion_centro' %}" class="sidebar-sublink">
+        <i class="fas fa-sliders"></i>
+        <span>Configuración del centro</span>
+      </a>
+
+      <a href="{% url 'admin:index' %}" class="sidebar-sublink">
+        <i class="fas fa-shield-halved"></i>
+        <span>Admin Django</span>
+      </a>
+    </div>
+  {% endif %}
+
+  <!-- ================= MODULOS (por rol y configuración) ================= -->
+  {% if modulos_sidebar %}
+    <div class="sidebar-section">
+      <span>
+        <i class="fas fa-cubes"></i>
+        Módulos
+      </span>
+    </div>
+
+    {% for modulo in modulos_sidebar %}
+      <button type="button" onclick="toggleMenu('{{ modulo.id }}')" class="menu-toggle">
+        <div>
+          <i class="fas {{ modulo.icono }}"></i>
+          <span>{{ modulo.nombre }}</span>
+        </div>
+
+        <i class="fas fa-chevron-down"></i>
+      </button>
+
+      <div id="{{ modulo.id }}" class="submenu hidden">
+        {% for enlace in modulo.links %}
+          <a href="{{ enlace.href }}" class="sidebar-sublink">
+            <i class="fas {{ enlace.icono }}"></i>
+            <span>{{ enlace.etiqueta }}</span>
+          </a>
+        {% endfor %}
+      </div>
+    {% endfor %}
+  {% endif %}
+
+{% endif %}
+
 
 
         <!-- FOOTER -->
@@ -523,6 +370,29 @@
       
         menu.classList.toggle('hidden')
       }
+
+      function toggleSidebar() {
+        const layout = document.querySelector('.dashboard-layout')
+        layout.classList.toggle('sidebar-collapsed')
+        const collapsed = layout.classList.contains('sidebar-collapsed')
+        localStorage.setItem('sidebar-collapsed', collapsed ? '1' : '0')
+        updateToggleIcon(collapsed)
+      }
+
+      function updateToggleIcon(collapsed) {
+        const icon = document.querySelector('#sidebar-toggle i')
+        icon.classList.toggle('fa-angles-left', !collapsed)
+        icon.classList.toggle('fa-angles-right', collapsed)
+      }
+
+      document.addEventListener('DOMContentLoaded', function () {
+        const layout = document.querySelector('.dashboard-layout')
+        const collapsed = localStorage.getItem('sidebar-collapsed') === '1'
+        if (collapsed) {
+          layout.classList.add('sidebar-collapsed')
+          updateToggleIcon(true)
+        }
+      })
     </script>
 
     <!-- ================= ALERTS ================= -->

@@ -8,12 +8,7 @@ urlpatterns = [
     path('<int:pk>/', views.estudiante_detail, name='estudiante_detail'),
     path('<int:pk>/editar/', views.estudiante_update, name='estudiante_update'),
     path('<int:pk>/eliminar/', views.estudiante_delete, name='estudiante_delete'),
-    path('<int:estudiante_id>/inscribir/', views.inscribir_estudiante, name='inscribir_estudiante'),
-    path(
-    '<int:estudiante_id>/inscribir-avanzado/',
-    views.inscribir_estudiante_avanzado,
-    name='inscribir_estudiante_avanzado'
-),
+    path('<int:estudiante_id>/inscribir/', views.inscribir_estudiante_avanzado, name='inscribir_estudiante'),
 path(
     'inscripcion/<int:inscripcion_id>/asignaturas/',
     views.inscripcion_asignaturas,
@@ -30,6 +25,24 @@ path(
     'historial/',
     views.historial_estudiantes,
     name='historial_estudiantes'
+),
+
+path(
+    'constancias/',
+    views.constancias,
+    name='constancias'
+),
+
+path(
+    'constancia/<int:pk>/',
+    views.constancia_estudiante,
+    name='constancia_estudiante'
+),
+
+path(
+    '<int:pk>/cambiar-estado/',
+    views.cambiar_estado_estudiante,
+    name='cambiar_estado_estudiante'
 ),
 
 ]

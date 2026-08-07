@@ -15,7 +15,7 @@ class CentroMiddleware:
             '/seleccionar-centro/',
             '/admin/',
         )
-        self.roles_sin_selector = ['docente', 'estudiante' ,'director', 'secretaria']
+        self.roles_sin_selector = ['docente', 'estudiante' ,'director', 'secretaria', 'cajero']
 
     def __call__(self, request):
         # ❌ Usar exact match

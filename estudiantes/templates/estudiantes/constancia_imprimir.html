@@ -1,0 +1,99 @@
+{% extends "home.html" %}
+
+{% block title %}Constancia de Estudios{% endblock %}
+
+{% block content %}
+
+<div class="max-w-3xl mx-auto">
+
+    <div class="mb-4 flex justify-end">
+        <button onclick="window.print()"
+                class="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700">
+            🖨️ Imprimir
+        </button>
+    </div>
+
+    <div class="bg-white shadow rounded p-10 border-t-8 border-blue-800">
+
+        <!-- Encabezado del centro -->
+        <div class="text-center border-b-2 border-gray-300 pb-4 mb-6">
+
+            <h1 class="text-xl font-bold text-blue-900">
+                {{ centro.nombre }}
+            </h1>
+
+            <p class="text-sm text-gray-600">
+                Código MINERD: {{ centro.codigo_minerd }}
+            </p>
+
+            {% if centro.direccion %}
+                <p class="text-sm text-gray-600">
+                    {{ centro.direccion }}
+                </p>
+            {% endif %}
+
+            {% if centro.telefono %}
+                <p class="text-sm text-gray-600">
+                    Tel.: {{ centro.telefono }}
+                </p>
+            {% endif %}
+
+        </div>
+
+        <h2 class="text-center font-bold text-lg mb-6 uppercase tracking-wide">
+            Constancia de Estudios
+        </h2>
+
+        <div class="text-sm leading-7 text-gray-800 space-y-4">
+
+            <p>
+                Se hace constar que el(la) estudiante
+                <strong>{{ estudiante.nombre_completo }}</strong>,
+                portador(a) de la matrícula número
+                <strong>{{ estudiante.matricula }}</strong>,
+                se encuentra matriculado(a) en este centro educativo
+                {% if inscripcion %}
+                    cursando el grado
+                    <strong>{{ inscripcion.grado }}</strong>,
+                    sección <strong>{{ inscripcion.seccion }}</strong>,
+                {% else %}
+                    (sin matrícula registrada en el año escolar activo),
+                {% endif %}
+                durante el año escolar
+                <strong>{{ anio_actual.nombre }}</strong>.
+            </p>
+
+            <p>
+                Se expide la presente constancia a petición del(la) interesado(a)
+                para los fines que estime convenientes.
+            </p>
+
+        </div>
+
+        <!-- Firma -->
+        <div class="mt-16 text-center text-sm text-gray-700">
+
+            <p>
+                Dada en {{ centro.nombre }},
+                el {% now "d \d\e F \d\e Y" %}.
+            </p>
+
+            <div class="mt-16 pt-2 border-t border-gray-400 mx-auto w-64">
+                <p class="font-semibold">Dirección / Secretaría</p>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<style>
+    @media print {
+        .sidebar, .sidebar-footer, .main-content > div > .mb-4 {
+            display: none !important;
+        }
+    }
+</style>
+
+{% endblock %}

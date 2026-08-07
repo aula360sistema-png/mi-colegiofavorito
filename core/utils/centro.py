@@ -12,8 +12,8 @@ def obtener_centro_del_usuario(request):
             id=request.session.get('centro_id')
         ).first()
 
-    # ADMINISTRATIVO (director / secretaria)
-    if user.rol in ['director', 'secretaria'] and hasattr(user, 'administrativo'):
+    # ADMINISTRATIVO (director / secretaria / cajero)
+    if user.rol in ['director', 'secretaria', 'cajero'] and hasattr(user, 'administrativo'):
         return user.administrativo.centro
 
     # DOCENTE

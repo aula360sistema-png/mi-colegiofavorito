@@ -1,0 +1,504 @@
+{% extends "home.html" %}
+
+{% block title %}Registrar Pago{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-6">
+
+    <!-- ================= HERO ================= -->
+    <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 shadow-xl">
+        <div class="absolute inset-0 opacity-20"
+             style="background-image: radial-gradient(circle at 20% 30%, white 1px, transparent 1px); background-size: 24px 24px;">
+        </div>
+        <div class="relative px-8 py-7 flex flex-wrap items-center justify-between gap-6">
+            <div>
+                <p class="text-emerald-200 text-sm font-medium uppercase tracking-wider">Caja · Entrada de efectivo</p>
+                <h2 class="text-3xl font-bold text-white mt-1">Registrar pago</h2>
+                <p class="text-emerald-100 mt-2 flex items-center gap-2">
+                    <i class="fas fa-calendar-day"></i> {{ hoy|date:"l, d \d\e F \d\e Y" }}
+                </p>
+            </div>
+
+            <div class="flex flex-col items-end gap-2">
+                <div class="flex flex-wrap gap-2">
+                    {% if sesion_abierta %}
+                    <span class="inline-flex items-center gap-2 bg-white/15 text-white rounded-full px-4 py-1.5 text-sm font-semibold backdrop-blur">
+                        <i class="fas fa-circle text-[8px] text-emerald-300"></i>
+                        Caja: {{ sesion_abierta.caja.nombre|default:"—" }}
+                    </span>
+                    <span class="inline-flex items-center gap-2 bg-white text-emerald-700 rounded-full px-4 py-1.5 text-sm font-bold shadow">
+                        <i class="fas fa-ticket"></i> Próximo recibo #{{ recibo_siguiente|default:"1" }}
+                    </span>
+                    {% else %}
+                    <span class="inline-flex items-center gap-2 bg-red-500/90 text-white rounded-full px-4 py-1.5 text-sm font-semibold">
+                        <i class="fas fa-circle text-[8px]"></i> Caja cerrada
+                    </span>
+                    {% endif %}
+                </div>
+                <a href="{% url 'caja:lista_pagos' %}"
+                   class="inline-flex items-center gap-2 bg-white/15 text-white text-sm font-semibold rounded-lg px-4 py-2 hover:bg-white/25 backdrop-blur">
+                    <i class="fas fa-arrow-left"></i> Historial de pagos
+                </a>
+            </div>
+        </div>
+    </div>
+
+    {% if form.non_field_errors %}
+    <div class="bg-red-50 border border-red-200 rounded-2xl p-4 text-red-700 text-sm">
+        {{ form.non_field_errors }}
+    </div>
+    {% endif %}
+
+    <!-- ================= CUERPO ================= -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        <!-- ===== FORMULARIO ===== -->
+        <div class="lg:col-span-2 space-y-6">
+            <form method="post" id="form-pago">
+                {% csrf_token %}
+
+                <!-- Estudiante -->
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                    <h3 class="font-semibold text-gray-700 mb-4 flex items-center gap-2">
+                        <i class="fas fa-user-graduate text-indigo-500"></i> Estudiante
+                    </h3>
+
+                    <div class="relative mb-3">
+                        <i class="fas fa-search absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                        <input type="text" id="estudiante-buscador"
+                               class="w-full rounded-lg border border-gray-300 bg-gray-50 pl-10 pr-3.5 py-2.5 text-sm text-gray-800 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
+                               placeholder="Escribe nombre o matrícula para filtrar…">
+                    </div>
+
+                    {{ form.estudiante }}
+                    {% if form.estudiante.errors %}
+                    <div class="text-red-600 text-sm mt-1">{{ form.estudiante.errors }}</div>
+                    {% endif %}
+
+                    <p class="text-xs text-gray-400 mt-2 flex items-center gap-1">
+                        <i class="fas fa-info-circle"></i> Si el estudiante no aparece, verifica que esté matriculado este año.
+                    </p>
+                </div>
+
+                <!-- Concepto y monto -->
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                    <h3 class="font-semibold text-gray-700 mb-4 flex items-center gap-2">
+                        <i class="fas fa-receipt text-emerald-500"></i> Concepto y monto
+                    </h3>
+
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-600 mb-1.5">Concepto</label>
+                        {{ form.concepto }}
+                        {% if form.concepto.errors %}
+                        <div class="text-red-600 text-sm mt-1">{{ form.concepto.errors }}</div>
+                        {% endif %}
+
+                        <div id="info-concepto" class="mt-3 hidden">
+                            <div class="flex flex-wrap gap-2" id="chips-concepto"></div>
+                        </div>
+                    </div>
+
+                    <div class="mb-2">
+                        <div class="flex items-center justify-between mb-1.5">
+                            <label class="block text-sm font-medium text-gray-600">Monto (RD$)</label>
+                            <button type="button" id="btn-usar-monto"
+                                    class="hidden text-xs font-semibold text-emerald-600 hover:text-emerald-700 hover:underline">
+                                <i class="fas fa-wand-magic-sparkles"></i> Usar monto del concepto
+                            </button>
+                        </div>
+                        <div class="relative">
+                            <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 font-semibold text-sm">RD$</span>
+                            {{ form.monto }}
+                        </div>
+                        {% if form.monto.errors %}
+                        <div class="text-red-600 text-sm mt-1">{{ form.monto.errors }}</div>
+                        {% endif %}
+                        <div id="alerta-monto"></div>
+                    </div>
+                </div>
+
+                <!-- Método de pago -->
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                    <h3 class="font-semibold text-gray-700 mb-4 flex items-center gap-2">
+                        <i class="fas fa-hand-holding-usd text-amber-500"></i> Método de pago
+                    </h3>
+
+                    <div class="grid grid-cols-2 gap-3" id="metodos-pago">
+                        {% for radio in form.metodo_pago %}
+                        <label for="{{ radio.id_for_label }}" class="relative cursor-pointer">
+                            {{ radio.tag }}
+                            <div class="peer-checked:border-emerald-500 peer-checked:bg-emerald-50 peer-checked:ring-2 peer-checked:ring-emerald-200 flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-700 transition">
+                                <span class="text-lg">
+                                    {% if radio.choice_label == "Efectivo" %}💵
+                                    {% elif radio.choice_label == "Cheque" %}🏦
+                                    {% elif radio.choice_label == "Transferencia bancaria" %}🏧
+                                    {% elif radio.choice_label == "Tarjeta" %}💳
+                                    {% else %}💲{% endif %}
+                                </span>
+                                {{ radio.choice_label }}
+                            </div>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Fecha y enviar -->
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                    <h3 class="font-semibold text-gray-700 mb-4 flex items-center gap-2">
+                        <i class="fas fa-calendar-check text-sky-500"></i> Fecha y confirmación
+                    </h3>
+
+                    <div class="mb-5 max-w-xs">
+                        <label class="block text-sm font-medium text-gray-600 mb-1.5">Fecha del pago</label>
+                        {{ form.fecha }}
+                    </div>
+
+                    <button type="submit" id="btn-registrar"
+                            class="w-full inline-flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-semibold rounded-xl px-6 py-3.5 shadow-lg transition">
+                        <i class="fas fa-receipt"></i> Registrar pago y generar recibo
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- ===== RESUMEN ===== -->
+        <div class="space-y-6">
+
+            <!-- Recibo -->
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                <h3 class="font-semibold text-gray-700 mb-4 flex items-center gap-2">
+                    <i class="fas fa-file-invoice text-indigo-500"></i> Datos del recibo
+                </h3>
+                <dl class="space-y-3 text-sm">
+                    <div class="flex items-center justify-between">
+                        <dt class="text-gray-400">Caja</dt>
+                        <dd class="font-semibold text-gray-800">{{ sesion_abierta.caja.nombre|default:"—" }}</dd>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <dt class="text-gray-400">Cajero</dt>
+                        <dd class="font-semibold text-gray-800">{{ request.user.get_full_name|default:request.user.username }}</dd>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <dt class="text-gray-400">Año escolar</dt>
+                        <dd class="font-semibold text-gray-800">{{ anio_activo.nombre|default:"—" }}</dd>
+                    </div>
+                    <div class="flex items-center justify-between border-t border-gray-100 pt-3">
+                        <dt class="text-gray-400">Número de recibo</dt>
+                        <dd class="font-semibold text-emerald-600 text-base">#{{ recibo_siguiente|default:"1" }}</dd>
+                    </div>
+                </dl>
+            </div>
+
+            <!-- Cuenta del estudiante -->
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                <h3 class="font-semibold text-gray-700 mb-4 flex items-center gap-2">
+                    <i class="fas fa-wallet text-emerald-500"></i> Cuenta del estudiante
+                </h3>
+
+                <div id="banner-estudiante"></div>
+
+                <div id="cuenta-vacio" class="py-6 text-center text-gray-400">
+                    <i class="fas fa-user-graduate text-3xl mb-2 block text-gray-300"></i>
+                    <p class="text-sm">Selecciona un estudiante para ver su balance.</p>
+                </div>
+
+                <div id="cuenta-cargando" class="py-6 text-center text-gray-400 hidden">
+                    <i class="fas fa-spinner fa-spin text-xl"></i>
+                    <p class="text-sm mt-2">Cargando balance…</p>
+                </div>
+
+                <div id="cuenta-contenido" class="hidden">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div id="avatar-estudiante"
+                             class="w-11 h-11 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 text-white flex items-center justify-center font-bold">
+                        </div>
+                        <div>
+                            <p id="nombre-estudiante" class="font-semibold text-gray-800 text-sm leading-tight"></p>
+                            <p id="matricula-estudiante" class="text-xs text-gray-400"></p>
+                        </div>
+                    </div>
+
+                    <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-4 mb-4 text-center">
+                        <p class="text-xs text-emerald-600 uppercase tracking-wide">Pendiente total</p>
+                        <p id="saldo-total" class="text-2xl font-bold text-emerald-700 mt-1">RD$ 0.00</p>
+                        <p id="anio-balance" class="text-xs text-emerald-500"></p>
+                    </div>
+
+                    <div id="lista-conceptos" class="space-y-3"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+(function () {
+    const URL_BALANCE = "{% url 'caja:api_balance_pago' 0 %}";
+
+    const estudianteSel = document.getElementById('id-estudiante');
+    const conceptoSel   = document.getElementById('id-concepto');
+    const montoInput    = document.getElementById('id-monto');
+    const buscador      = document.getElementById('estudiante-buscador');
+    const btnUsarMonto  = document.getElementById('btn-usar-monto');
+
+    const infoConcepto  = document.getElementById('info-concepto');
+    const chipsConcepto = document.getElementById('chips-concepto');
+    const alertaMonto   = document.getElementById('alerta-monto');
+
+    const cuentaVacio   = document.getElementById('cuenta-vacio');
+    const cuentaCarga   = document.getElementById('cuenta-cargando');
+    const cuentaCont    = document.getElementById('cuenta-contenido');
+    const bannerEst     = document.getElementById('banner-estudiante');
+
+    const formPago     = document.getElementById('form-pago');
+    const btnRegistrar = document.getElementById('btn-registrar');
+
+    let balance = { estudiante: null, anio: null, enrolado: true, conceptos: [] };
+
+    function setSubmitBloqueado(bloqueado) {
+        btnRegistrar.disabled = bloqueado;
+        btnRegistrar.classList.toggle('opacity-50', bloqueado);
+        btnRegistrar.classList.toggle('cursor-not-allowed', bloqueado);
+    }
+
+    function mostrarBanner(html) {
+        bannerEst.innerHTML = html;
+        bannerEst.classList.remove('hidden');
+    }
+
+    function ocultarBanner() {
+        bannerEst.innerHTML = '';
+        bannerEst.classList.add('hidden');
+    }
+
+    function fmt(n) {
+        return 'RD$ ' + (Number(n) || 0).toLocaleString('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+    }
+
+    function chip(texto, estilo) {
+        return '<span class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ' + estilo + '">' + texto + '</span>';
+    }
+
+    function conceptoActual() {
+        const id = conceptoSel.value;
+        return balance.conceptos.find(c => String(c.id) === String(id)) || null;
+    }
+
+    function pintarChipsConcepto() {
+        const c = conceptoActual();
+        if (!c) {
+            infoConcepto.classList.add('hidden');
+            return;
+        }
+        infoConcepto.classList.remove('hidden');
+        let html = '';
+        html += chip('<i class="fas fa-tag"></i> Precio: ' + fmt(c.monto), 'bg-gray-100 text-gray-700');
+        html += chip('<i class="fas fa-check-circle"></i> Pagado: ' + fmt(c.pagado), 'bg-emerald-100 text-emerald-700');
+        if (c.saldo > 0) {
+            html += chip('<i class="fas fa-exclamation-circle"></i> Pendiente: ' + fmt(c.saldo), 'bg-amber-100 text-amber-700');
+        } else {
+            html += chip('<i class="fas fa-circle-check"></i> Concepto al día', 'bg-emerald-100 text-emerald-700');
+        }
+        chipsConcepto.innerHTML = html;
+    }
+
+    function pintarAlertaMonto() {
+        const c = conceptoActual();
+        const m = parseFloat(montoInput.value);
+        alertaMonto.innerHTML = '';
+
+        if (!c || !m || m <= 0) return;
+
+        if (c.saldo > 0 && m > c.saldo + 0.001) {
+            alertaMonto.innerHTML =
+                '<div class="mt-2 flex items-center gap-2 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-800">' +
+                '<i class="fas fa-triangle-exclamation"></i> El monto supera lo pendiente (' + fmt(c.saldo) +
+                '). El excedente quedará como saldo a favor del estudiante.</div>';
+        } else if (c.saldo <= 0 && m > 0) {
+            alertaMonto.innerHTML =
+                '<div class="mt-2 flex items-center gap-2 rounded-lg bg-emerald-50 border border-emerald-200 px-3 py-2 text-xs text-emerald-700">' +
+                '<i class="fas fa-circle-check"></i> Este concepto ya está al día. Estás registrando un pago voluntario.</div>';
+        }
+    }
+
+    function pintarCuenta() {
+        const total = balance.conceptos.reduce((a, c) => a + c.saldo, 0);
+        document.getElementById('saldo-total').textContent = fmt(total);
+        document.getElementById('anio-balance').textContent = 'Año escolar ' + (balance.anio || '—');
+
+        if (balance.estudiante) {
+            const partes = (balance.estudiante || '').split(' ').filter(Boolean);
+            const iniciales = partes.slice(0, 2).map(p => p[0]).join('').toUpperCase();
+            document.getElementById('avatar-estudiante').textContent = iniciales || '?';
+            document.getElementById('nombre-estudiante').textContent = balance.estudiante;
+            document.getElementById('matricula-estudiante').textContent = 'Matrícula ' + balance.matricula;
+        }
+
+        const cont = document.getElementById('lista-conceptos');
+        if (balance.conceptos.length === 0) {
+            cont.innerHTML =
+                '<div class="py-4 text-center bg-gray-50 rounded-xl">' +
+                '<p class="text-xs text-gray-500">Sin conceptos asignados para este año.</p>' +
+                '</div>';
+        } else {
+            cont.innerHTML = balance.conceptos.map(c => {
+                const pct = c.esperado > 0 ? Math.min(100, Math.round(c.pagado / c.esperado * 100)) : 0;
+                const estado = c.saldo <= 0
+                    ? '<span class="text-[10px] font-bold text-emerald-600 uppercase">Al día</span>'
+                    : '<span class="text-[10px] font-bold text-amber-600 uppercase">Pendiente</span>';
+                return '<div class="rounded-xl border border-gray-100 bg-gray-50/60 p-3">' +
+                    '<div class="flex items-center justify-between mb-1.5">' +
+                    '<p class="text-xs font-semibold text-gray-700">' + c.nombre + '</p>' + estado +
+                    '</div>' +
+                    '<div class="h-1.5 w-full rounded-full bg-gray-200 overflow-hidden">' +
+                    '<div class="h-full rounded-full ' + (c.saldo <= 0 ? 'bg-emerald-500' : 'bg-amber-500') +
+                    '" style="width:' + pct + '%"></div></div>' +
+                    '<div class="flex justify-between mt-1.5 text-[11px] text-gray-500">' +
+                    '<span>Precio ' + fmt(c.monto) + '</span>' +
+                    '<span class="font-semibold ' + (c.saldo > 0 ? 'text-amber-700' : 'text-emerald-700') + '">' +
+                    fmt(c.saldo) + '</span></div></div>';
+            }).join('');
+        }
+    }
+
+    function cargarBalance(id) {
+        if (!id) {
+            balance = { estudiante: null, anio: null, enrolado: true, conceptos: [] };
+            cuentaVacio.classList.remove('hidden');
+            cuentaCarga.classList.add('hidden');
+            cuentaCont.classList.add('hidden');
+            ocultarBanner();
+            setSubmitBloqueado(false);
+            pintarChipsConcepto();
+            pintarAlertaMonto();
+            return;
+        }
+        cuentaVacio.classList.add('hidden');
+        cuentaCarga.classList.remove('hidden');
+        cuentaCont.classList.add('hidden');
+        ocultarBanner();
+
+        fetch(URL_BALANCE.replace('/0/', '/' + id + '/'))
+            .then(r => r.json())
+            .then(data => {
+                balance = data;
+                balance.matricula = data.matricula || '';
+                balance.enrolado = data.enrolado !== false;
+                cuentaCarga.classList.add('hidden');
+
+                if (!balance.enrolado) {
+                    cuentaCont.classList.add('hidden');
+                    mostrarBanner(
+                        '<div class="mb-4 flex items-start gap-2 rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-800">' +
+                        '<i class="fas fa-ban mt-0.5"></i>' +
+                        '<span><strong>No está matriculado</strong> en el año escolar activo ' +
+                        '(' + (balance.anio || '—') + ').<br>' +
+                        'Debe matricularse en ese año antes de registrarle pagos.</span></div>'
+                    );
+                    setSubmitBloqueado(true);
+                    return;
+                }
+
+                cuentaCont.classList.remove('hidden');
+                pintarCuenta();
+                syncConcepto();
+            })
+            .catch(() => {
+                cuentaCarga.classList.add('hidden');
+                cuentaVacio.classList.remove('hidden');
+            });
+    }
+
+    estudianteSel.addEventListener('change', function () {
+        cargarBalance(this.value);
+    });
+
+    function syncConcepto() {
+        const c = conceptoActual();
+
+        if (!balance.enrolado) {
+            setSubmitBloqueado(true);
+            pintarChipsConcepto();
+            pintarAlertaMonto();
+            return;
+        }
+
+        if (balance.conceptos.length === 0) {
+            setSubmitBloqueado(true);
+            pintarChipsConcepto();
+            pintarAlertaMonto();
+            return;
+        }
+
+        if (!c) {
+            setSubmitBloqueado(true);
+            if (conceptoSel.value) {
+                infoConcepto.classList.remove('hidden');
+                chipsConcepto.innerHTML = chip(
+                    '<i class="fas fa-user-slash"></i> Este concepto no está asignado al estudiante para el año activo',
+                    'bg-amber-100 text-amber-700'
+                );
+            } else {
+                pintarChipsConcepto();
+            }
+            pintarAlertaMonto();
+            return;
+        }
+
+        setSubmitBloqueado(false);
+        montoInput.value = c.saldo > 0 ? c.saldo : c.monto;
+        btnUsarMonto.classList.add('hidden');
+        pintarChipsConcepto();
+        pintarAlertaMonto();
+    }
+
+    conceptoSel.addEventListener('change', syncConcepto);
+
+    montoInput.addEventListener('input', function () {
+        const c = conceptoActual();
+        btnUsarMonto.classList.toggle('hidden', !c);
+        pintarAlertaMonto();
+    });
+
+    btnUsarMonto.addEventListener('click', function () {
+        const c = conceptoActual();
+        if (c) montoInput.value = c.monto;
+        pintarAlertaMonto();
+    });
+
+    buscador.addEventListener('input', function () {
+        const q = (this.value || '').toLowerCase().trim();
+        Array.from(estudianteSel.options).forEach(opt => {
+            if (!opt.value) return;
+            const coincide = opt.text.toLowerCase().indexOf(q) !== -1;
+            opt.hidden = !coincide;
+        });
+        if (q) {
+            const visible = Array.from(estudianteSel.options).filter(o => o.value && !o.hidden);
+            if (visible.length === 1) {
+                estudianteSel.value = visible[0].value;
+                cargarBalance(visible[0].value);
+            }
+        }
+    });
+
+    if (estudianteSel.value) {
+        cargarBalance(estudianteSel.value);
+    } else {
+        syncConcepto();
+    }
+
+    // Evitar doble envío: deshabilitar el botón al primer clic
+    formPago.addEventListener('submit', function () {
+        btnRegistrar.disabled = true;
+        btnRegistrar.classList.add('opacity-60', 'cursor-not-allowed');
+        btnRegistrar.innerHTML =
+            '<i class="fas fa-spinner fa-spin"></i> Registrando pago…';
+    });
+})();
+</script>
+{% endblock %}
