@@ -85,5 +85,10 @@ class AsistenciaEstudiante(models.Model):
         unique_together = ('inscripcion', 'fecha')
         ordering = ['-fecha']
 
+        indexes = [
+            models.Index(fields=['inscripcion'], name='asist_inscripcion'),
+            models.Index(fields=['fecha', 'estado'], name='asist_fecha_estado'),
+        ]
+
     def __str__(self):
         return f"{self.inscripcion.estudiante} - {self.fecha} - {self.get_estado_display()}"

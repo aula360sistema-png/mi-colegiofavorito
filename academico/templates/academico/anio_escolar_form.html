@@ -3,57 +3,128 @@
 {% block title %}{{ accion }} Año Escolar{% endblock %}
 
 {% block content %}
+
 <div class="max-w-2xl mx-auto">
 
-    <div class="bg-white shadow rounded-lg p-6">
-        <h2 class="text-xl font-semibold mb-6">
-            {{ accion }} Año Escolar
-        </h2>
+    <!-- Encabezado -->
+    <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-8">
 
-        <form method="post" class="space-y-4">
+        <div class="flex items-center gap-4">
+            <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-teal-500 to-emerald-700 text-white flex items-center justify-center text-2xl shadow-lg shadow-teal-200 shrink-0">
+                <i class="fas fa-calendar"></i>
+            </div>
+            <div>
+                <h2 class="text-2xl font-bold text-gray-800">{{ accion }} Año Escolar</h2>
+                <p class="text-sm text-gray-500 mt-1">Defina el período lectivo del centro</p>
+            </div>
+        </div>
+
+        <a href="{% url 'anio_escolar_list' %}"
+           class="inline-flex items-center justify-center gap-2 text-sm text-gray-600 hover:text-blue-600 transition font-medium border border-gray-300 rounded-lg px-4 py-2.5 hover:border-blue-300 hover:bg-blue-50">
+            <i class="fas fa-arrow-left"></i>
+            Volver al listado
+        </a>
+
+    </div>
+
+    <!-- Formulario -->
+    <div class="bg-white shadow-sm rounded-2xl border border-gray-200 overflow-hidden">
+
+        <div class="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white flex items-center gap-3">
+            <span class="w-9 h-9 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center">
+                <i class="fas fa-pen-to-square"></i>
+            </span>
+            <div>
+                <h3 class="font-semibold text-gray-800">Datos del año escolar</h3>
+                <p class="text-xs text-gray-400">Todos los campos son obligatorios</p>
+            </div>
+        </div>
+
+        <form method="post" class="p-6 space-y-6">
             {% csrf_token %}
 
+            {% if form.non_field_errors %}
+            <div class="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-700 flex items-start gap-2">
+                <i class="fas fa-circle-exclamation mt-0.5"></i>
+                <div>
+                    {% for error in form.non_field_errors %}
+                    <p>{{ error }}</p>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
             <div>
-                <label class="block text-sm font-medium mb-1">
+                <label for="{{ form.nombre.id_for_label }}"
+                       class="block text-sm font-medium text-gray-700 mb-1.5">
+                    <i class="fas fa-heading text-gray-400 mr-1"></i>
                     Nombre
                 </label>
                 {{ form.nombre }}
+                <p class="text-xs text-gray-400 mt-1">
+                    Ejemplo: 2024-2025
+                </p>
+                {% if form.nombre.errors %}
+                <p class="text-sm text-red-600 mt-1">{{ form.nombre.errors.0 }}</p>
+                {% endif %}
             </div>
 
-            <div>
-                <label class="block text-sm font-medium mb-1">
-                    Fecha inicio
-                </label>
-                {{ form.fecha_inicio }}
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+
+                <div>
+                    <label for="{{ form.fecha_inicio.id_for_label }}"
+                           class="block text-sm font-medium text-gray-700 mb-1.5">
+                        <i class="fas fa-play text-gray-400 mr-1"></i>
+                        Fecha de inicio
+                    </label>
+                    {{ form.fecha_inicio }}
+                    {% if form.fecha_inicio.errors %}
+                    <p class="text-sm text-red-600 mt-1">{{ form.fecha_inicio.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <label for="{{ form.fecha_fin.id_for_label }}"
+                           class="block text-sm font-medium text-gray-700 mb-1.5">
+                        <i class="fas fa-flag-checkered text-gray-400 mr-1"></i>
+                        Fecha de fin
+                    </label>
+                    {{ form.fecha_fin }}
+                    {% if form.fecha_fin.errors %}
+                    <p class="text-sm text-red-600 mt-1">{{ form.fecha_fin.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
             </div>
 
-            <div>
-                <label class="block text-sm font-medium mb-1">
-                    Fecha fin
-                </label>
-                {{ form.fecha_fin }}
-            </div>
+            <label class="flex items-start gap-3 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 cursor-pointer hover:border-blue-300 transition">
+                <span class="mt-0.5">{{ form.activo }}</span>
+                <span class="text-sm">
+                    <span class="font-medium text-gray-800 block">{{ form.activo.label }}</span>
+                    <span class="text-xs text-gray-500">Marca este año escolar como el activo del centro.</span>
+                </span>
+            </label>
 
-            <div class="flex items-center gap-2">
-                {{ form.activo }}
-                <label class="text-sm">
-                    Año escolar activo
-                </label>
-            </div>
+            <div class="flex items-center justify-end gap-3 pt-5 border-t border-gray-100">
 
-            <div class="flex gap-3 pt-4">
+                <a href="{% url 'anio_escolar_list' %}"
+                   class="inline-flex items-center gap-2 bg-gray-100 text-gray-700 px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-200 transition">
+                    <i class="fas fa-xmark"></i>
+                    Cancelar
+                </a>
+
                 <button type="submit"
-                        class="bg-blue-600 text-white px-5 py-2 rounded hover:bg-blue-700">
+                        class="inline-flex items-center gap-2 bg-blue-600 text-white px-7 py-2.5 rounded-lg text-sm font-semibold shadow-md shadow-blue-200 hover:bg-blue-700 hover:shadow-lg transition">
+                    <i class="fas fa-save"></i>
                     Guardar
                 </button>
 
-                <a href="{% url 'anio_escolar_list' %}"
-                   class="bg-gray-200 text-gray-700 px-5 py-2 rounded hover:bg-gray-300">
-                    Cancelar
-                </a>
             </div>
+
         </form>
+
     </div>
 
 </div>
+
 {% endblock %}

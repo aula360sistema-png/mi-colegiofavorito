@@ -1,56 +1,256 @@
 {% extends "home.html" %}
 
+{% block title %}Configuración del Centro{% endblock %}
+
 {% block content %}
+<div class="max-w-5xl mx-auto space-y-6">
 
-<div class="max-w-4xl mx-auto bg-white p-6 rounded-xl shadow">
+    <!-- ================= HERO ================= -->
+    <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-600 shadow-xl">
+        <div class="absolute inset-0 opacity-20"
+             style="background-image: radial-gradient(circle at 20% 30%, white 1px, transparent 1px); background-size: 24px 24px;">
+        </div>
+        <div class="relative px-8 py-7">
+            <p class="text-indigo-200 text-sm font-medium uppercase tracking-wider">Configuración global</p>
+            <h2 class="text-3xl font-bold text-white mt-1">{{ centro.nombre }}</h2>
+            <p class="text-indigo-100 mt-2 text-sm">
+                <i class="fas fa-id-card"></i> Código MINERD {{ centro.codigo_minerd }}
+            </p>
+        </div>
+    </div>
 
-    <h1 class="text-2xl font-bold mb-6">
-        Configuración del Centro
-    </h1>
-
-    <p class="mb-6 text-gray-500">
-        {{ centro.nombre }}
-    </p>
+    {% if form.non_field_errors %}
+    <div class="bg-red-50 border border-red-200 rounded-2xl p-4 text-red-700 text-sm">
+        {{ form.non_field_errors }}
+    </div>
+    {% endif %}
 
     <form method="post">
-
         {% csrf_token %}
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-            {% for field in form %}
-
-            <div class="border rounded-lg p-4">
-
-                <label class="flex items-center justify-between">
-
-                    <span class="font-medium">
-                        {{ field.label }}
-                    </span>
-
-                    {{ field }}
-
+        <!-- ================= ACADÉMICO ================= -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+            <h3 class="font-semibold text-gray-700 mb-4 flex items-center gap-2">
+                <i class="fas fa-graduation-cap text-indigo-500"></i> Aspectos académicos
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <label class="flex items-center justify-between gap-4 rounded-xl border border-gray-200 p-4 cursor-pointer hover:bg-gray-50">
+                    <span class="text-sm font-medium text-gray-700">{{ form.usa_calificacion_numerica.label }}</span>
+                    {{ form.usa_calificacion_numerica }}
                 </label>
-
+                <label class="flex items-center justify-between gap-4 rounded-xl border border-gray-200 p-4 cursor-pointer hover:bg-gray-50">
+                    <span class="text-sm font-medium text-gray-700">{{ form.usa_competencias.label }}</span>
+                    {{ form.usa_competencias }}
+                </label>
+                <label class="flex items-center justify-between gap-4 rounded-xl border border-gray-200 p-4 cursor-pointer hover:bg-gray-50">
+                    <span class="text-sm font-medium text-gray-700">{{ form.permite_completivo.label }}</span>
+                    {{ form.permite_completivo }}
+                </label>
+                <div class="rounded-xl border border-gray-200 p-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1.5">{{ form.nota_minima_aprobacion.label }}</label>
+                    {{ form.nota_minima_aprobacion }}
+                </div>
             </div>
-
-            {% endfor %}
-
         </div>
 
-        <div class="mt-6">
-
-            <button type="submit"
-                    class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg">
-
-                Guardar configuración
-
-            </button>
-
+        <!-- ================= MÓDULOS ================= -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+            <h3 class="font-semibold text-gray-700 mb-1 flex items-center gap-2">
+                <i class="fas fa-cubes text-indigo-500"></i> Módulos del sistema
+            </h3>
+            <p class="text-xs text-gray-400 mb-4">Activa o desactiva los módulos que aparecen en el menú del centro.</p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <label class="flex items-center justify-between gap-4 rounded-xl border border-gray-200 p-4 cursor-pointer hover:bg-gray-50">
+                    <span class="text-sm font-medium text-gray-700">{{ form.modulo_asistencia.label }}</span>
+                    {{ form.modulo_asistencia }}
+                </label>
+                <label class="flex items-center justify-between gap-4 rounded-xl border border-gray-200 p-4 cursor-pointer hover:bg-gray-50">
+                    <span class="text-sm font-medium text-gray-700">{{ form.modulo_caja.label }}</span>
+                    {{ form.modulo_caja }}
+                </label>
+                <label class="flex items-center justify-between gap-4 rounded-xl border border-gray-200 p-4 cursor-pointer hover:bg-gray-50">
+                    <span class="text-sm font-medium text-gray-700">{{ form.modulo_nomina.label }}</span>
+                    {{ form.modulo_nomina }}
+                </label>
+                <label class="flex items-center justify-between gap-4 rounded-xl border border-gray-200 p-4 cursor-pointer hover:bg-gray-50">
+                    <span class="text-sm font-medium text-gray-700">{{ form.modulo_biblioteca.label }}</span>
+                    {{ form.modulo_biblioteca }}
+                </label>
+                <label class="flex items-center justify-between gap-4 rounded-xl border border-gray-200 p-4 cursor-pointer hover:bg-gray-50">
+                    <span class="text-sm font-medium text-gray-700">{{ form.modulo_transporte.label }}</span>
+                    {{ form.modulo_transporte }}
+                </label>
+                <label class="flex items-center justify-between gap-4 rounded-xl border border-gray-200 p-4 cursor-pointer hover:bg-gray-50">
+                    <span class="text-sm font-medium text-gray-700">{{ form.modulo_cafeteria.label }}</span>
+                    {{ form.modulo_cafeteria }}
+                </label>
+                <label class="flex items-center justify-between gap-4 rounded-xl border border-gray-200 p-4 cursor-pointer hover:bg-gray-50">
+                    <span class="text-sm font-medium text-gray-700">{{ form.modulo_inventario.label }}</span>
+                    {{ form.modulo_inventario }}
+                </label>
+                <label class="flex items-center justify-between gap-4 rounded-xl border border-gray-200 p-4 cursor-pointer hover:bg-gray-50">
+                    <span class="text-sm font-medium text-gray-700">{{ form.modulo_reportes.label }}</span>
+                    {{ form.modulo_reportes }}
+                </label>
+                <label class="flex items-center justify-between gap-4 rounded-xl border border-gray-200 p-4 cursor-pointer hover:bg-gray-50">
+                    <span class="text-sm font-medium text-gray-700">{{ form.modulo_mensajeria.label }}</span>
+                    {{ form.modulo_mensajeria }}
+                </label>
+            </div>
         </div>
 
+        <!-- ================= FACTURACIÓN ================= -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+            <h3 class="font-semibold text-gray-700 mb-1 flex items-center gap-2">
+                <i class="fas fa-file-invoice-dollar text-sky-500"></i> Facturación
+            </h3>
+            <p class="text-xs text-gray-400 mb-4">Datos fiscales del centro y emisión de comprobantes con NCF.</p>
+            <div class="space-y-3">
+                <label class="flex items-center justify-between gap-4 rounded-xl border border-gray-200 p-4 cursor-pointer hover:bg-gray-50">
+                    <span class="text-sm font-medium text-gray-700">{{ form.permitir_facturacion.label }}</span>
+                    {{ form.permitir_facturacion }}
+                </label>
+                <label class="flex items-center justify-between gap-4 rounded-xl border border-gray-200 p-4 cursor-pointer hover:bg-gray-50">
+                    <span class="text-sm font-medium text-gray-700">{{ form.facturacion_itbis.label }}</span>
+                    {{ form.facturacion_itbis }}
+                </label>
+                <div class="rounded-xl border border-gray-200 p-4 max-w-sm">
+                    <label class="block text-sm font-medium text-gray-700 mb-1.5">{{ form.rnc.label }}</label>
+                    {{ form.rnc }}
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= CERTIFICADOS ================= -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+            <h3 class="font-semibold text-gray-700 mb-1 flex items-center gap-2">
+                <i class="fas fa-scroll text-emerald-500"></i> Certificados y constancias
+            </h3>
+            <p class="text-xs text-gray-400 mb-4">Permite a estudiantes y tutores solicitar certificados desde su portal.</p>
+            <div class="space-y-3">
+                <label class="flex items-center justify-between gap-4 rounded-xl border border-gray-200 p-4 cursor-pointer hover:bg-gray-50">
+                    <span class="text-sm font-medium text-gray-700">{{ form.modulo_certificados.label }}</span>
+                    {{ form.modulo_certificados }}
+                </label>
+                <div class="rounded-xl border border-gray-200 p-4 max-w-sm">
+                    <label class="block text-sm font-medium text-gray-700 mb-1.5">{{ form.precio_certificado.label }}</label>
+                    {{ form.precio_certificado }}
+                </div>
+                <label class="flex items-center justify-between gap-4 rounded-xl border border-gray-200 p-4 cursor-pointer hover:bg-gray-50">
+                    <span class="text-sm font-medium text-gray-700">{{ form.permitir_pago_online.label }}</span>
+                    {{ form.permitir_pago_online }}
+                </label>
+            </div>
+        </div>
+
+        <!-- ================= NÓMINA ================= -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+            <h3 class="font-semibold text-gray-700 mb-4 flex items-center gap-2">
+                <i class="fas fa-money-check-dollar text-emerald-500"></i> Nómina
+            </h3>
+            <div class="max-w-sm">
+                <label class="block text-sm font-medium text-gray-700 mb-1.5">{{ form.tipo_pago_nomina.label }}</label>
+                {{ form.tipo_pago_nomina }}
+            </div>
+        </div>
+
+        <!-- ================= CORREO Y WHATSAPP ================= -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+            <h3 class="font-semibold text-gray-700 mb-1 flex items-center gap-2">
+                <i class="fas fa-envelope-circle-check text-blue-500"></i> Correo y WhatsApp
+            </h3>
+            <p class="text-xs text-gray-400 mb-4">
+                Configuración de los envíos de Comunicaciones. Si se dejan vacíos
+                se usa lo definido en settings/.env.
+            </p>
+
+            <div class="space-y-6">
+                <div>
+                    <h4 class="text-sm font-semibold text-gray-600 mb-3 flex items-center gap-2">
+                        <i class="fas fa-envelope text-blue-500"></i> Servidor de correo (SMTP)
+                    </h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1.5">{{ form.email_servidor.label }}</label>
+                            {{ form.email_servidor }}
+                            <p class="text-xs text-gray-400 mt-1">{{ form.email_servidor.help_text }}</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1.5">{{ form.email_puerto.label }}</label>
+                            {{ form.email_puerto }}
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1.5">{{ form.email_usuario.label }}</label>
+                            {{ form.email_usuario }}
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1.5">{{ form.email_clave.label }}</label>
+                            {{ form.email_clave }}
+                            <p class="text-xs text-gray-400 mt-1">{{ form.email_clave.help_text }}</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1.5">{{ form.email_remitente.label }}</label>
+                            {{ form.email_remitente }}
+                            <p class="text-xs text-gray-400 mt-1">{{ form.email_remitente.help_text }}</p>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
+                        <label class="flex items-center justify-between gap-4 rounded-xl border border-gray-200 p-4 cursor-pointer hover:bg-gray-50">
+                            <span class="text-sm font-medium text-gray-700">{{ form.email_tls.label }}</span>
+                            {{ form.email_tls }}
+                        </label>
+                        <label class="flex items-center justify-between gap-4 rounded-xl border border-gray-200 p-4 cursor-pointer hover:bg-gray-50">
+                            <span class="text-sm font-medium text-gray-700">{{ form.email_ssl.label }}</span>
+                            {{ form.email_ssl }}
+                        </label>
+                    </div>
+                </div>
+
+                <div class="border-t border-gray-100 pt-6">
+                    <h4 class="text-sm font-semibold text-gray-600 mb-3 flex items-center gap-2">
+                        <i class="fab fa-whatsapp text-green-500"></i> WhatsApp (gateway)
+                    </h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-700 mb-1.5">{{ form.whatsapp_url.label }}</label>
+                            {{ form.whatsapp_url }}
+                            <p class="text-xs text-gray-400 mt-1">{{ form.whatsapp_url.help_text }}</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1.5">{{ form.whatsapp_token.label }}</label>
+                            {{ form.whatsapp_token }}
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1.5">{{ form.whatsapp_remitente.label }}</label>
+                            {{ form.whatsapp_remitente }}
+                            <p class="text-xs text-gray-400 mt-1">{{ form.whatsapp_remitente.help_text }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <button type="submit"
+                class="inline-flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-semibold rounded-xl px-8 py-3.5 shadow-lg transition">
+            <i class="fas fa-save"></i> Guardar configuración
+        </button>
+    </form>
+
+    <!-- ================= CORREO DE PRUEBA ================= -->
+    <form method="post" action="{% url 'core:test_correo' %}"
+          class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+        {% csrf_token %}
+        <h3 class="font-semibold text-gray-700 mb-1 flex items-center gap-2">
+            <i class="fas fa-paper-plane text-blue-500"></i> Probar configuración de correo
+        </h3>
+        <p class="text-xs text-gray-400 mb-4">
+            Envía un correo de prueba con la configuración guardada. Si aún no la has guardado, hazlo primero.
+        </p>
+        <button type="submit"
+                class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl px-6 py-3 transition">
+            <i class="fas fa-paper-plane"></i> Enviar correo de prueba
+        </button>
     </form>
 
 </div>
-
 {% endblock %}

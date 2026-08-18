@@ -1,0 +1,187 @@
+{% extends 'home.html' %}
+{% load formatos %}
+
+{% block title %}
+  Mi Colegio - Historial clínico
+{% endblock %}
+
+{% block content %}
+<div class="p-6">
+  <div class="mb-6">
+    <h1 class="text-2xl font-bold text-slate-800">
+      Historial clínico
+    </h1>
+    <p class="text-slate-500">
+      {{ estudiante.nombre_completo }} — Matrícula {{ estudiante.matricula }}
+    </p>
+    <p class="text-xs text-slate-400 mt-1">
+      Esta información es confidencial y se usa únicamente para atención en emergencias.
+    </p>
+  </div>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="mb-4 rounded-xl px-4 py-3 text-sm font-medium {% if message.tags == 'success' %}bg-emerald-50 text-emerald-700 border border-emerald-200{% elif message.tags == 'error' %}bg-red-50 text-red-700 border border-red-200{% else %}bg-blue-50 text-blue-700 border border-blue-200{% endif %}">
+        {{ message }}
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="lg:col-span-2 space-y-4">
+      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+        <div class="flex items-center gap-2 mb-4">
+          <i class="fas fa-droplet text-red-500"></i>
+          <h2 class="font-semibold text-slate-800">Datos generales</h2>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+          <div>
+            <p class="text-slate-400">Grupo sanguíneo</p>
+            <p class="font-semibold text-slate-700">
+              {{ historial.get_grupo_sanguineo_display }}
+            </p>
+          </div>
+          <div>
+            <p class="text-slate-400">Última actualización</p>
+            <p class="font-semibold text-slate-700">
+              {{ historial.updated_at|date:"d/m/Y" }}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+        <div class="flex items-center gap-2 mb-4">
+          <i class="fas fa-allergies text-amber-500"></i>
+          <h2 class="font-semibold text-slate-800">Alergias</h2>
+        </div>
+        {% if historial.alergias %}
+          <p class="text-sm text-slate-600 whitespace-pre-line">{{ historial.alergias }}</p>
+        {% else %}
+          <p class="text-sm text-slate-400">Sin alergias registradas.</p>
+        {% endif %}
+      </div>
+
+      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+        <div class="flex items-center gap-2 mb-4">
+          <i class="fas fa-stethoscope text-blue-500"></i>
+          <h2 class="font-semibold text-slate-800">Condiciones médicas</h2>
+        </div>
+        {% if historial.condiciones_medicas %}
+          <p class="text-sm text-slate-600 whitespace-pre-line">{{ historial.condiciones_medicas }}</p>
+        {% else %}
+          <p class="text-sm text-slate-400">Sin condiciones médicas registradas.</p>
+        {% endif %}
+      </div>
+
+      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+        <div class="flex items-center gap-2 mb-4">
+          <i class="fas fa-pills text-emerald-500"></i>
+          <h2 class="font-semibold text-slate-800">Medicamentos habituales</h2>
+        </div>
+        {% if historial.medicamentos_habituales %}
+          <p class="text-sm text-slate-600 whitespace-pre-line">{{ historial.medicamentos_habituales }}</p>
+        {% else %}
+          <p class="text-sm text-slate-400">Sin medicamentos registrados.</p>
+        {% endif %}
+      </div>
+
+      {% if historial.vacunas %}
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+          <div class="flex items-center gap-2 mb-4">
+            <i class="fas fa-syringe text-purple-500"></i>
+            <h2 class="font-semibold text-slate-800">Vacunas</h2>
+          </div>
+          <p class="text-sm text-slate-600 whitespace-pre-line">{{ historial.vacunas }}</p>
+        </div>
+      {% endif %}
+
+      {% if historial.observaciones %}
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+          <div class="flex items-center gap-2 mb-4">
+            <i class="fas fa-note-sticky text-slate-500"></i>
+            <h2 class="font-semibold text-slate-800">Observaciones</h2>
+          </div>
+          <p class="text-sm text-slate-600 whitespace-pre-line">{{ historial.observaciones }}</p>
+        </div>
+      {% endif %}
+
+      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+        <div class="flex items-center gap-2 mb-4">
+          <i class="fas fa-file-medical text-teal-500"></i>
+          <h2 class="font-semibold text-slate-800">Atenciones registradas</h2>
+        </div>
+        {% for registro in registros %}
+          <div class="border-t border-gray-100 py-3 first:border-t-0 first:pt-0">
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-sm font-semibold text-slate-700">
+                {{ registro.get_tipo_display }}
+              </span>
+              <span class="text-xs text-slate-400">{{ registro.fecha|date:"d/m/Y" }}</span>
+            </div>
+            <p class="text-sm text-slate-600 mt-1">{{ registro.descripcion }}</p>
+            {% if registro.atencion_proporcionada %}
+              <p class="text-xs text-slate-500 mt-1">
+                Atención: {{ registro.atencion_proporcionada }}
+              </p>
+            {% endif %}
+            {% if registro.medicamento %}
+              <p class="text-xs text-slate-500">Medicamento: {{ registro.medicamento }}</p>
+            {% endif %}
+            {% if registro.notificado_a_tutor %}
+              <p class="text-xs text-amber-600 mt-1">
+                <i class="fas fa-bell"></i> Notificado al tutor
+              </p>
+            {% endif %}
+          </div>
+        {% empty %}
+          <p class="text-sm text-slate-400">No hay atenciones registradas.</p>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div>
+      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 sticky top-24">
+        <div class="flex items-center gap-2 mb-4">
+          <i class="fas fa-phone-volume text-red-500"></i>
+          <h2 class="font-semibold text-slate-800">Contactos de emergencia</h2>
+        </div>
+
+        <div class="space-y-3 text-sm">
+          <div class="rounded-xl bg-red-50 border border-red-100 p-3">
+            <p class="font-semibold text-slate-700">
+              {{ historial.contacto_emergencia_nombre|default:"No registrado" }}
+            </p>
+            {% if historial.contacto_emergencia_parentesco %}
+              <p class="text-xs text-slate-500">{{ historial.contacto_emergencia_parentesco }}</p>
+            {% endif %}
+            {% if historial.contacto_emergencia_telefono %}
+              <p class="text-xs font-medium text-red-700 mt-1">
+                {{ historial.contacto_emergencia_telefono }}
+              </p>
+            {% endif %}
+          </div>
+
+          <div class="rounded-xl bg-slate-50 border border-gray-100 p-3">
+            <p class="text-xs text-slate-400 mb-1">Contacto secundario</p>
+            <p class="font-semibold text-slate-700">
+              {{ historial.contacto_emergencia_secundario_nombre|default:"No registrado" }}
+            </p>
+            {% if historial.contacto_emergencia_secundario_telefono %}
+              <p class="text-xs font-medium text-slate-600 mt-1">
+                {{ historial.contacto_emergencia_secundario_telefono }}
+              </p>
+            {% endif %}
+          </div>
+        </div>
+
+        {% if not historial.contacto_emergencia_nombre and not historial.contacto_emergencia_telefono %}
+          <p class="text-xs text-slate-400 mt-3">
+            Actualiza esta información en la coordinación del centro.
+          </p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

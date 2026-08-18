@@ -24,4 +24,8 @@ def obtener_centro_del_usuario(request):
     if user.rol == 'estudiante' and hasattr(user, 'estudiante'):
         return user.estudiante.centro
 
+    # TUTOR
+    if user.rol == 'tutor' and hasattr(user, 'tutor'):
+        return user.tutor.centro
+
     return None

@@ -1,55 +1,230 @@
 {% extends "home.html" %}
+{% load formatos %}
 
 {% block title %}Historial Académico{% endblock %}
 
 {% block content %}
-<div class="max-w-5xl mx-auto space-y-6">
+<div class="max-w-5xl mx-auto">
 
-    <div>
-        <h1 class="text-2xl font-bold text-gray-800">
-            📘 Historial Académico
-        </h1>
-        <p class="text-gray-600">
-            {{ estudiante.nombre_completo }}
-        </p>
+    <!-- Encabezado -->
+    <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6">
+
+        <div>
+            <a href="{% url 'administracion:seguimiento_estudiantes' %}"
+               class="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-blue-600 mb-2 transition">
+                <i class="fas fa-arrow-left"></i>
+                Volver al seguimiento
+            </a>
+
+            <h1 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                <i class="fas fa-book-open-reader text-indigo-600"></i>
+                Historial Académico
+            </h1>
+        </div>
+
+        <span class="inline-flex items-center gap-2 bg-indigo-100 text-indigo-700 px-4 py-2 rounded-lg text-sm font-semibold self-start">
+            <i class="fas fa-file-lines"></i>
+            {{ total_boletines }} boletines
+        </span>
+
     </div>
 
-    <div class="bg-white shadow rounded">
-        <table class="min-w-full text-sm">
-            <thead class="bg-gray-100">
-                <tr>
-                    <th class="px-4 py-3">Año escolar</th>
-                    <th class="px-4 py-3">Grado</th>
-                    <th class="px-4 py-3">Sección</th>
-                    <th class="px-4 py-3 text-center">Acciones</th>
-                </tr>
-            </thead>
-            <tbody>
+    {% if estudiante %}
 
-            {% for acta in actas %}
-                <tr class="border-t">
-                    <td class="px-4 py-2">{{ acta.anio_escolar.nombre }}</td>
-                    <td class="px-4 py-2">{{ acta.grado }}</td>
-                    <td class="px-4 py-2">{{ acta.seccion }}</td>
-                    <td class="px-4 py-2 text-center">
-                        <a href="{% url 'administracion:ver_boletin' acta.id %}"
-                           class="text-indigo-600 hover:underline">
-                            📄 Ver boletín
-                        </a>
-                    </td>
-               
-                </tr>
-            {% empty %}
-                <tr>
-                    <td colspan="4" class="text-center py-6 text-gray-500">
-                        No hay boletines generados.
-                    </td>
-                </tr>
-            {% endfor %}
+    <!-- Tarjeta del estudiante -->
+    <div class="bg-white shadow-sm rounded-xl border border-gray-200 p-6 mb-6 flex flex-col sm:flex-row sm:items-center gap-5">
 
-            </tbody>
-        </table>
+        {% avatar estudiante size='w-16 h-16' color='from-indigo-500 to-purple-600' texto='text-xl' %}
+
+        <div class="flex-1 min-w-0">
+            <p class="text-xl font-semibold text-gray-800">{{ estudiante.nombre_completo }}</p>
+
+            <div class="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-sm text-gray-500">
+                <span class="inline-flex items-center gap-1.5">
+                    <i class="fas fa-id-badge text-gray-400"></i>
+                    <span class="font-mono">{{ estudiante.matricula }}</span>
+                </span>
+                <span class="inline-flex items-center gap-1.5">
+                    <i class="fas fa-calendar text-gray-400"></i>
+                    {{ estudiante.edad }} años
+                </span>
+                <span class="inline-flex items-center gap-1.5">
+                    <i class="fas fa-venus-mars text-gray-400"></i>
+                    {{ estudiante.get_sexo_display }}
+                </span>
+                <span class="inline-flex items-center gap-1.5">
+                    <i class="fas fa-flag text-gray-400"></i>
+                    {{ estudiante.nacionalidad|default:"—" }}
+                </span>
+            </div>
+        </div>
+
+        {% if actas %}
+        <div class="text-center sm:text-right">
+            <p class="text-xs uppercase tracking-wide text-gray-500 font-semibold">Último promedio</p>
+            <p class="text-3xl font-bold
+                {% if actas.0.promedio and actas.0.promedio >= 70 %}text-green-600
+                {% elif actas.0.promedio and actas.0.promedio >= 60 %}text-yellow-600
+                {% elif actas.0.promedio %}text-red-600
+                {% else %}text-gray-300{% endif %}">
+                {{ actas.0.promedio|default:"—" }}
+            </p>
+        </div>
+        {% endif %}
+
     </div>
+
+    <!-- Tabla de boletines -->
+    <div class="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
+
+        <div class="flex items-center justify-between px-5 py-4 border-b border-gray-200 bg-gray-50">
+            <h3 class="font-semibold text-gray-800 flex items-center gap-2">
+                <i class="fas fa-table text-gray-400"></i>
+                Boletines por año escolar
+            </h3>
+        </div>
+
+        <div class="overflow-x-auto">
+
+            <table class="min-w-full divide-y divide-gray-200 text-sm">
+
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+                            Año escolar
+                        </th>
+                        <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+                            Grado
+                        </th>
+                        <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+                            Sección
+                        </th>
+                        <th class="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-500">
+                            Promedio
+                        </th>
+                        <th class="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-500">
+                            Estado
+                        </th>
+                        <th class="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">
+                            Acciones
+                        </th>
+                    </tr>
+                </thead>
+
+                <tbody class="divide-y divide-gray-100">
+
+                    {% for fila in actas %}
+                    <tr class="hover:bg-blue-50/50 transition-colors">
+
+                        <td class="px-5 py-3">
+                            <span class="inline-flex items-center gap-2 font-medium text-gray-800">
+                                <i class="fas fa-calendar text-gray-300"></i>
+                                {{ fila.anio }}
+                            </span>
+                        </td>
+
+                        <td class="px-5 py-3">
+                            <span class="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-md text-xs font-semibold">
+                                {{ fila.grado }}
+                            </span>
+                        </td>
+
+                        <td class="px-5 py-3">
+                            <span class="bg-gray-100 text-gray-600 px-2 py-0.5 rounded-md text-xs font-medium">
+                                {{ fila.seccion }}
+                            </span>
+                        </td>
+
+                        <td class="px-5 py-3 text-center">
+                            {% if fila.promedio %}
+                            <span class="font-semibold
+                                {% if fila.promedio >= 70 %}text-green-600
+                                {% elif fila.promedio >= 60 %}text-yellow-600
+                                {% else %}text-red-600{% endif %}">
+                                {{ fila.promedio }}
+                            </span>
+                            {% else %}
+                            <span class="text-gray-300">—</span>
+                            {% endif %}
+                        </td>
+
+                        <td class="px-5 py-3 text-center">
+                            {% if fila.estado == "aprobado" %}
+                            <span class="inline-flex items-center gap-1 bg-green-100 text-green-700 px-2.5 py-1 rounded-full text-xs font-semibold">
+                                <i class="fas fa-check-circle text-[10px]"></i>
+                                Aprobado
+                            </span>
+                            {% elif fila.estado == "recuperacion" %}
+                            <span class="inline-flex items-center gap-1 bg-yellow-100 text-yellow-700 px-2.5 py-1 rounded-full text-xs font-semibold">
+                                <i class="fas fa-clock-rotate-left text-[10px]"></i>
+                                Recuperación
+                            </span>
+                            {% elif fila.estado == "reprobado" %}
+                            <span class="inline-flex items-center gap-1 bg-red-100 text-red-700 px-2.5 py-1 rounded-full text-xs font-semibold">
+                                <i class="fas fa-times-circle text-[10px]"></i>
+                                Reprobado
+                            </span>
+                            {% else %}
+                            <span class="inline-flex items-center gap-1 bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full text-xs font-semibold">
+                                <i class="fas fa-minus text-[10px]"></i>
+                                Sin promedio
+                            </span>
+                            {% endif %}
+                        </td>
+
+                        <td class="px-5 py-3">
+                            <div class="flex items-center justify-end gap-2">
+
+                                <a href="{% url 'administracion:ver_boletin' fila.acta.id %}"
+                                   class="inline-flex items-center gap-1.5 bg-blue-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-blue-700 transition">
+                                    <i class="fas fa-file-lines"></i>
+                                    Ver boletín
+                                </a>
+
+                                <a href="{% url 'administracion:imprimir_boletin_acta' fila.acta.id %}"
+                                   target="_blank"
+                                   class="inline-flex items-center gap-1.5 bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-indigo-200 transition">
+                                    <i class="fas fa-print"></i>
+                                    Imprimir
+                                </a>
+
+                            </div>
+                        </td>
+
+                    </tr>
+                    {% empty %}
+
+                    <tr>
+                        <td colspan="6" class="px-5 py-12 text-center">
+                            <i class="fas fa-file-circle-xmark text-3xl text-gray-300 mb-3 block"></i>
+                            <p class="text-gray-500 font-medium">No hay boletines generados para este estudiante.</p>
+                            <p class="text-xs text-gray-400 mt-1">Genera boletines desde el módulo de administración.</p>
+                        </td>
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+    {% else %}
+
+    <div class="bg-white shadow-sm rounded-xl border border-gray-200 p-12 text-center">
+        <i class="fas fa-user-slash text-4xl text-gray-300 mb-3 block"></i>
+        <p class="text-gray-500 font-medium">Estudiante no encontrado o sin boletines.</p>
+        <a href="{% url 'administracion:seguimiento_estudiantes' %}"
+           class="inline-flex items-center gap-2 mt-4 text-sm text-blue-600 hover:underline">
+            <i class="fas fa-arrow-left"></i>
+            Volver al seguimiento
+        </a>
+    </div>
+
+    {% endif %}
 
 </div>
 {% endblock %}

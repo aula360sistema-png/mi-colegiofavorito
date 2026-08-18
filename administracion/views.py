@@ -3,7 +3,8 @@ from decimal import Decimal, ROUND_HALF_UP
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.db.models import Avg, Count, Sum
+from django.core.paginator import Paginator
+from django.db.models import Avg, Count, Sum, Q
 from django.shortcuts import (
     get_object_or_404,
     redirect,
@@ -11,15 +12,18 @@ from django.shortcuts import (
 )
 from django.utils import timezone
 from django.utils.crypto import get_random_string
+from django_ratelimit.decorators import ratelimit
 
 from academico.models import (
-    AreaCompetencia,
     Calificacion,
     DocenteMateria,
     Grado,
     Periodo,
+    PeriodoAnio,
     Seccion
 )
+
+from academico.services.periodos import abrir_periodos_anio, sincronizar_periodos_anio, sincronizar_periodos_centro
 
 from administracion.forms import (
     AdministrativoForm,
@@ -68,13 +72,19 @@ from django.contrib import messages
 from django.db.models import Count
 
 
-@login_required
-@role_required('director', 'secretaria', 'superadmin')
-@centro_required
-def dashboard_admin(request):
-    user = request.user
+def obtener_metricas_dashboard(centro):
+    """Métricas del dashboard cacheadas ~60s para no recalcular en cada request.
 
-    centro = request.centro
+    Se guardan como valores planos (lists/dicts) para que sean serializables
+    en LocMemCache y Redis.
+    """
+    from django.core.cache import cache
+    from core.cache_utils import ttl
+
+    clave = f'dashboard:{centro.id}:{obtener_version_dashboard(centro.id)}'
+    metricas = cache.get(clave)
+    if metricas is not None:
+        return metricas
 
     anio_actual = (
         AnioEscolar.objects
@@ -84,13 +94,6 @@ def dashboard_admin(request):
         )
         .first()
     )
-
-    if not anio_actual:
-
-        messages.warning(
-            request,
-            "No hay año escolar activo."
-        )
 
     total_docentes = Docente.objects.filter(
         centro=centro
@@ -105,7 +108,7 @@ def dashboard_admin(request):
     ).count()
 
     total_secciones = Seccion.objects.filter(
-        grado__nivel__centro=centro
+        centro=centro
     ).count()
 
     total_asignaciones = (
@@ -140,7 +143,7 @@ def dashboard_admin(request):
         total_estudiantes - estudiantes_inscritos
     )
 
-    estudiantes_por_grado = (
+    estudiantes_por_grado = list(
         Inscripcion.objects
         .filter(
             centro=centro,
@@ -151,7 +154,7 @@ def dashboard_admin(request):
         if anio_actual else []
     )
 
-    docentes_por_nivel = (
+    docentes_por_nivel = list(
         DocenteMateria.objects
         .filter(
             docente__centro=centro,
@@ -164,10 +167,10 @@ def dashboard_admin(request):
 
     # ================= MÉTRICAS ACADÉMICAS DEL AÑO ACTIVO =================
     if anio_actual:
-        periodos_qs = Periodo.objects.filter(
-            centro=centro,
+        sincronizar_periodos_anio(anio_actual)
+        periodos_qs = PeriodoAnio.objects.filter(
             anio_escolar=anio_actual,
-            es_completivo=False,
+            periodo__es_completivo=False,
         )
         periodos_abiertos = periodos_qs.filter(cerrado=False).count()
         periodos_cerrados = periodos_qs.filter(cerrado=True).count()
@@ -251,23 +254,18 @@ def dashboard_admin(request):
     configuracion, _ = ConfiguracionCentro.objects.get_or_create(centro=centro)
     nota_minima = float(configuracion.nota_minima_aprobacion)
 
-    context = {
-        'centro': centro,
+    metricas = {
         'anio_actual': anio_actual,
-
         'total_docentes': total_docentes,
         'total_estudiantes': total_estudiantes,
         'total_grados': total_grados,
         'total_secciones': total_secciones,
         'total_asignaciones': total_asignaciones,
-
         'docentes_sin_asignacion': docentes_sin_asignacion,
         'estudiantes_sin_inscripcion': estudiantes_sin_inscripcion,
-
         'estudiantes_por_grado': estudiantes_por_grado,
         'docentes_por_nivel': docentes_por_nivel,
         'estudiantes_por_estado': estudiantes_por_estado,
-
         'periodos_abiertos': periodos_abiertos,
         'periodos_cerrados': periodos_cerrados,
         'porcentaje_periodos_cerrados': porcentaje_periodos_cerrados,
@@ -275,19 +273,44 @@ def dashboard_admin(request):
         'porcentaje_actas_generadas': porcentaje_actas_generadas,
         'promedio_general': promedio_general,
         'nota_minima': nota_minima,
-
         'total_recaudado': total_recaudado,
         'total_recibos': total_recibos,
         'ultimos_pagos': ultimos_pagos,
-
-        'es_director': request.user.rol == 'director',
-        'es_secretaria': request.user.rol == 'secretaria',
     }
+
+    cache.set(clave, metricas, timeout=ttl('CACHE_TTL_CORTO'))
+    return metricas
+
+
+def obtener_version_dashboard(centro_id):
+    from core.cache_utils import obtener_version
+    return obtener_version(f'dashboard:{centro_id}')
+
+
+def invalidar_dashboard(centro_id):
+    from core.cache_utils import invalidar_dominio
+    invalidar_dominio(f'dashboard:{centro_id}')
+
+
+@login_required
+@role_required('director', 'secretaria', 'admin', 'superadmin')
+@centro_required
+def dashboard_admin(request):
+    user = request.user
+
+    centro = request.centro
+
+    metricas = obtener_metricas_dashboard(centro)
 
     return render(
         request,
         'administracion/dashboard.html',
-        context
+        {
+            'centro': centro,
+            'es_director': request.user.rol == 'director',
+            'es_secretaria': request.user.rol == 'secretaria',
+            **metricas,
+        }
     )
 
 
@@ -296,7 +319,7 @@ from django.utils import timezone
 
 
 @login_required
-@role_required('director', 'superadmin')
+@role_required('director', 'admin', 'superadmin')
 @centro_required
 def administrativo_create(request):
 
@@ -304,7 +327,7 @@ def administrativo_create(request):
 
     if request.method == 'POST':
 
-        form = AdministrativoForm(request.POST)
+        form = AdministrativoForm(request.POST, request.FILES)
 
         if form.is_valid():
 
@@ -335,6 +358,7 @@ def administrativo_create(request):
                 )
 
                 usuario.rol = cargo_form
+                usuario.debe_cambiar_password = True
                 usuario.save()
 
                 admin.usuario = usuario
@@ -343,12 +367,14 @@ def administrativo_create(request):
 
             return render(
                 request,
-                'administracion/credenciales.html',
+                'usuarios/credenciales.html',
                 {
                     'usuario': usuario.username,
                     'password': password,
                     'centro': centro.nombre,
-                    'cargo': admin.cargo
+                    'cargo': admin.cargo,
+                    'tipo_nombre': 'Administrativo',
+                    'tipo_slug': 'administrativo',
                 }
             )
 
@@ -375,14 +401,18 @@ from core.utils.anio import obtener_anio_activo
 
 @login_required
 @centro_required
-@role_required('director', 'secretaria', 'superadmin')
+@role_required('director', 'secretaria', 'admin', 'superadmin')
 def listado_personal(request):
 
     centro = request.centro
     tipo = request.GET.get('tipo')
+    q = request.GET.get('q', '').strip()
+    estado = request.GET.get('estado', '').strip()
 
-    administrativos = []
-    estudiantes = []
+    if tipo not in ('administrativo', 'estudiante'):
+        tipo = ''
+
+    stats = obtener_stats_personal(centro)
 
     # ================= ADMINISTRATIVOS =================
     if tipo == 'administrativo':
@@ -393,10 +423,39 @@ def listado_personal(request):
             .select_related('usuario')
         )
 
-    # ================= ESTUDIANTES =================
-    elif tipo == 'estudiante':
+        if q:
+            administrativos = administrativos.filter(
+                Q(primer_nombre__icontains=q) |
+                Q(segundo_nombre__icontains=q) |
+                Q(primer_apellido__icontains=q) |
+                Q(segundo_apellido__icontains=q) |
+                Q(cedula__icontains=q)
+            )
 
-        anio_actual = obtener_anio_activo(centro)
+        if estado:
+            administrativos = administrativos.filter(estado=estado)
+
+        administrativos = administrativos.order_by('primer_apellido', 'primer_nombre')
+
+        paginator = Paginator(administrativos, 10)
+        page_obj = paginator.get_page(request.GET.get('page'))
+
+        return render(
+            request,
+            'administracion/listado_personal.html',
+            {
+                'centro': centro,
+                'tipo': tipo,
+                'administrativos': page_obj.object_list,
+                'page_obj': page_obj,
+                'q': q,
+                'estado': estado,
+                'stats': stats,
+            }
+        )
+
+    # ================= ESTUDIANTES =================
+    if tipo == 'estudiante':
 
         estudiantes = (
             Estudiante.objects
@@ -404,21 +463,39 @@ def listado_personal(request):
             .select_related('usuario')
         )
 
-        # 🔥 Traer TODAS las inscripciones de una vez
+        if q:
+            estudiantes = estudiantes.filter(
+                Q(matricula__icontains=q) |
+                Q(primer_nombre__icontains=q) |
+                Q(segundo_nombre__icontains=q) |
+                Q(primer_apellido__icontains=q) |
+                Q(segundo_apellido__icontains=q)
+            )
+
+        if estado:
+            estudiantes = estudiantes.filter(estado=estado)
+
+        estudiantes = estudiantes.order_by('primer_apellido', 'primer_nombre')
+
+        paginator = Paginator(estudiantes, 10)
+        page_obj = paginator.get_page(request.GET.get('page'))
+
+        # 🔥 Traer TODAS las inscripciones de una vez (solo página actual)
         inscripciones = {
             i.estudiante_id: i
             for i in (
                 Inscripcion.objects
                 .filter(
                     centro=centro,
-                    anio_escolar=anio_actual
+                    anio_escolar=obtener_anio_activo(centro),
+                    estudiante_id__in=[e.id for e in page_obj.object_list]
                 )
                 .select_related('grado', 'seccion')
             )
         }
 
         # 🔥 Relacionar sin hacer queries extra
-        for e in estudiantes:
+        for e in page_obj.object_list:
 
             inscripcion = inscripciones.get(e.id)
 
@@ -434,27 +511,87 @@ def listado_personal(request):
                 else '—'
             )
 
+        return render(
+            request,
+            'administracion/listado_personal.html',
+            {
+                'centro': centro,
+                'tipo': tipo,
+                'estudiantes': page_obj.object_list,
+                'page_obj': page_obj,
+                'q': q,
+                'estado': estado,
+                'stats': stats,
+            }
+        )
+
+    # ================= SIN SELECCIÓN =================
     return render(
         request,
         'administracion/listado_personal.html',
         {
             'centro': centro,
             'tipo': tipo,
-            'administrativos': administrativos,
-            'estudiantes': estudiantes,
+            'administrativos': [],
+            'estudiantes': [],
+            'q': q,
+            'estado': estado,
+            'stats': stats,
         }
     )
 
 
 @login_required
-@role_required('director', 'secretaria', 'superadmin')
+@role_required('director', 'secretaria', 'admin', 'superadmin')
 def mantenimiento_home(request):
     user = request.user
 
     centro = user.administrativo.centro
 
+    from academico.models import (
+        AreaCurricular,
+        Asignatura,
+        Competencia,
+        GradoAsignatura,
+        Grado,
+        Nivel,
+        Periodo,
+        PeriodoAnio,
+        Seccion,
+    )
+
+    anio_activo = obtener_anio_activo(centro)
+    if anio_activo:
+        sincronizar_periodos_anio(anio_activo)
+
+    conteos = {
+        'anios': AnioEscolar.objects.filter(centro=centro).count(),
+        'niveles': Nivel.objects.filter(centro=centro).count(),
+        'grados': Grado.objects.filter(nivel__centro=centro).count(),
+        'secciones': Seccion.objects.filter(centro=centro).count(),
+        'areas': AreaCurricular.objects.filter(centro=centro).count(),
+        'asignaturas': Asignatura.objects.filter(centro=centro).count(),
+        'grados_asignaturas': GradoAsignatura.objects.filter(
+            grado__nivel__centro=centro
+        ).count(),
+        'competencias': Competencia.objects.filter(nivel__centro=centro).count(),
+        'periodos': Periodo.objects.filter(centro=centro).count(),
+        'docentematerias': DocenteMateria.objects.filter(
+            anio_escolar__centro=centro
+        ).count(),
+    }
+
     return render(request, 'administracion/mantenimiento.html', {
-        'centro': centro
+        'centro': centro,
+        'conteos': conteos,
+        'todos_cerrados': (
+            anio_activo is not None and
+            PeriodoAnio.objects.filter(anio_escolar=anio_activo).exists() and
+            not PeriodoAnio.objects.filter(
+                anio_escolar=anio_activo,
+                cerrado=False
+            ).exists()
+        ),
     })
 
 from collections import defaultdict
@@ -470,7 +607,8 @@ def redondear(valor):
 
 @login_required
 @centro_required
-@role_required('director', 'secretaria', 'superadmin')
+@role_required('director', 'secretaria', 'admin', 'superadmin')
+@ratelimit(key='ip', rate='50/h', method='POST', block=True)
 def generar_boletines(request):
 
     if request.method != "POST":
@@ -487,11 +625,10 @@ def generar_boletines(request):
     nota_minima = float(configuracion.nota_minima_aprobacion)
 
     # 🔒 validar períodos cerrados (se ignoran los completivos)
-    if Periodo.objects.filter(
-        centro=centro,
+    if PeriodoAnio.objects.filter(
         anio_escolar=anio,
         cerrado=False,
-        es_completivo=False
+        periodo__es_completivo=False
     ).exists():
         messages.error(
             request,
@@ -499,11 +636,10 @@ def generar_boletines(request):
         )
         return redirect("administracion:dashboard_admin")
 
-    if not Periodo.objects.filter(
-        centro=centro,
+    if not PeriodoAnio.objects.filter(
         anio_escolar=anio,
         cerrado=True,
-        es_completivo=False
+        periodo__es_completivo=False
     ).exists():
         messages.error(
             request,
@@ -601,7 +737,8 @@ def generar_boletines(request):
 
 @login_required
 @centro_required
-@role_required('director', 'superadmin')
+@role_required('director', 'admin', 'superadmin')
+@ratelimit(key='ip', rate='20/h', method='POST', block=True)
 def cerrar_completivo(request):
     """
     Cierra el completivo del año activo: los estudiantes en estado
@@ -622,10 +759,9 @@ def cerrar_completivo(request):
     configuracion, _ = ConfiguracionCentro.objects.get_or_create(centro=centro)
     nota_minima = float(configuracion.nota_minima_aprobacion)
 
-    completivo_abierto = Periodo.objects.filter(
-        centro=centro,
+    completivo_abierto = PeriodoAnio.objects.filter(
         anio_escolar=anio,
-        es_completivo=True,
+        periodo__es_completivo=True,
         cerrado=False
     ).exists()
 
@@ -695,16 +831,109 @@ from django.contrib.auth.decorators import login_required
 from administracion.models import Acta
 
 
+def obtener_stats_personal(centro):
+    """Conteos de la pantalla de personal, cacheados por dominio.
+
+    Dependen de la versión de estudiantes (Estudiante) y de personal
+    (Administrativo), ambas invalidadas por sus respectivas señales.
+    """
+    from core.cache_utils import obtener_o_generar, obtener_version, ttl
+
+    clave = (
+        f'stats_personal:{centro.id}:'
+        f'{obtener_version(f"estudiantes:{centro.id}")}:'
+        f'{obtener_version(f"personal:{centro.id}")}'
+    )
+    return obtener_o_generar(
+        clave,
+        lambda: _obtener_stats_personal_sql(centro),
+        version=1,
+        timeout=ttl('CACHE_TTL_MEDIO'),
+    )
+
+
+def _obtener_stats_personal_sql(centro):
+    return {
+        'admin_total': Administrativo.objects.filter(centro=centro).count(),
+        'admin_activos': Administrativo.objects.filter(centro=centro, estado='activo').count(),
+        'admin_inactivos': Administrativo.objects.filter(centro=centro, estado='inactivo').count(),
+        'est_total': Estudiante.objects.filter(centro=centro).count(),
+        'est_activos': Estudiante.objects.filter(centro=centro, estado='activo').count(),
+        'est_retirados': Estudiante.objects.filter(centro=centro, estado='retirado').count(),
+        'est_egresados': Estudiante.objects.filter(centro=centro, estado='egresado').count(),
+    }
+
+
+def actas_del_centro(centro):
+    """Boletines (actas) del centro, cacheados por dominio.
+
+    Es la consulta base de la lista de boletines: la vista filtra y
+    pagina en memoria para no re-consultar la BD por cada combinación
+    de filtros. Se invalida con la señal de `Acta`.
+    """
+    from core.cache_utils import obtener_o_generar, obtener_version, ttl
+
+    clave = (
+        f'actas:{centro.id}:'
+        f'{obtener_version(f"actas:{centro.id}")}'
+    )
+    return obtener_o_generar(
+        clave,
+        lambda: list(
+            Acta.objects.filter(centro=centro).select_related(
+                'estudiante', 'grado', 'anio_escolar'
+            ).order_by('grado', 'seccion', 'estudiante__primer_apellido')
+        ),
+        version=1,
+        timeout=ttl('CACHE_TTL_MEDIO'),
+    )
+
+
 @login_required
 @centro_required
 @role_required('director', 'secretaria', 'admin', 'superadmin')
 def reportes(request):
     centro = request.centro
 
+    metricas = obtener_metricas_reportes(centro)
+
+    return render(request, 'administracion/reportes.html', {
+        'centro': centro,
+        **metricas,
+    })
+
+
+def obtener_metricas_reportes(centro):
+    """Agregados de la pantalla de reportes cacheados.
+
+    Las claves dependen de la versión de estructura (grados/secciones/
+    periodos) y de estudiantes (matrícula/inscripciones), así que se
+    invalidan con las señales existentes.
+    """
+    from core.cache_utils import (
+        invalidar_dominio,
+        obtener_o_generar,
+        obtener_version,
+        ttl,
+    )
+
+    clave = (
+        f'reportes:{centro.id}:'
+        f'{obtener_version(f"estructura:{centro.id}")}:'
+        f'{obtener_version(f"estudiantes:{centro.id}")}'
+    )
+    return obtener_o_generar(
+        clave,
+        lambda: _obtener_metricas_reportes_sql(centro),
+        version=1,
+        timeout=ttl('CACHE_TTL_MEDIO'),
+    )
+
+
+def _obtener_metricas_reportes_sql(centro):
     anio_actual = obtener_anio_activo(centro)
 
-    # Matrícula por grado + sección (año activo)
-    matricula_por_grado = (
+    matricula_por_grado = list(
         Inscripcion.objects
         .filter(centro=centro, anio_escolar=anio_actual)
         .values('grado__nombre', 'seccion__nombre')
@@ -713,8 +942,7 @@ def reportes(request):
         if anio_actual else []
     )
 
-    # Matrícula por año escolar
-    matricula_por_anio = (
+    matricula_por_anio = list(
         Inscripcion.objects
         .filter(centro=centro)
         .values('anio_escolar__nombre')
@@ -722,16 +950,14 @@ def reportes(request):
         .order_by('-anio_escolar__fecha_inicio')
     )
 
-    # Estudiantes por estado general
-    estudiantes_por_estado = (
+    estudiantes_por_estado = list(
         Estudiante.objects
         .filter(centro=centro)
         .values('estado')
         .annotate(total=Count('id'))
     )
 
-    # Estados académicos de la matrícula activa
-    estados_academicos = (
+    estados_academicos = list(
         Inscripcion.objects
         .filter(centro=centro, anio_escolar=anio_actual)
         .values('estado_final')
@@ -739,19 +965,25 @@ def reportes(request):
         if anio_actual else []
     )
 
-    return render(request, 'administracion/reportes.html', {
-        'centro': centro,
+    total_matricula_activa = sum(r['total'] for r in matricula_por_grado)
+    total_estudiantes = Estudiante.objects.filter(centro=centro).count()
+    total_estados_academicos = sum(r['total'] for r in estados_academicos)
+
+    return {
         'anio_actual': anio_actual,
         'matricula_por_grado': matricula_por_grado,
         'matricula_por_anio': matricula_por_anio,
         'estudiantes_por_estado': estudiantes_por_estado,
         'estados_academicos': estados_academicos,
-    })
+        'total_matricula_activa': total_matricula_activa,
+        'total_estudiantes': total_estudiantes,
+        'total_estados_academicos': total_estados_academicos,
+    }
 
 
 @login_required
 @centro_required
-@role_required('director', 'secretaria', 'superadmin')
+@role_required('director', 'secretaria', 'admin', 'superadmin')
 def ver_boletin_estudiante(request, acta_id):
     """
     Vista SOLO LECTURA del boletín oficial (Acta).
@@ -773,38 +1005,70 @@ def ver_boletin_estudiante(request, acta_id):
 
 @login_required
 @centro_required
-@role_required('director', 'secretaria', 'superadmin')
+@role_required('director', 'secretaria', 'admin', 'superadmin')
 def lista_boletines(request):
 
     centro = request.centro
 
-    actas = Acta.objects.filter(
-        centro=centro
-    ).select_related(
-        'estudiante', 'grado', 'anio_escolar'
-    )
+    actas = actas_del_centro(centro)
 
-    # 🔥 filtros GET
+    # 🔥 filtros GET (en memoria sobre la lista base cacheada)
+    q = request.GET.get("q", "").strip()
     anio_id = request.GET.get("anio")
     estado = request.GET.get("estado")
 
+    if q:
+        ql = q.lower()
+        actas = [
+            a for a in actas
+            if (
+                ql in (a.estudiante.primer_nombre or '').lower()
+                or ql in (a.estudiante.segundo_nombre or '').lower()
+                or ql in (a.estudiante.primer_apellido or '').lower()
+                or ql in (a.estudiante.segundo_apellido or '').lower()
+                or ql in (a.estudiante.matricula or '').lower()
+            )
+        ]
+
     if anio_id:
-        actas = actas.filter(anio_escolar_id=anio_id)
+        actas = [a for a in actas if a.anio_escolar_id == int(anio_id)]
 
     if estado:
-        actas = actas.filter(datos__estado_final=estado)
+        actas = [
+            a for a in actas
+            if a.datos.get('estado_final') == estado
+        ]
 
-    actas = actas.order_by(
-        'grado',
-        'seccion',
-        'estudiante__primer_apellido'
+    resumen = {
+        'total': len(actas),
+        'aprobado': sum(
+            1 for a in actas if a.datos.get('estado_final') == 'aprobado'
+        ),
+        'reprobado': sum(
+            1 for a in actas if a.datos.get('estado_final') == 'reprobado'
+        ),
+        'recuperacion': sum(
+            1 for a in actas if a.datos.get('estado_final') == 'recuperacion'
+        ),
+    }
+    resumen['pendiente'] = (
+        resumen['total']
+        - resumen['aprobado']
+        - resumen['reprobado']
+        - resumen['recuperacion']
     )
-  
+
+    paginator = Paginator(actas, 10)
+    page_obj = paginator.get_page(request.GET.get('page'))
+
     context = {
-        "actas": actas,
+        "actas": page_obj.object_list,
+        "page_obj": page_obj,
         "anios": AnioEscolar.objects.filter(centro=centro).order_by('-fecha_inicio'),
         "filtro_anio": anio_id,
         "filtro_estado": estado,
+        "q": q,
+        "resumen": resumen,
         "es_director": request.user.rol == 'director',
     }
 
@@ -820,13 +1084,13 @@ from administracion.forms import AnioEscolarForm
 
 @login_required
 @centro_required
-@role_required('director', 'secretaria', 'superadmin')
+@role_required('director', 'secretaria', 'admin', 'superadmin')
 def anio_escolar_list(request):
     centro = request.centro
 
-    anios = AnioEscolar.objects.filter(
-        centro=centro
-    ).order_by('-fecha_inicio')
+    from academico.services import estructura
+
+    anios = estructura.anios_escolares(centro)
 
     return render(request, 'academico/anio_escolar_list.html', {
         'anios': anios
@@ -835,7 +1099,7 @@ def anio_escolar_list(request):
 
 @login_required
 @centro_required
-@role_required('director', 'secretaria', 'superadmin')
+@role_required('director', 'secretaria', 'admin', 'superadmin')
 def anio_escolar_create(request):
     centro = request.centro
 
@@ -853,6 +1117,7 @@ def anio_escolar_create(request):
                 ).update(activo=False)
 
             anio.save()
+            abrir_periodos_anio(anio)
             return redirect('anio_escolar_list')
     else:
         form = AnioEscolarForm()
@@ -865,7 +1130,7 @@ def anio_escolar_create(request):
 
 @login_required
 @centro_required
-@role_required('director', 'secretaria', 'superadmin')
+@role_required('director', 'secretaria', 'admin', 'superadmin')
 def anio_escolar_update(request, pk):
     centro = request.centro
 
@@ -884,6 +1149,7 @@ def anio_escolar_update(request, pk):
                 ).exclude(pk=anio.pk).update(activo=False)
 
             form.save()
+            abrir_periodos_anio(anio)
             return redirect('anio_escolar_list')
     else:
         form = AnioEscolarForm(instance=anio)
@@ -899,30 +1165,90 @@ from administracion.models import Acta
 
 @login_required
 @centro_required
-@role_required('director', 'secretaria', 'superadmin')
+@role_required('director', 'secretaria', 'admin', 'superadmin')
 def seguimiento_estudiantes(request):
     centro = request.centro
 
+    q = request.GET.get('q', '').strip()
+    grado_id = request.GET.get('grado', '').strip()
+
     actas_qs = (
-    Acta.objects
-    .select_related(
-        "estudiante",
-        "grado",
-        "anio_escolar",
-        "generado_por",
-        "centro",
+        Acta.objects
+        .filter(centro=centro)
+        .select_related(
+            "estudiante",
+            "grado",
+            "anio_escolar",
+            "generado_por",
+            "centro",
+        )
+        .order_by(
+            "-anio_escolar__fecha_inicio",
+            "estudiante_id",
+        )
     )
-    .order_by(
-        "grado__nombre",
-        "seccion",
-        "estudiante__primer_apellido",
-        "estudiante__primer_nombre",
+
+    if q:
+        actas_qs = actas_qs.filter(
+            Q(estudiante__primer_nombre__icontains=q) |
+            Q(estudiante__segundo_nombre__icontains=q) |
+            Q(estudiante__primer_apellido__icontains=q) |
+            Q(estudiante__segundo_apellido__icontains=q) |
+            Q(estudiante__matricula__icontains=q)
+        )
+
+    if grado_id:
+        actas_qs = actas_qs.filter(grado_id=grado_id)
+
+    # Una fila por estudiante: el acta más reciente (último promedio)
+    unicos = {}
+    for acta in actas_qs:
+        if acta.estudiante_id not in unicos:
+            unicos[acta.estudiante_id] = acta
+
+    actas_unico = list(unicos.values())
+
+    total_estudiantes = len(actas_unico)
+
+    def _estado_promedio(p):
+        if p is None:
+            return None
+        if p >= 70:
+            return 'aprobado'
+        if p >= 60:
+            return 'recuperacion'
+        return 'reprobado'
+
+    resumen = {'aprobado': 0, 'recuperacion': 0, 'reprobado': 0, 'sin_promedio': 0}
+    for acta in actas_unico:
+        datos = acta.datos or {}
+        asignaturas = datos.get("asignaturas", [])
+        pfs = [a["pf"] for a in asignaturas if a.get("pf") is not None]
+        promedio = round(sum(pfs) / len(pfs), 2) if pfs else None
+        estado = _estado_promedio(promedio)
+        if estado is None:
+            resumen['sin_promedio'] += 1
+        else:
+            resumen[estado] += 1
+
+    actas_unico.sort(
+        key=lambda a: (
+            a.grado.nombre,
+            a.seccion or '',
+            a.estudiante.primer_apellido,
+            a.estudiante.primer_nombre,
+        )
     )
-)
+
+    paginator = Paginator(actas_unico, 10)
+    page_obj = paginator.get_page(request.GET.get('page'))
+
+    grados = set(a.grado for a in actas_unico)
+    grados = sorted(grados, key=lambda g: g.nombre)
 
     actas = []
 
-    for acta in actas_qs:
+    for acta in page_obj.object_list:
         datos = acta.datos or {}
         asignaturas = datos.get("asignaturas", [])
 
@@ -942,6 +1268,7 @@ def seguimiento_estudiantes(request):
             "estudiante": acta.estudiante,
             "grado": acta.grado,
             "seccion": acta.seccion,
+            "anio": acta.anio_escolar.nombre,
             "promedio": promedio_general,
             "acta_id": acta.id
         })
@@ -950,7 +1277,13 @@ def seguimiento_estudiantes(request):
         request,
         "administracion/seguimiento_estudiantes.html",
         {
-            "actas": actas
+            "actas": actas,
+            "page_obj": page_obj,
+            "grados": grados,
+            "total_estudiantes": total_estudiantes,
+            "resumen": resumen,
+            "q": q,
+            "grado_seleccionado": grado_id,
         }
     )
 
@@ -960,7 +1293,7 @@ def seguimiento_estudiantes(request):
 
 @login_required
 @centro_required
-@role_required('director', 'secretaria', 'superadmin')
+@role_required('director', 'secretaria', 'admin', 'superadmin')
 def seguimiento_estudiante(request, estudiante_id):
     centro = request.centro
     if not centro:
@@ -973,14 +1306,40 @@ def seguimiento_estudiante(request, estudiante_id):
             estudiante_id=estudiante_id
         )
         .select_related('anio_escolar', 'grado')
-        .order_by('-anio_escolar__nombre')
+        .order_by('-anio_escolar__fecha_inicio')
     )
 
     estudiante = actas.first().estudiante if actas else None
 
+    filas = []
+    for acta in actas:
+        datos = acta.datos or {}
+        asignaturas = datos.get("asignaturas", [])
+        pfs = [a["pf"] for a in asignaturas if a.get("pf") is not None]
+        promedio = round(sum(pfs) / len(pfs), 2) if pfs else None
+
+        if promedio is None:
+            estado = 'sin_promedio'
+        elif promedio >= 70:
+            estado = 'aprobado'
+        elif promedio >= 60:
+            estado = 'recuperacion'
+        else:
+            estado = 'reprobado'
+
+        filas.append({
+            "acta": acta,
+            "anio": acta.anio_escolar.nombre,
+            "grado": acta.grado,
+            "seccion": acta.seccion or '—',
+            "promedio": promedio,
+            "estado": estado,
+        })
+
     return render(request, "administracion/seguimiento_estudiante.html", {
         "estudiante": estudiante,
-        "actas": actas
+        "actas": filas,
+        "total_boletines": len(filas),
     })
 
 
@@ -991,7 +1350,7 @@ from administracion.models import Acta
 
 @login_required
 @centro_required
-@role_required('director', 'secretaria', 'superadmin')
+@role_required('director', 'secretaria', 'admin', 'superadmin')
 def imprimir_boletin_acta(request, acta_id):
     centro = request.centro
     acta = get_object_or_404(Acta, id=acta_id, centro=centro)

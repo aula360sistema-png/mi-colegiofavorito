@@ -3,7 +3,7 @@ from decimal import ROUND_HALF_UP, Decimal
 from academico.models import (
     Periodo,
     DocenteMateria,
-    AreaCompetencia,
+    Competencia,
     Calificacion
 )
 
@@ -93,9 +93,8 @@ def construir_boletin_estudiante(inscripcion, centro, anio):
     # 🔒 Los períodos de completivo NO entran en el promedio base
     periodos = list(
         Periodo.objects.filter(
-            centro=centro,
-            anio_escolar=anio,
-            cerrado=True,
+            estados__anio_escolar=anio,
+            estados__cerrado=True,
             es_completivo=False
         ).order_by("orden")
     )
@@ -117,9 +116,12 @@ def construir_boletin_estudiante(inscripcion, centro, anio):
         if asignatura.id in asignaturas_map:
             continue  # ⛔ ya procesada
 
-        area_competencias = AreaCompetencia.objects.filter(
-            area=asignatura.area
-        ).select_related("competencia")
+        # Las competencias son del catálogo MINERD del nivel: todas las
+        # asignaturas de ese nivel muestran las mismas competencias en el boletín.
+        competencias_catalogo = Competencia.objects.filter(
+            nivel=inscripcion.grado.nivel,
+            activo=True
+        ).order_by("nombre")
 
         calificaciones = Calificacion.objects.filter(
             inscripcion=inscripcion,
@@ -135,8 +137,7 @@ def construir_boletin_estudiante(inscripcion, centro, anio):
         competencias_data = []
         pcs = []
 
-        for ac in area_competencias:
-            competencia = ac.competencia
+        for competencia in competencias_catalogo:
             valores = []
             periodos_data = []
 
@@ -197,9 +198,8 @@ def resultado_completivo_estudiante(inscripcion, centro, anio, nota_minima):
 
     completivo_periodos = list(
         Periodo.objects.filter(
-            centro=centro,
-            anio_escolar=anio,
-            cerrado=True,
+            estados__anio_escolar=anio,
+            estados__cerrado=True,
             es_completivo=True
         ).order_by("orden")
     )

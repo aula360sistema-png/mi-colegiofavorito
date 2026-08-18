@@ -1,4 +1,5 @@
 {% extends "home.html" %}
+{% load formatos %}
 
 {% block content %}
 <div class="max-w-5xl mx-auto">
@@ -22,7 +23,10 @@
             <ul class="divide-y text-sm">
                 {% for est in estudiantes %}
                 <li class="px-4 py-2">
-                    {{ est.nombre_completo }} — {{ est.matricula }}
+                    <div class="flex items-center gap-2">
+                        {% avatar est size='w-8 h-8' texto='text-xs' %}
+                        {{ est.nombre_completo }} — {{ est.matricula }}
+                    </div>
                 </li>
                 {% endfor %}
             </ul>

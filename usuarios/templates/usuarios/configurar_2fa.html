@@ -1,0 +1,60 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configurar 2FA</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { min-height: 100vh; display: flex; justify-content: center; align-items: center; background: linear-gradient(to right, #4b6cb7, #182848); }
+        .box { background: #fff; padding: 40px 50px; border-radius: 12px; box-shadow: 0 8px 25px rgba(0,0,0,0.2); width: 100%; max-width: 480px; text-align: center; }
+        .box h2 { margin-bottom: 10px; color: #333; font-size: 26px; font-weight: 600; }
+        .box p.sub { color: #666; margin-bottom: 25px; font-size: 14px; }
+        .box p.error { color: #e74c3c; margin-bottom: 20px; font-weight: 500; }
+        #qrcode { margin: 0 auto 20px; }
+        .box .secret { background: #f4f4f4; border-radius: 8px; padding: 12px; font-family: monospace; font-size: 16px; letter-spacing: 2px; margin-bottom: 20px; word-break: break-all; }
+        .box label { display: block; text-align: left; margin-bottom: 5px; font-weight: 500; color: #555; }
+        .box input { width: 100%; padding: 12px 15px; margin-bottom: 20px; border-radius: 8px; border: 1px solid #ccc; font-size: 18px; letter-spacing: 4px; text-align: center; transition: all 0.3s ease; }
+        .box input:focus { border-color: #4b6cb7; box-shadow: 0 0 5px rgba(75,108,183,0.5); outline: none; }
+        .box button { width: 100%; padding: 12px; background: #4b6cb7; color: #fff; border: none; border-radius: 8px; font-size: 18px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; }
+        .box button:hover { background: #3a54a0; }
+        .box a.back { display: inline-block; margin-top: 15px; color: #888; font-size: 14px; text-decoration: none; }
+    </style>
+    <script src="{% static 'vendor/qrcodejs/qrcode.min.js' %}"></script>
+</head>
+<body>
+    <div class="box">
+        <h2>Configura tu 2FA</h2>
+        <p class="sub">Escanea el código QR con Google Authenticator, Authy o similar, o ingresa la clave manualmente.</p>
+
+        {% if error %}
+            <p class="error">{{ error }}</p>
+        {% endif %}
+
+        <div id="qrcode" data-uri="{{ uri }}"></div>
+
+        <div class="secret">{{ secret }}</div>
+
+        <form method="post">
+            {% csrf_token %}
+            <label for="codigo">Código de 6 dígitos</label>
+            <input type="text" name="codigo" id="codigo" inputmode="numeric" maxlength="6" placeholder="000000" required>
+            <button type="submit">Activar y continuar</button>
+        </form>
+
+        <a class="back" href="{% url 'usuarios:login' %}">Volver al inicio de sesión</a>
+    </div>
+
+    <script>
+        var qr = document.getElementById('qrcode');
+        if (typeof QRCode !== 'undefined' && qr.dataset.uri) {
+            new QRCode(qr, {
+                text: qr.dataset.uri,
+                width: 200,
+                height: 200
+            });
+        }
+    </script>
+</body>
+</html>

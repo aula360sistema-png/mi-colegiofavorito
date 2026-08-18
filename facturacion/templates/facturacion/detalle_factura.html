@@ -1,0 +1,140 @@
+{% extends "home.html" %}
+{% load formatos %}
+
+{% block title %}Factura {{ factura.ncf|default:factura.numero_legible }}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+
+    <!-- Acciones (se ocultan al imprimir) -->
+    <div class="flex flex-wrap items-center justify-between gap-3 print:hidden">
+        <a href="{% url 'facturacion:lista_facturas' %}"
+           class="inline-flex items-center gap-2 bg-white border border-gray-200 text-gray-600 px-4 py-2 rounded-xl hover:bg-gray-50 text-sm font-medium">
+            <i class="fas fa-arrow-left"></i> Volver a facturas
+        </a>
+        <button onclick="window.print()"
+                class="inline-flex items-center gap-2 bg-gradient-to-r from-sky-600 to-blue-600 hover:from-sky-700 hover:to-blue-700 text-white px-5 py-2.5 rounded-xl shadow text-sm font-medium">
+            <i class="fas fa-print"></i> Imprimir factura
+        </button>
+    </div>
+
+    <!-- ================= FACTURA ================= -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <!-- Encabezado -->
+        <div class="px-8 py-6 bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-600 text-white flex flex-wrap items-start justify-between gap-6">
+            <div>
+                <h2 class="text-2xl font-bold flex items-center gap-2">
+                    <i class="fas fa-graduation-cap"></i> {{ factura.centro.nombre }}
+                </h2>
+                <p class="text-sky-100 text-sm mt-1">Código MINERD {{ factura.centro.codigo_minerd }}</p>
+                {% if config.rnc %}
+                <p class="text-sky-100 text-sm mt-1"><i class="fas fa-id-card"></i> RNC {{ config.rnc }}</p>
+                {% endif %}
+                {% if factura.centro.direccion %}
+                <p class="text-sky-100 text-sm mt-1">{{ factura.centro.direccion }}</p>
+                {% endif %}
+                {% if factura.centro.telefono or factura.centro.email %}
+                <p class="text-sky-100 text-sm mt-1">
+                    {% if factura.centro.telefono %}{{ factura.centro.telefono }}{% endif %}
+                    {% if factura.centro.telefono and factura.centro.email %} · {% endif %}
+                    {% if factura.centro.email %}{{ factura.centro.email }}{% endif %}
+                </p>
+                {% endif %}
+            </div>
+
+            <div class="text-right">
+                <p class="text-sky-200 text-xs uppercase tracking-widest">Comprobante Fiscal</p>
+                <p class="text-3xl font-black mt-1 font-mono">{{ factura.ncf|default:"SIN NCF" }}</p>
+                {% if factura.tipo %}
+                <p class="text-sky-100 text-sm mt-1">{{ factura.tipo.codigo }} · {{ factura.tipo.nombre }}</p>
+                {% endif %}
+                <p class="text-sky-100 text-sm mt-1">Fecha: {{ factura.fecha|date:"d/m/Y" }}</p>
+                {% if factura.pago %}
+                <p class="text-sky-100 text-sm">Recibo No. {{ factura.pago.recibo }}</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Cliente -->
+        <div class="px-8 py-5 border-b border-gray-100 flex flex-wrap gap-8">
+            <div class="flex items-center gap-3">
+                {% avatar factura.estudiante size='w-10 h-10' texto='text-sm' %}
+                <div>
+                    <p class="text-xs text-gray-400 uppercase tracking-wide">Cliente</p>
+                    <p class="font-semibold text-gray-800 mt-0.5">{{ factura.estudiante.nombre_completo }}</p>
+                </div>
+            </div>
+            <div>
+                <p class="text-xs text-gray-400 uppercase tracking-wide">Matrícula</p>
+                <p class="font-mono text-gray-700 mt-0.5">{{ factura.estudiante.matricula }}</p>
+            </div>
+            <div>
+                <p class="text-xs text-gray-400 uppercase tracking-wide">Emitida por</p>
+                <p class="text-gray-700 mt-0.5">{{ factura.creado_por.get_full_name|default:factura.creado_por|default:"—" }}</p>
+            </div>
+        </div>
+
+        <!-- Items -->
+        <div class="px-8 py-6">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="text-left text-xs uppercase text-gray-400 border-b border-gray-100">
+                        <th class="pb-3">Descripción</th>
+                        <th class="pb-3 text-center">Cantidad</th>
+                        <th class="pb-3 text-right">Precio</th>
+                        <th class="pb-3 text-right">Subtotal</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in factura.items.all %}
+                    <tr class="border-b border-gray-50">
+                        <td class="py-3 font-medium text-gray-800">{{ item.descripcion }}</td>
+                        <td class="py-3 text-center text-gray-600">{{ item.cantidad }}</td>
+                        <td class="py-3 text-right text-gray-600">RD$ {{ item.precio|dop }}</td>
+                        <td class="py-3 text-right text-gray-800">RD$ {{ item.subtotal|dop }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="py-6 text-center text-gray-400">Sin líneas de detalle.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Totales -->
+        <div class="px-8 pb-8 flex justify-end">
+            <div class="w-full max-w-xs space-y-2 text-sm">
+                <div class="flex items-center justify-between text-gray-600">
+                    <span>Subtotal</span>
+                    <span>RD$ {{ factura.subtotal|dop }}</span>
+                </div>
+                <div class="flex items-center justify-between {% if factura.aplica_itbis %}text-indigo-600{% else %}text-gray-300{% endif %}">
+                    <span>ITBIS (18%)</span>
+                    <span>{% if factura.aplica_itbis %}RD$ {{ factura.itbis|dop }}{% else %}—{% endif %}</span>
+                </div>
+                <div class="flex items-center justify-between border-t-2 border-dashed border-gray-200 pt-3 text-base font-bold text-gray-900">
+                    <span>Total</span>
+                    <span>RD$ {{ factura.total|dop }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pie -->
+        <div class="px-8 py-4 bg-gray-50 border-t border-gray-100 text-xs text-gray-400 flex flex-wrap items-center justify-between gap-2">
+            <span>
+                {% if factura.aplica_itbis %}Factura con ITBIS desglosado (18%).{% else %}Factura sin ITBIS.{% endif %}
+                Este documento se emite de forma electrónica por el sistema.
+            </span>
+            <span class="font-mono">{{ factura.ncf|default:factura.numero_legible }}</span>
+        </div>
+    </div>
+
+</div>
+
+{% if request.GET.print %}
+<script>
+    window.addEventListener('load', function () { window.print(); });
+</script>
+{% endif %}
+{% endblock %}

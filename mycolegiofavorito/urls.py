@@ -19,6 +19,8 @@ from django.urls import path
 from django.urls import include
 from django.shortcuts import redirect
 from django.conf.urls import handler404
+from django.conf import settings
+from django.conf.urls.static import static
 
 
 
@@ -35,7 +37,16 @@ urlpatterns = [
     path('nomina/', include('nomina.urls', namespace='nomina')),
     path('asistencia/', include('asistencia.urls', namespace='asistencia')),
     path('caja/', include('caja.urls', namespace='caja')),
+    path('facturacion/', include('facturacion.urls', namespace='facturacion')),
+    path('tutores/', include('tutores.urls', namespace='tutores')),
+    path('comunicaciones/', include('comunicaciones.urls', namespace='comunicaciones')),
+    path('auditoria/', include('auditoria.urls', namespace='auditoria')),
+    path('entrenamiento/', include('entrenamiento.urls', namespace='entrenamiento')),
+    path('orientacion/', include('orientacion.urls', namespace='orientacion')),
 
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 handler404 = 'core.views.custom_404_view'

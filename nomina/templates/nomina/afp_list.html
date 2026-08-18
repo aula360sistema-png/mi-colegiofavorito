@@ -5,7 +5,7 @@
 <div class="page-header">
     <div>
         <h1 class="page-title">
-            AFP
+            Administradora de Fondos de Pensiones (AFP)
         </h1>
 
         <p class="page-subtitle">
@@ -27,6 +27,8 @@
                 <th>Nombre</th>
                 <th>% Empleado</th>
                 <th>% Empresa</th>
+                <th>Estado</th>
+                <th>Acciones</th>
             </tr>
         </thead>
 
@@ -42,8 +44,44 @@
 
                 <td>{{ afp.porcentaje_empresa }}%</td>
 
+                <td>
+                    {% if afp.activo %}
+                        <span class="badge-success">Activa</span>
+                    {% else %}
+                        <span class="badge-danger">Inactiva</span>
+                    {% endif %}
+                </td>
+
+                <td>
+                    <div class="table-actions">
+                        <a href="{% url 'nomina:afp_edit' afp.pk %}" class="btn-action" title="Editar">
+                            <i class="fas fa-pen"></i>
+                        </a>
+
+                        <form method="post" action="{% url 'nomina:afp_toggle' afp.pk %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn-action" title="Alternar estado">
+                                {% if afp.activo %}
+                                    <i class="fas fa-ban"></i>
+                                {% else %}
+                                    <i class="fas fa-check"></i>
+                                {% endif %}
+                            </button>
+                        </form>
+                    </div>
+                </td>
+
             </tr>
 
+            {% empty %}
+            <tr>
+                <td colspan="5">
+                    <div class="empty-state">
+                        <i class="fas fa-building-columns"></i>
+                        <p>No hay AFP registradas</p>
+                    </div>
+                </td>
+            </tr>
             {% endfor %}
 
         </tbody>

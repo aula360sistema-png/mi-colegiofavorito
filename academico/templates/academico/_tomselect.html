@@ -1,0 +1,71 @@
+{% load static %}
+<link rel="stylesheet" href="{% static 'vendor/tomselect/css/tom-select.min.css' %}" />
+<style>
+  .ts-wrapper .ts-control,
+  .ts-wrapper.single .ts-control {
+    border: 1px solid #d1d5db;
+    border-radius: 0.5rem;
+    min-height: 42px;
+    padding: 0.375rem 0.75rem;
+    background-color: #ffffff;
+    box-shadow: none;
+    font-size: 0.875rem;
+    color: #111827;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+  .ts-wrapper.focus .ts-control {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+  }
+  .ts-wrapper .ts-control:hover {
+    border-color: #9ca3af;
+  }
+  .ts-wrapper .ts-control .item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+  }
+  .ts-wrapper .ts-dropdown {
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
+    overflow: hidden;
+    font-size: 0.875rem;
+  }
+  .ts-wrapper .ts-dropdown .ts-dropdown-content .option {
+    padding: 0.5rem 0.75rem;
+  }
+  .ts-wrapper .ts-dropdown .ts-dropdown-content .option.active {
+    background-color: #eff6ff;
+    color: #1d4ed8;
+  }
+  .ts-wrapper .ts-dropdown .ts-dropdown-content .option.selected {
+    background-color: #bfdbfe;
+    color: #1e40af;
+  }
+</style>
+<script src="{% static 'vendor/tomselect/js/tom-select.complete.min.js' %}"></script>
+<script>
+(function () {
+  document.querySelectorAll('select.searchable').forEach(function (el) {
+    new TomSelect(el, {
+      create: false,
+      allowEmptyOption: false,
+      placeholder: 'Buscar y seleccionar...',
+      sortField: { field: 'text', direction: 'asc' },
+      render: {
+        option: function (data, escape) {
+          return '<div class="flex items-center gap-2 py-0.5">' +
+                 '<i class="fas fa-check-circle text-gray-300"></i>' +
+                 '<span>' + escape(data.text) + '</span></div>';
+        },
+        item: function (data, escape) {
+          return '<div class="flex items-center gap-2">' +
+                 '<i class="fas fa-check-circle text-blue-500"></i>' +
+                 '<span>' + escape(data.text) + '</span></div>';
+        }
+      }
+    });
+  });
+})();
+</script>

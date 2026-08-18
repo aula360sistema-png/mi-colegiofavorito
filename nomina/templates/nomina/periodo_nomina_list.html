@@ -1,5 +1,7 @@
 {% extends 'home.html' %}
 
+{% load nomina_extras %}
+
 {% block content %}
 
 <div class="page-header">
@@ -12,8 +14,18 @@
             Generación y administración de nómina
         </p>
     </div>
-</div>
 
+    <form method="get" class="search-form">
+        <select name="anio" onchange="this.form.submit()">
+            <option value="">Todos los años</option>
+            {% for a in anios_disponibles %}
+                <option value="{{ a }}" {% if a|stringformat:"s" == anio_seleccionado %}selected{% endif %}>
+                    {{ a }}
+                </option>
+            {% endfor %}
+        </select>
+    </form>
+</div>
 
 <div class="table-card">
 
@@ -21,10 +33,12 @@
 
         <thead>
             <tr>
-                <th>Año</th>
+                <th>Período</th>
                 <th>Mes</th>
-                <th>Periodo</th>
+                <th>Período No.</th>
                 <th>Fecha Pago</th>
+                <th>Empleados</th>
+                <th>Neto a pagar</th>
                 <th>Estado</th>
                 <th>Acciones</th>
             </tr>
@@ -36,20 +50,32 @@
 
             <tr>
 
-                <td>
-                    {{ periodo.anio }}
-                </td>
+                <td>{{ periodo.descripcion }}</td>
 
-                <td>
-                    {{ periodo.mes }}
-                </td>
+                <td>{{ periodo.mes|mes_nombre }} {{ periodo.anio }}</td>
 
                 <td>
                     {{ periodo.numero_periodo }}
                 </td>
 
                 <td>
-                    {{ periodo.fecha_pago }}
+                    {{ periodo.fecha_pago|date:"d/m/Y" }}
+                </td>
+
+                <td>
+                    {% if periodo.nomina_generada %}
+                        {{ periodo.cantidad_empleados|default:0 }}
+                    {% else %}
+                        —
+                    {% endif %}
+                </td>
+
+                <td>
+                    {% if periodo.nomina_generada %}
+                        <strong>RD$ {{ periodo.total_neto|dop }}</strong>
+                    {% else %}
+                        —
+                    {% endif %}
                 </td>
 
                 <td>
@@ -57,13 +83,13 @@
                     {% if periodo.cerrado %}
 
                         <span class="badge-danger">
-                            Cerrado
+                            <i class="fas fa-lock"></i> Cerrado
                         </span>
 
                     {% elif periodo.nomina_generada %}
 
                         <span class="badge-warning">
-                            Nómina Generada
+                            <i class="fas fa-check"></i> Generada
                         </span>
 
                     {% else %}
@@ -78,38 +104,26 @@
 
                 <td>
 
-                    {% if not periodo.nomina_generada and not periodo.cerrado %}
+                    <div class="table-actions">
 
-                        <button
-                            class="btn-nomina"
-                            id="btn-{{ periodo.id }}"
-                            onclick="generarNomina({{ periodo.id }})"
-                        >
-                            <i class="fas fa-play"></i>
-                            Generar Nómina
-                        </button>
+                        <a href="{% url 'nomina:periodo_detalle' periodo.id %}" class="btn-action" title="Ver detalle">
+                            <i class="fas fa-eye"></i>
+                        </a>
 
-                    {% elif periodo.nomina_generada %}
+                        {% if not periodo.nomina_generada and not periodo.cerrado %}
 
-                        <button
-                            class="btn-disabled"
-                            disabled
-                        >
-                            <i class="fas fa-check"></i>
-                            Generada
-                        </button>
+                            <button
+                                class="btn-action btn-action-green"
+                                id="btn-{{ periodo.id }}"
+                                onclick="generarNomina({{ periodo.id }})"
+                                title="Generar nómina"
+                            >
+                                <i class="fas fa-play"></i>
+                            </button>
 
-                    {% else %}
+                        {% endif %}
 
-                        <button
-                            class="btn-disabled"
-                            disabled
-                        >
-                            <i class="fas fa-lock"></i>
-                            Cerrado
-                        </button>
-
-                    {% endif %}
+                    </div>
 
                 </td>
 
@@ -119,7 +133,7 @@
 
             <tr>
 
-                <td colspan="6">
+                <td colspan="8">
 
                     <div class="empty-state">
 
@@ -155,14 +169,14 @@ function generarNomina(periodoId) {
     Swal.fire({
 
         title: '¿Generar nómina?',
-        
-        html: `
-            Se generará automáticamente:
-            <br><br>
 
-            • Salario base<br>
+        html: `
+            Se calculará automáticamente:<br><br>
+
+            • Salario base (prorrateado)<br>
             • AFP<br>
             • ARS<br>
+            • ISR<br>
             • Ingresos extras<br>
             • Descuentos<br>
             • Neto a pagar
@@ -186,7 +200,6 @@ function generarNomina(periodoId) {
 
             btn.innerHTML = `
                 <i class="fas fa-spinner fa-spin"></i>
-                Generando...
             `;
 
             fetch(`/nomina/generar/${periodoId}/`, {
@@ -236,10 +249,7 @@ function generarNomina(periodoId) {
 
                     btn.disabled = false;
 
-                    btn.innerHTML = `
-                        <i class="fas fa-play"></i>
-                        Generar Nómina
-                    `;
+                    btn.innerHTML = '<i class="fas fa-play"></i>';
                 }
 
             })
@@ -258,10 +268,7 @@ function generarNomina(periodoId) {
 
                 btn.disabled = false;
 
-                btn.innerHTML = `
-                    <i class="fas fa-play"></i>
-                    Generar Nómina
-                `;
+                btn.innerHTML = '<i class="fas fa-play"></i>';
             });
         }
     });

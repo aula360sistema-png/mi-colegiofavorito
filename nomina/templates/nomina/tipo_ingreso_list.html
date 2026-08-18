@@ -1,0 +1,78 @@
+{% extends 'home.html' %}
+
+{% block title %}
+Tipos de Ingreso
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Tipos de Ingreso</h1>
+        <p class="page-subtitle">Conceptos de pago adicionales al salario base</p>
+    </div>
+
+    <a href="{% url 'nomina:tipo_ingreso_create' %}" class="btn-primary">
+        <i class="fas fa-plus"></i>
+        Nuevo tipo
+    </a>
+</div>
+
+<div class="table-card">
+    <table class="custom-table">
+        <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>Obligatorio</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for tipo in tipos %}
+            <tr>
+                <td>{{ tipo.nombre }}</td>
+                <td>
+                    {% if tipo.obligatorio %}
+                        <span class="badge-warning">Sí</span>
+                    {% else %}
+                        <span class="badge-neutral">No</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if tipo.activo %}
+                        <span class="badge-success">Activo</span>
+                    {% else %}
+                        <span class="badge-danger">Inactivo</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <div class="table-actions">
+                        <form method="post" action="{% url 'nomina:tipo_ingreso_toggle' tipo.pk %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn-action" title="Alternar estado">
+                                {% if tipo.activo %}
+                                    <i class="fas fa-ban"></i>
+                                {% else %}
+                                    <i class="fas fa-check"></i>
+                                {% endif %}
+                            </button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="4">
+                    <div class="empty-state">
+                        <i class="fas fa-coins"></i>
+                        <p>No hay tipos de ingreso registrados</p>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% endblock %}

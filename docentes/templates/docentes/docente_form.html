@@ -1,4 +1,5 @@
 {% extends "home.html" %}
+{% load formatos %}
 
 {% block title %}
 {% if form.instance.pk %}
@@ -10,192 +11,262 @@ Nuevo Docente
 
 {% block content %}
 
-<div class="max-w-7xl mx-auto">
+<div class="max-w-6xl mx-auto">
 
     <!-- Encabezado -->
-    <div class="mb-6">
+    <div class="flex items-center justify-between mb-6">
 
-        <h2 class="text-3xl font-bold">
+        <div>
+            <a href="{% url 'docente_list' %}"
+               class="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-blue-600 mb-2 transition">
+                <i class="fas fa-arrow-left"></i>
+                Volver al listado
+            </a>
 
-            {% if form.instance.pk %}
-                👨‍🏫 Editar Docente
-            {% else %}
-                ➕ Nuevo Docente
-            {% endif %}
+            <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                {% if form.instance.pk %}
+                <i class="fas fa-user-edit text-blue-600"></i>
+                Editar Docente
+                {% else %}
+                <i class="fas fa-user-plus text-blue-600"></i>
+                Nuevo Docente
+                {% endif %}
+            </h2>
 
-        </h2>
-
-        <p class="text-gray-600">
-            Complete la información del docente.
-        </p>
+            <p class="text-sm text-gray-500 mt-1">
+                Complete los datos del docente. Los campos marcados con <span class="text-red-500">*</span> son obligatorios.
+            </p>
+        </div>
 
     </div>
 
-    <form method="post">
+    {% if form.non_field_errors %}
+    <div class="mb-6 bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3">
+        <i class="fas fa-exclamation-triangle text-red-600 mt-0.5"></i>
+        <div>
+            <h4 class="font-semibold text-red-700 mb-1">Corrija los errores indicados:</h4>
+            {% for error in form.non_field_errors %}
+            <p class="text-sm text-red-600">{{ error }}</p>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Tarjeta de identidad (modo edición) -->
+    {% if docente %}
+
+    <div class="bg-white shadow-sm rounded-xl border border-gray-200 p-5 mb-6 flex items-center gap-4">
+
+        {% avatar docente size='w-14 h-14' texto='text-lg' %}
+
+        <div class="flex-1 min-w-0">
+            <p class="text-lg font-semibold text-gray-800 truncate">{{ docente.nombre_completo }}</p>
+            <div class="flex flex-wrap items-center gap-2 mt-1 text-xs text-gray-500">
+                <span class="inline-flex items-center gap-1">
+                    <i class="fas fa-id-card text-gray-400"></i>
+                    {{ docente.cedula }}
+                </span>
+                <span class="inline-flex items-center gap-1">
+                    <i class="fas fa-hashtag text-gray-400"></i>
+                    {{ docente.codigo_docente_minerd }}
+                </span>
+                <span class="inline-flex items-center gap-1">
+                    <i class="fas fa-venus-mars text-gray-400"></i>
+                    {{ docente.get_sexo_display }}
+                </span>
+            </div>
+        </div>
+
+        {% if docente.estado == "activo" %}
+        <span class="hidden sm:inline-flex items-center gap-1.5 bg-green-100 text-green-700 px-3 py-1.5 rounded-full text-xs font-semibold">
+            <i class="fas fa-circle text-[8px]"></i>
+            Activo
+        </span>
+        {% else %}
+        <span class="hidden sm:inline-flex items-center gap-1.5 bg-red-100 text-red-700 px-3 py-1.5 rounded-full text-xs font-semibold">
+            <i class="fas fa-circle text-[8px]"></i>
+            Inactivo
+        </span>
+        {% endif %}
+
+    </div>
+
+    {% endif %}
+
+    <form method="post" enctype="multipart/form-data" class="space-y-6">
 
         {% csrf_token %}
 
-        <!-- Datos Personales -->
-        <div class="bg-white shadow rounded mb-6">
-
-            <div class="border-b px-4 py-3">
-                <h3 class="font-semibold text-lg">
-                    🧍 Datos Personales
-                </h3>
-            </div>
-
-            <div class="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-
-                <div>
-                    {{ form.primer_nombre.label_tag }}
-                    {{ form.primer_nombre }}
-                </div>
-
-                <div>
-                    {{ form.segundo_nombre.label_tag }}
-                    {{ form.segundo_nombre }}
-                </div>
-
-                <div>
-                    {{ form.primer_apellido.label_tag }}
-                    {{ form.primer_apellido }}
-                </div>
-
-                <div>
-                    {{ form.segundo_apellido.label_tag }}
-                    {{ form.segundo_apellido }}
-                </div>
-
-                <div>
-                    {{ form.cedula.label_tag }}
-                    {{ form.cedula }}
-                </div>
-
-                <div>
-                    {{ form.sexo.label_tag }}
-                    {{ form.sexo }}
-                </div>
-
-                <div>
-                    {{ form.fecha_nacimiento.label_tag }}
-                    {{ form.fecha_nacimiento }}
-                </div>
-
-                <div>
-                    {{ form.nacionalidad.label_tag }}
-                    {{ form.nacionalidad }}
-                </div>
-
-            </div>
-
+        {% if form.errors and not form.non_field_errors %}
+        <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800 flex items-start gap-2">
+            <i class="fas fa-info-circle mt-0.5"></i>
+            Hay campos con errores. Revisa las secciones marcadas en rojo.
         </div>
-
-        <!-- Contacto -->
-        <div class="bg-white shadow rounded mb-6">
-
-            <div class="border-b px-4 py-3">
-                <h3 class="font-semibold text-lg">
-                    📞 Información de Contacto
-                </h3>
-            </div>
-
-            <div class="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-
-                <div>
-                    {{ form.telefono.label_tag }}
-                    {{ form.telefono }}
-                </div>
-
-                <div>
-                    {{ form.correo_personal.label_tag }}
-                    {{ form.correo_personal }}
-                </div>
-
-                <div class="md:col-span-2">
-                    {{ form.direccion.label_tag }}
-                    {{ form.direccion }}
-                </div>
-
-            </div>
-
-        </div>
-
-        <!-- Información Laboral -->
-        <div class="bg-white shadow rounded mb-6">
-
-            <div class="border-b px-4 py-3">
-                <h3 class="font-semibold text-lg">
-                    🏫 Información Laboral
-                </h3>
-            </div>
-
-            <div class="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-
-                <div>
-                    {{ form.codigo_docente_minerd.label_tag }}
-                    {{ form.codigo_docente_minerd }}
-                </div>
-
-                <div>
-                    {{ form.area_especialidad.label_tag }}
-                    {{ form.area_especialidad }}
-                </div>
-
-                <div>
-                    {{ form.fecha_ingreso.label_tag }}
-                    {{ form.fecha_ingreso }}
-                </div>
-
-                <div>
-                    {{ form.tipo_contrato.label_tag }}
-                    {{ form.tipo_contrato }}
-                </div>
-
-                <div>
-                    {{ form.tanda.label_tag }}
-                    {{ form.tanda }}
-                </div>
-
-                <div>
-                    {{ form.estado.label_tag }}
-                    {{ form.estado }}
-                </div>
-
-            </div>
-
-        </div>
-
-        <!-- Errores -->
-        {% if form.errors %}
-
-        <div class="bg-red-50 border border-red-200 rounded p-4 mb-6">
-
-            <h4 class="font-semibold text-red-700 mb-2">
-                Errores encontrados
-            </h4>
-
-            {{ form.errors }}
-
-        </div>
-
         {% endif %}
 
-        <!-- Botones -->
-        <div class="flex justify-between">
+        <!-- FOTO -->
+        <section class="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
+
+            <div class="flex items-center gap-3 px-6 py-4 border-b border-gray-200 bg-gray-50">
+                <div class="w-9 h-9 rounded-lg bg-sky-100 text-sky-600 flex items-center justify-center">
+                    <i class="fas fa-camera"></i>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-gray-800">Foto del Docente</h3>
+                    <p class="text-xs text-gray-500">Sube una foto de perfil (JPG o PNG)</p>
+                </div>
+            </div>
+
+            <div class="p-6">
+                <div class="flex items-center gap-5">
+                    <div class="shrink-0">
+                        {% avatar form.instance size='w-20 h-20' texto='text-2xl' %}
+                    </div>
+                    <div class="flex-1">
+                        <label for="{{ form.foto.id_for_label }}"
+                               class="block text-sm font-medium text-gray-600 mb-1.5">
+                            {{ form.foto.label }}{% if form.foto.field.required %} <span class="text-red-500">*</span>{% endif %}
+                        </label>
+                        {{ form.foto }}
+                        {% if form.foto.errors %}
+                        <p class="text-xs text-red-600 mt-1">{{ form.foto.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- DATOS PERSONALES -->
+        <section class="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
+
+            <div class="flex items-center gap-3 px-6 py-4 border-b border-gray-200 bg-gray-50">
+                <div class="w-9 h-9 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center">
+                    <i class="fas fa-user"></i>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-gray-800">Datos Personales</h3>
+                    <p class="text-xs text-gray-500">Información básica de identidad del docente</p>
+                </div>
+            </div>
+
+            <div class="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+
+                {% for field in form %}
+                    {% if field.name in "primer_nombre segundo_nombre primer_apellido segundo_apellido cedula sexo fecha_nacimiento nacionalidad" %}
+                    <div>
+                        <label for="{{ field.id_for_label }}"
+                               class="block text-sm font-medium text-gray-600 mb-1.5">
+                            {{ field.label }}{% if field.field.required %} <span class="text-red-500">*</span>{% endif %}
+                        </label>
+                        {{ field }}
+                        {% if field.errors %}
+                        <p class="text-xs text-red-600 mt-1">{{ field.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                {% endfor %}
+
+            </div>
+
+        </section>
+
+        <!-- CONTACTO -->
+        <section class="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
+
+            <div class="flex items-center gap-3 px-6 py-4 border-b border-gray-200 bg-gray-50">
+                <div class="w-9 h-9 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center">
+                    <i class="fas fa-phone"></i>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-gray-800">Información de Contacto</h3>
+                    <p class="text-xs text-gray-500">Teléfono, correo y dirección</p>
+                </div>
+            </div>
+
+            <div class="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+
+                {% for field in form %}
+                    {% if field.name in "telefono correo_personal direccion" %}
+                    <div{% if field.name == "direccion" %} class="md:col-span-2 lg:col-span-3"{% endif %}>
+                        <label for="{{ field.id_for_label }}"
+                               class="block text-sm font-medium text-gray-600 mb-1.5">
+                            {{ field.label }}{% if field.field.required %} <span class="text-red-500">*</span>{% endif %}
+                        </label>
+                        {{ field }}
+                        {% if field.help_text %}
+                        <p class="text-xs text-gray-400 mt-1">{{ field.help_text }}</p>
+                        {% endif %}
+                        {% if field.errors %}
+                        <p class="text-xs text-red-600 mt-1">{{ field.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                {% endfor %}
+
+            </div>
+
+        </section>
+
+        <!-- INFORMACIÓN LABORAL -->
+        <section class="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
+
+            <div class="flex items-center gap-3 px-6 py-4 border-b border-gray-200 bg-gray-50">
+                <div class="w-9 h-9 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center">
+                    <i class="fas fa-briefcase"></i>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-gray-800">Información Laboral</h3>
+                    <p class="text-xs text-gray-500">Código MINERD, contrato y tanda</p>
+                </div>
+            </div>
+
+            <div class="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+
+                {% for field in form %}
+                    {% if field.name in "codigo_docente_minerd area_especialidad fecha_ingreso tipo_contrato tanda estado" %}
+                    <div>
+                        <label for="{{ field.id_for_label }}"
+                               class="block text-sm font-medium text-gray-600 mb-1.5">
+                            {{ field.label }}{% if field.field.required %} <span class="text-red-500">*</span>{% endif %}
+                        </label>
+                        {{ field }}
+                        {% if field.errors %}
+                        <p class="text-xs text-red-600 mt-1">{{ field.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                {% endfor %}
+
+            </div>
+
+        </section>
+
+        <!-- Acciones -->
+        <div class="flex items-center justify-between gap-3 bg-white shadow-sm rounded-xl border border-gray-200 p-4">
 
             <a href="{% url 'docente_list' %}"
-               class="bg-gray-200 px-6 py-2 rounded hover:bg-gray-300">
-
-                ← Cancelar
-
+               class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 transition">
+                <i class="fas fa-times"></i>
+                Cancelar
             </a>
 
-            <button type="submit"
-                    class="bg-blue-600 text-white px-8 py-2 rounded hover:bg-blue-700">
+            <div class="flex items-center gap-2">
+                {% if docente %}
+                <a href="{% url 'docente_detail' docente.id %}"
+                   class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium text-blue-600 hover:bg-blue-50 transition">
+                    <i class="fas fa-eye"></i>
+                    Ver detalle
+                </a>
+                {% endif %}
 
-                💾 Guardar
-
-            </button>
+                <button
+                    type="submit"
+                    class="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-2.5 rounded-lg shadow-sm hover:bg-blue-700 hover:shadow transition text-sm font-semibold">
+                    <i class="fas fa-save"></i>
+                    {% if form.instance.pk %}Guardar cambios{% else %}Guardar Docente{% endif %}
+                </button>
+            </div>
 
         </div>
 

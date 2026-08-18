@@ -41,6 +41,12 @@ path(
     views.configuracion_centro,
     name='configuracion_centro'
 ),
+
+path(
+    'configuracion-centro/test-correo/',
+    views.test_correo,
+    name='test_correo'
+),
 ]
 
 

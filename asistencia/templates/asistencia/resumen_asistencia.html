@@ -1,4 +1,5 @@
 {% extends 'home.html' %}
+{% load formatos %}
 
 {% block title %}
 Resumen de Asistencia
@@ -30,29 +31,49 @@ Resumen de Asistencia
 
 {% else %}
 
-<div class="asistencia-selector">
+<div class="bg-white shadow-sm rounded-2xl border border-gray-200 mb-6">
 
-    <form method="get" class="asistencia-filtros">
+    <div class="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white flex items-center gap-3 rounded-t-2xl">
+        <span class="w-9 h-9 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center">
+            <i class="fas fa-filter"></i>
+        </span>
+        <div>
+            <h3 class="font-semibold text-gray-800">Filtros del resumen</h3>
+            <p class="text-xs text-gray-400">Promedio de asistencia por estudiante y sección</p>
+        </div>
+    </div>
 
-        <div class="form-group">
-            <label>Grado</label>
-            <select id="grado" name="grado">
-                <option value="">-- Seleccionar --</option>
-                {% for gid, grado, sid, seccion in grados_secciones %}
-                    {% ifchanged gid %}
+    <form method="get" class="p-6">
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 items-end">
+
+            <div>
+                <label for="grado" class="block text-sm font-medium text-gray-700 mb-1.5">
+                    <i class="fas fa-school text-gray-400 mr-1"></i>
+                    Grado
+                </label>
+
+                <select id="grado" name="grado" class="searchable w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <option value="">Seleccione un grado</option>
+                    {% for gid, grado, sid, seccion in grados_secciones %}
+                        {% ifchanged gid %}
                         <option value="{{ gid }}" {% if gid == grado_id %}selected{% endif %}>
                             {{ grado.nombre }}
                         </option>
-                    {% endifchanged %}
-                {% endfor %}
-            </select>
-        </div>
+                        {% endifchanged %}
+                    {% endfor %}
+                </select>
+            </div>
 
-        <div class="form-group">
-            <label>Sección</label>
-            <select id="seccion" name="seccion">
-                <option value="">-- Seleccionar --</option>
-                {% for gid, grado, sid, seccion in grados_secciones %}
+            <div>
+                <label for="seccion" class="block text-sm font-medium text-gray-700 mb-1.5">
+                    <i class="fas fa-door-open text-gray-400 mr-1"></i>
+                    Sección
+                </label>
+
+                <select id="seccion" name="seccion" class="searchable w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <option value="">Seleccione una sección</option>
+                    {% for gid, grado, sid, seccion in grados_secciones %}
                     <option
                         value="{{ sid }}"
                         data-grado="{{ gid }}"
@@ -60,24 +81,35 @@ Resumen de Asistencia
                     >
                         {{ seccion.nombre }}
                     </option>
-                {% endfor %}
-            </select>
-        </div>
+                    {% endfor %}
+                </select>
+            </div>
 
-        <div class="form-group">
-            <label>Hasta</label>
-            <input
-                type="date"
-                name="hasta"
-                value="{{ hasta|date:'Y-m-d' }}"
-                max="{{ anio.fecha_fin|date:'Y-m-d' }}"
-            >
-        </div>
+            <div>
+                <label for="hasta" class="block text-sm font-medium text-gray-700 mb-1.5">
+                    <i class="fas fa-flag-checkered text-gray-400 mr-1"></i>
+                    Hasta
+                </label>
 
-        <button type="submit" class="btn-primary">
-            <i class="fas fa-search"></i>
-            Consultar
-        </button>
+                <input
+                    type="date"
+                    id="hasta"
+                    name="hasta"
+                    value="{{ hasta|date:'Y-m-d' }}"
+                    max="{{ anio.fecha_fin|date:'Y-m-d' }}"
+                    class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+            </div>
+
+            <div>
+                <button type="submit"
+                        class="w-full inline-flex items-center justify-center gap-2 bg-blue-600 text-white px-6 py-2.5 rounded-lg text-sm font-semibold shadow-md shadow-blue-200 hover:bg-blue-700 transition">
+                    <i class="fas fa-search"></i>
+                    Consultar
+                </button>
+            </div>
+
+        </div>
 
     </form>
 
@@ -112,7 +144,10 @@ Resumen de Asistencia
                 <td>{{ forloop.counter }}</td>
 
                 <td>
-                    <strong>{{ fila.inscripcion.estudiante.nombre_completo }}</strong>
+                    <div class="flex items-center gap-2">
+                        {% avatar fila.inscripcion.estudiante size='w-8 h-8' texto='text-xs' %}
+                        <strong>{{ fila.inscripcion.estudiante.nombre_completo }}</strong>
+                    </div>
                 </td>
 
                 <td>{{ fila.inscripcion.estudiante.matricula }}</td>
@@ -175,6 +210,8 @@ Resumen de Asistencia
 
 {% endif %}
 
+{% include "academico/_tomselect.html" %}
+
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         const grado = document.getElementById('grado');
@@ -182,22 +219,58 @@ Resumen de Asistencia
 
         if (!grado || !seccion) return;
 
-        function filtrarSecciones() {
-            const gid = grado.value;
-
-            seccion.querySelectorAll('option').forEach(function (op) {
-                if (!op.value) return;
-
-                op.style.display = (op.dataset.grado === gid) ? '' : 'none';
+        function opcionesDeSeccion(gid) {
+            return Array.from(seccion.querySelectorAll('option')).filter(function (op) {
+                return !op.value || op.dataset.grado === gid;
             });
         }
 
-        grado.addEventListener('change', function () {
-            seccion.value = '';
-            filtrarSecciones();
-        });
+        function sincronizarSecciones(gid) {
+            const ts = seccion.tomselect;
 
-        filtrarSecciones();
+            if (!ts) {
+                seccion.querySelectorAll('option').forEach(function (op) {
+                    if (!op.value) return;
+                    op.style.display = (op.dataset.grado === gid) ? '' : 'none';
+                });
+                return;
+            }
+
+            const actual = seccion.value;
+            const opciones = opcionesDeSeccion(gid).map(function (op) {
+                return { value: op.value, text: op.textContent };
+            });
+
+            ts.clearOptions(true);
+            ts.addOption(opciones);
+
+            if (!opciones.some(function (o) { return o.value === actual; })) {
+                ts.clear(true);
+            }
+
+            ts.refreshOptions(false);
+        }
+
+        function limpiarSeccion() {
+            const ts = seccion.tomselect;
+            if (ts) {
+                ts.clear();
+            } else {
+                seccion.value = '';
+            }
+        }
+
+        function onGradoChange() {
+            limpiarSeccion();
+            sincronizarSecciones(grado.value);
+        }
+
+        grado.addEventListener('change', onGradoChange);
+        if (grado.tomselect) {
+            grado.tomselect.on('change', onGradoChange);
+        }
+
+        sincronizarSecciones(grado.value);
     });
 </script>
 

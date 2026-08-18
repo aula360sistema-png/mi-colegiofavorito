@@ -10,7 +10,7 @@ Cargos
 
     <div>
         <h1 class="page-title">Cargos</h1>
-        <p class="page-subtitle">Gestión de cargos del sistema</p>
+        <p class="page-subtitle">Gestión de cargos del personal</p>
     </div>
 
     <a href="{% url 'nomina:cargo_create' %}" class="btn-primary">
@@ -27,8 +27,9 @@ Cargos
         <thead>
             <tr>
                 <th>Nombre</th>
-              
+                <th>Descripción</th>
                 <th>Estado</th>
+                <th>Acciones</th>
             </tr>
         </thead>
 
@@ -37,13 +38,40 @@ Cargos
             {% for cargo in cargos %}
             <tr>
                 <td>{{ cargo.nombre }}</td>
-           
+                <td>{{ cargo.descripcion|default:"—" }}</td>
                 <td>
                     {% if cargo.activo %}
                         <span class="badge-success">Activo</span>
                     {% else %}
                         <span class="badge-danger">Inactivo</span>
                     {% endif %}
+                </td>
+                <td>
+                    <div class="table-actions">
+                        <a href="{% url 'nomina:cargo_edit' cargo.pk %}" class="btn-action" title="Editar">
+                            <i class="fas fa-pen"></i>
+                        </a>
+
+                        <form method="post" action="{% url 'nomina:cargo_toggle' cargo.pk %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn-action" title="Alternar estado">
+                                {% if cargo.activo %}
+                                    <i class="fas fa-ban"></i>
+                                {% else %}
+                                    <i class="fas fa-check"></i>
+                                {% endif %}
+                            </button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="4">
+                    <div class="empty-state">
+                        <i class="fas fa-briefcase"></i>
+                        <p>No hay cargos registrados</p>
+                    </div>
                 </td>
             </tr>
             {% endfor %}
@@ -55,5 +83,3 @@ Cargos
 </div>
 
 {% endblock %}
-
-

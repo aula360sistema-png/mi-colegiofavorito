@@ -1,114 +1,525 @@
 {% extends "home.html" %}
+{% load formatos %}
 
 {% block title %}Personal del Centro{% endblock %}
 
 {% block content %}
+
 <div class="max-w-7xl mx-auto">
 
-    <h2 class="text-2xl font-semibold mb-4">
-        👥 Personal del centro: {{ centro.nombre }}
-    </h2>
+    <!-- Encabezado -->
+    <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6">
 
-    <!-- Selector -->
-    <form method="get" class="flex gap-3 mb-6">
-        <select name="tipo"
-                class="border rounded px-3 py-2 text-sm"
-                required>
-            <option value="">-- Seleccionar --</option>
-            <option value="administrativo" {% if tipo == 'administrativo' %}selected{% endif %}>
-                Personal administrativo
-            </option>
-            <option value="estudiante" {% if tipo == 'estudiante' %}selected{% endif %}>
+        <div>
+            <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                <i class="fas fa-users text-blue-600"></i>
+                Personal del Centro
+            </h2>
+            <p class="text-sm text-gray-500 mt-1">
+                <i class="fas fa-school mr-1"></i>
+                {{ centro.nombre }}
+            </p>
+        </div>
+
+        <div class="inline-flex bg-gray-100 rounded-lg p-1">
+            <a href="{% url 'administracion:listado_personal' %}?tipo=administrativo"
+               class="px-4 py-2 rounded-lg text-sm font-semibold transition {% if tipo == 'administrativo' %}bg-white text-blue-700 shadow-sm{% else %}text-gray-500 hover:text-gray-700{% endif %}">
+                <i class="fas fa-user-tie mr-1"></i>
+                Administrativos
+            </a>
+            <a href="{% url 'administracion:listado_personal' %}?tipo=estudiante"
+               class="px-4 py-2 rounded-lg text-sm font-semibold transition {% if tipo == 'estudiante' %}bg-white text-blue-700 shadow-sm{% else %}text-gray-500 hover:text-gray-700{% endif %}">
+                <i class="fas fa-user-graduate mr-1"></i>
                 Estudiantes
-            </option>
-        </select>
+            </a>
+        </div>
 
-        <button type="submit"
-                class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-            🔍 Buscar
-        </button>
-    </form>
-
-    <!-- ADMINISTRATIVOS -->
-    {% if tipo == 'administrativo' %}
-    <div class="bg-white shadow rounded">
-        <table class="w-full text-sm">
-            <thead class="bg-gray-50 text-left">
-                <tr>
-                    <th class="px-4 py-2">Nombre</th>
-                    <th class="px-4 py-2">Cargo</th>
-                    <th class="px-4 py-2">Correo</th>
-                    <th class="px-4 py-2">Estado</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for p in administrativos %}
-                <tr class="border-t">
-                    <td class="px-4 py-2">{{ p.nombre_completo }}</td>
-                    <td class="px-4 py-2 capitalize">{{ p.get_cargo_display }}</td>
-                    <td class="px-4 py-2">{{ p.usuario.email }}</td>
-                    <td class="px-4 py-2">
-                        <span class="px-2 py-1 rounded text-xs
-                            {% if p.estado == 'activo' %}
-                                bg-green-100 text-green-700
-                            {% else %}
-                                bg-red-100 text-red-700
-                            {% endif %}">
-                            {{ p.estado }}
-                        </span>
-                    </td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="4" class="px-4 py-6 text-center text-gray-500">
-                        No hay personal administrativo
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
     </div>
-    {% endif %}
 
-    <!-- ESTUDIANTES -->
-    {% if tipo == 'estudiante' %}
-    <div class="bg-white shadow rounded">
-        <table class="w-full text-sm">
-            <thead class="bg-gray-50 text-left">
-                <tr>
-                    <th class="px-4 py-2">Nombre</th>
-                    <th class="px-4 py-2">Matrícula</th>
-                    <th class="px-4 py-2">Grado</th>
-                    <th class="px-4 py-2">Estado</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for e in estudiantes %}
-                <tr class="border-t">
-                    <td class="px-4 py-2">{{ e.nombre_completo }}</td>
-                    <td class="px-4 py-2">{{ e.matricula }}</td>
- <td class="px-4 py-2">
-    {% if e.grado_actual != '—' %}
-        {{ e.grado_actual }} {{ e.seccion_actual }}
+    {% if not tipo %}
+
+    <!-- Selección inicial -->
+    <div class="bg-white shadow-sm rounded-xl border border-gray-200 p-12 text-center">
+        <i class="fas fa-people-group text-4xl text-gray-300 mb-4 block"></i>
+        <p class="text-gray-500 font-medium">Selecciona una categoría para ver el personal del centro.</p>
+        <div class="flex justify-center gap-3 mt-6">
+            <a href="{% url 'administracion:listado_personal' %}?tipo=administrativo"
+               class="inline-flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-lg hover:bg-blue-700 text-sm font-semibold transition">
+                <i class="fas fa-user-tie"></i>
+                Personal administrativo
+            </a>
+            <a href="{% url 'administracion:listado_personal' %}?tipo=estudiante"
+               class="inline-flex items-center gap-2 bg-indigo-600 text-white px-5 py-2.5 rounded-lg hover:bg-indigo-700 text-sm font-semibold transition">
+                <i class="fas fa-user-graduate"></i>
+                Estudiantes
+            </a>
+        </div>
+    </div>
+
     {% else %}
-        <span class="text-gray-400">Sin inscripción activa</span>
-    {% endif %}
-</td>
 
+    <!-- Tarjetas de resumen -->
+    {% if tipo == 'administrativo' %}
 
-                    <td class="px-4 py-2">{{ e.estado }}</td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="4" class="px-4 py-6 text-center text-gray-500">
-                        No hay estudiantes
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+
+        <div class="bg-white shadow-sm rounded-xl p-5 border border-gray-200 flex items-center gap-4">
+            <div class="w-12 h-12 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center text-xl">
+                <i class="fas fa-user-tie"></i>
+            </div>
+            <div>
+                <p class="text-xs uppercase tracking-wide text-gray-500 font-semibold">Total administrativos</p>
+                <p class="text-2xl font-bold text-gray-800">{{ stats.admin_total }}</p>
+            </div>
+        </div>
+
+        <div class="bg-white shadow-sm rounded-xl p-5 border border-gray-200 flex items-center gap-4">
+            <div class="w-12 h-12 rounded-lg bg-green-100 text-green-600 flex items-center justify-center text-xl">
+                <i class="fas fa-user-check"></i>
+            </div>
+            <div>
+                <p class="text-xs uppercase tracking-wide text-gray-500 font-semibold">Activos</p>
+                <p class="text-2xl font-bold text-green-600">{{ stats.admin_activos }}</p>
+            </div>
+        </div>
+
+        <div class="bg-white shadow-sm rounded-xl p-5 border border-gray-200 flex items-center gap-4">
+            <div class="w-12 h-12 rounded-lg bg-red-100 text-red-600 flex items-center justify-center text-xl">
+                <i class="fas fa-user-slash"></i>
+            </div>
+            <div>
+                <p class="text-xs uppercase tracking-wide text-gray-500 font-semibold">Inactivos</p>
+                <p class="text-2xl font-bold text-red-600">{{ stats.admin_inactivos }}</p>
+            </div>
+        </div>
+
     </div>
+
+    {% else %}
+
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+
+        <div class="bg-white shadow-sm rounded-xl p-5 border border-gray-200 flex items-center gap-4">
+            <div class="w-12 h-12 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center text-xl">
+                <i class="fas fa-user-graduate"></i>
+            </div>
+            <div>
+                <p class="text-xs uppercase tracking-wide text-gray-500 font-semibold">Total estudiantes</p>
+                <p class="text-2xl font-bold text-gray-800">{{ stats.est_total }}</p>
+            </div>
+        </div>
+
+        <div class="bg-white shadow-sm rounded-xl p-5 border border-gray-200 flex items-center gap-4">
+            <div class="w-12 h-12 rounded-lg bg-green-100 text-green-600 flex items-center justify-center text-xl">
+                <i class="fas fa-user-check"></i>
+            </div>
+            <div>
+                <p class="text-xs uppercase tracking-wide text-gray-500 font-semibold">Activos</p>
+                <p class="text-2xl font-bold text-green-600">{{ stats.est_activos }}</p>
+            </div>
+        </div>
+
+        <div class="bg-white shadow-sm rounded-xl p-5 border border-gray-200 flex items-center gap-4">
+            <div class="w-12 h-12 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center text-xl">
+                <i class="fas fa-user-slash"></i>
+            </div>
+            <div>
+                <p class="text-xs uppercase tracking-wide text-gray-500 font-semibold">Retirados</p>
+                <p class="text-2xl font-bold text-amber-600">{{ stats.est_retirados }}</p>
+            </div>
+        </div>
+
+        <div class="bg-white shadow-sm rounded-xl p-5 border border-gray-200 flex items-center gap-4">
+            <div class="w-12 h-12 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center text-xl">
+                <i class="fas fa-graduation-cap"></i>
+            </div>
+            <div>
+                <p class="text-xs uppercase tracking-wide text-gray-500 font-semibold">Egresados</p>
+                <p class="text-2xl font-bold text-indigo-600">{{ stats.est_egresados }}</p>
+            </div>
+        </div>
+
+    </div>
+
+    {% endif %}
+
+    <!-- Filtros -->
+    <div class="bg-white shadow-sm rounded-xl border border-gray-200 p-4 mb-6">
+
+        <form method="get" id="filtro-form" class="flex flex-col md:flex-row gap-3">
+
+            <input type="hidden" name="tipo" value="{{ tipo }}">
+
+            <div class="flex-1 relative">
+                <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                <input
+                    id="busqueda-input"
+                    type="text"
+                    name="q"
+                    value="{{ q }}"
+                    placeholder="{% if tipo == 'administrativo' %}Buscar por nombre o cédula...{% else %}Buscar por matrícula o nombre...{% endif %}"
+                    class="w-full border border-gray-300 rounded-lg pl-10 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+            </div>
+
+            <select
+                name="estado"
+                data-auto-submit
+                class="md:w-52 border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                <option value="">Todos los estados</option>
+
+                {% if tipo == 'administrativo' %}
+                <option value="activo" {% if estado == 'activo' %}selected{% endif %}>Activos</option>
+                <option value="inactivo" {% if estado == 'inactivo' %}selected{% endif %}>Inactivos</option>
+                {% else %}
+                <option value="activo" {% if estado == 'activo' %}selected{% endif %}>Activos</option>
+                <option value="retirado" {% if estado == 'retirado' %}selected{% endif %}>Retirados</option>
+                <option value="egresado" {% if estado == 'egresado' %}selected{% endif %}>Egresados</option>
+                {% endif %}
+
+            </select>
+
+            <button type="submit"
+                    class="inline-flex items-center justify-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-lg hover:bg-blue-700 text-sm font-semibold">
+                <i class="fas fa-filter"></i>
+                Filtrar
+            </button>
+
+            {% if q or estado %}
+            <a href="{% url 'administracion:listado_personal' %}?tipo={{ tipo }}"
+               class="inline-flex items-center justify-center gap-2 bg-gray-200 text-gray-700 px-5 py-2.5 rounded-lg hover:bg-gray-300 text-sm font-medium">
+                <i class="fas fa-times"></i>
+                Limpiar
+            </a>
+            {% endif %}
+
+        </form>
+
+        <!-- Chips de filtros activos -->
+        {% if q or estado %}
+        <div class="flex flex-wrap items-center gap-2 mt-4 pt-4 border-t border-gray-100">
+
+            <span class="text-xs font-semibold text-gray-500 uppercase tracking-wide mr-1">
+                Filtros activos:
+            </span>
+
+            {% if q %}
+            <span class="inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 border border-blue-200 px-3 py-1.5 rounded-full text-xs font-medium">
+                <i class="fas fa-search text-[10px]"></i>
+                "{{ q }}"
+                <button type="button" onclick="removeFilter('q')" class="hover:text-red-500 transition">
+                    <i class="fas fa-xmark"></i>
+                </button>
+            </span>
+            {% endif %}
+
+            {% if estado %}
+            <span class="inline-flex items-center gap-1.5 bg-indigo-50 text-indigo-700 border border-indigo-200 px-3 py-1.5 rounded-full text-xs font-medium">
+                <i class="fas fa-user-check text-[10px]"></i>
+                {{ estado|capfirst }}
+                <button type="button" onclick="removeFilter('estado')" class="hover:text-red-500 transition">
+                    <i class="fas fa-xmark"></i>
+                </button>
+            </span>
+            {% endif %}
+
+            <a href="{% url 'administracion:listado_personal' %}?tipo={{ tipo }}"
+               class="inline-flex items-center gap-1.5 text-xs font-medium text-red-600 hover:text-red-700 hover:underline ml-2 transition">
+                <i class="fas fa-trash-can"></i>
+                Limpiar todo
+            </a>
+
+        </div>
+        {% endif %}
+
+    </div>
+
+    <script>
+      function removeFilter(param) {
+        const url = new URL(window.location.href)
+        url.searchParams.delete(param)
+        url.searchParams.delete('page')
+        window.location.href = url.toString()
+      }
+
+      document.addEventListener('DOMContentLoaded', function () {
+        const form = document.getElementById('filtro-form')
+
+        document.querySelectorAll('select[data-auto-submit]').forEach(function (select) {
+          select.addEventListener('change', function () {
+            form.submit()
+          })
+        })
+
+        const input = document.getElementById('busqueda-input')
+        if (input) {
+          let timer
+          input.addEventListener('input', function () {
+            clearTimeout(timer)
+            timer = setTimeout(function () {
+              form.submit()
+            }, 450)
+          })
+        }
+      })
+    </script>
+
+    <!-- ==================== TABLA ADMINISTRATIVOS ==================== -->
+    {% if tipo == 'administrativo' %}
+
+    <div class="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
+
+        <div class="flex items-center justify-between px-5 py-4 border-b border-gray-200 bg-gray-50">
+            <h3 class="font-semibold text-gray-800 flex items-center gap-2">
+                <i class="fas fa-user-tie text-gray-400"></i>
+                Personal administrativo
+            </h3>
+            <span class="text-xs font-medium bg-blue-100 text-blue-700 px-2.5 py-1 rounded-full">
+                Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+            </span>
+        </div>
+
+        <div class="overflow-x-auto">
+
+            <table class="min-w-full divide-y divide-gray-200 text-sm">
+
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+                            Nombre
+                        </th>
+                        <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+                            Cargo
+                        </th>
+                        <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+                            Cédula
+                        </th>
+                        <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+                            Correo
+                        </th>
+                        <th class="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-500">
+                            Estado
+                        </th>
+                    </tr>
+                </thead>
+
+                <tbody class="divide-y divide-gray-100">
+
+                    {% for p in administrativos %}
+
+                    <tr class="hover:bg-blue-50/50 transition-colors">
+
+                        <td class="px-5 py-3">
+                            <div class="flex items-center gap-3">
+                                {% avatar p %}
+                                <p class="font-medium text-gray-800">{{ p.nombre_completo }}</p>
+                            </div>
+                        </td>
+
+                        <td class="px-5 py-3">
+                            <span class="inline-flex items-center gap-1.5 bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-md text-xs font-semibold capitalize">
+                                <i class="fas fa-briefcase text-[10px]"></i>
+                                {{ p.get_cargo_display }}
+                            </span>
+                        </td>
+
+                        <td class="px-5 py-3">
+                            <span class="font-mono text-sm text-gray-600">{{ p.cedula }}</span>
+                        </td>
+
+                        <td class="px-5 py-3 text-gray-600">{{ p.usuario.email|default:"—" }}</td>
+
+                        <td class="px-5 py-3 text-center">
+
+                            {% if p.estado == "activo" %}
+                            <span class="inline-flex items-center gap-1 bg-green-100 text-green-700 px-2.5 py-1 rounded-full text-xs font-semibold">
+                                <i class="fas fa-circle text-[8px]"></i>
+                                Activo
+                            </span>
+                            {% else %}
+                            <span class="inline-flex items-center gap-1 bg-red-100 text-red-700 px-2.5 py-1 rounded-full text-xs font-semibold">
+                                <i class="fas fa-circle text-[8px]"></i>
+                                Inactivo
+                            </span>
+                            {% endif %}
+
+                        </td>
+
+                    </tr>
+
+                    {% empty %}
+
+                    <tr>
+                        <td colspan="5" class="px-5 py-12 text-center">
+                            <i class="fas fa-user-tie text-3xl text-gray-300 mb-3 block"></i>
+                            <p class="text-gray-500 font-medium">No se encontraron administrativos.</p>
+                            <p class="text-xs text-gray-400 mt-1">Prueba con otro término de búsqueda.</p>
+                        </td>
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-5 py-3 border-t border-gray-200 bg-gray-50 text-sm text-gray-600">
+            <span>
+                Mostrando
+                <strong>{{ page_obj.start_index }}</strong>–
+                <strong>{{ page_obj.end_index }}</strong> de
+                <strong>{{ page_obj.paginator.count }}</strong> administrativos
+            </span>
+            <span class="text-xs text-gray-400 hidden md:block">
+                <i class="fas fa-school mr-1"></i>
+                {{ centro.nombre }}
+            </span>
+        </div>
+
+        {% include "administracion/personal_paginador.html" %}
+
+    </div>
+
+    {% endif %}
+
+    <!-- ==================== TABLA ESTUDIANTES ==================== -->
+    {% if tipo == 'estudiante' %}
+
+    <div class="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
+
+        <div class="flex items-center justify-between px-5 py-4 border-b border-gray-200 bg-gray-50">
+            <h3 class="font-semibold text-gray-800 flex items-center gap-2">
+                <i class="fas fa-user-graduate text-gray-400"></i>
+                Estudiantes
+            </h3>
+            <span class="text-xs font-medium bg-blue-100 text-blue-700 px-2.5 py-1 rounded-full">
+                Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+            </span>
+        </div>
+
+        <div class="overflow-x-auto">
+
+            <table class="min-w-full divide-y divide-gray-200 text-sm">
+
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+                            Estudiante
+                        </th>
+                        <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+                            Matrícula
+                        </th>
+                        <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+                            Grado / Sección
+                        </th>
+                        <th class="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-500">
+                            Estado
+                        </th>
+                    </tr>
+                </thead>
+
+                <tbody class="divide-y divide-gray-100">
+
+                    {% for e in estudiantes %}
+
+                    <tr class="hover:bg-blue-50/50 transition-colors">
+
+                        <td class="px-5 py-3">
+                            <div class="flex items-center gap-3">
+                                {% avatar e color='from-indigo-500 to-purple-600' %}
+                                <p class="font-medium text-gray-800">{{ e.nombre_completo }}</p>
+                            </div>
+                        </td>
+
+                        <td class="px-5 py-3">
+                            <span class="font-mono text-sm text-gray-600">{{ e.matricula }}</span>
+                        </td>
+
+                        <td class="px-5 py-3">
+
+                            {% if e.grado_actual != '—' %}
+
+                            <div class="flex items-center gap-1.5">
+                                <span class="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-md text-xs font-semibold">
+                                    {{ e.grado_actual }}
+                                </span>
+                                <span class="bg-gray-100 text-gray-600 px-2 py-0.5 rounded-md text-xs font-medium">
+                                    {{ e.seccion_actual }}
+                                </span>
+                            </div>
+
+                            {% else %}
+
+                            <span class="text-gray-400 italic text-xs">Sin inscripción activa</span>
+
+                            {% endif %}
+
+                        </td>
+
+                        <td class="px-5 py-3 text-center">
+
+                            {% if e.estado == "activo" %}
+                            <span class="inline-flex items-center gap-1 bg-green-100 text-green-700 px-2.5 py-1 rounded-full text-xs font-semibold">
+                                <i class="fas fa-circle text-[8px]"></i>
+                                Activo
+                            </span>
+                            {% elif e.estado == "retirado" %}
+                            <span class="inline-flex items-center gap-1 bg-amber-100 text-amber-700 px-2.5 py-1 rounded-full text-xs font-semibold">
+                                <i class="fas fa-user-slash text-[10px]"></i>
+                                Retirado
+                            </span>
+                            {% else %}
+                            <span class="inline-flex items-center gap-1 bg-indigo-100 text-indigo-700 px-2.5 py-1 rounded-full text-xs font-semibold">
+                                <i class="fas fa-graduation-cap text-[10px]"></i>
+                                Egresado
+                            </span>
+                            {% endif %}
+
+                        </td>
+
+                    </tr>
+
+                    {% empty %}
+
+                    <tr>
+                        <td colspan="4" class="px-5 py-12 text-center">
+                            <i class="fas fa-user-graduate text-3xl text-gray-300 mb-3 block"></i>
+                            <p class="text-gray-500 font-medium">No se encontraron estudiantes.</p>
+                            <p class="text-xs text-gray-400 mt-1">Prueba con otro término de búsqueda.</p>
+                        </td>
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-5 py-3 border-t border-gray-200 bg-gray-50 text-sm text-gray-600">
+            <span>
+                Mostrando
+                <strong>{{ page_obj.start_index }}</strong>–
+                <strong>{{ page_obj.end_index }}</strong> de
+                <strong>{{ page_obj.paginator.count }}</strong> estudiantes
+            </span>
+            <span class="text-xs text-gray-400 hidden md:block">
+                <i class="fas fa-school mr-1"></i>
+                {{ centro.nombre }}
+            </span>
+        </div>
+
+        {% include "administracion/personal_paginador.html" %}
+
+    </div>
+
+    {% endif %}
+
     {% endif %}
 
 </div>
+
 {% endblock %}

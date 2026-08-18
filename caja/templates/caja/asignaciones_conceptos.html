@@ -1,4 +1,5 @@
 {% extends "home.html" %}
+{% load formatos %}
 
 {% block title %}Asignar Conceptos{% endblock %}
 
@@ -36,7 +37,7 @@
                         <option value="">— Selecciona —</option>
                         {% for c in conceptos %}
                             <option value="{{ c.id }}" {% if c.id|stringformat:"s" == concepto_seleccionado %}selected{% endif %}>
-                                {{ c.nombre }} · RD$ {{ c.monto|floatformat:2 }}
+                                {{ c.nombre }} · RD$ {{ c.monto|dop }}
                             </option>
                         {% endfor %}
                     </select>
@@ -111,8 +112,11 @@
                                            class="rounded checkbox-estudiante"
                                            {% if not f.asignado %}checked{% endif %}>
                                 </td>
-                                <td class="px-4 py-2 font-medium text-gray-800">
-                                    {{ f.estudiante.nombre_completo }}
+                                <td class="px-4 py-2">
+                                    <div class="flex items-center gap-2">
+                                        {% avatar f.estudiante size='w-8 h-8' texto='text-xs' %}
+                                        <span class="font-medium text-gray-800">{{ f.estudiante.nombre_completo }}</span>
+                                    </div>
                                     {% if f.asignado %}
                                         <span class="ml-2 px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full text-[11px] font-medium">
                                             Ya asignado
@@ -168,9 +172,14 @@
             <tbody>
                 {% for asig in asignaciones %}
                     <tr class="border-t hover:bg-gray-50">
-                        <td class="px-6 py-2.5 font-medium text-gray-800">{{ asig.estudiante.nombre_completo }}</td>
+                        <td class="px-6 py-2.5">
+                            <div class="flex items-center gap-2">
+                                {% avatar asig.estudiante size='w-8 h-8' texto='text-xs' %}
+                                <span class="font-medium text-gray-800">{{ asig.estudiante.nombre_completo }}</span>
+                            </div>
+                        </td>
                         <td class="px-4 py-2.5">{{ asig.concepto.nombre }}</td>
-                        <td class="px-4 py-2.5 text-right">RD$ {{ asig.concepto.monto|floatformat:2 }}</td>
+                        <td class="px-4 py-2.5 text-right">RD$ {{ asig.concepto.monto|dop }}</td>
                         <td class="px-4 py-2.5 text-gray-500">{{ asig.anio_escolar.nombre }}</td>
                         <td class="px-4 py-2.5 text-center">
                             {% if asig.activo %}

@@ -17,6 +17,9 @@ class AuditoriaMiddleware:
         # Guardamos request globalmente
         _request_storage.request = request
 
-        response = self.get_response(request)
-
-        return response
+        try:
+            return self.get_response(request)
+        finally:
+            # Limpiamos el request para no arrastrar referencias obsoletas
+            # entre peticiones (evita auditoría con usuarios de otra sesión)
+            _request_storage.request = None

@@ -6,7 +6,8 @@ from .models import Usuario
 class UsuarioAdmin(admin.ModelAdmin):
     list_display = ('username', 'email', 'is_active', 'is_staff', 'rol', 'fecha_creacion')
     list_filter = ('is_active',)   # ← COMA OBLIGATORIA
-    search_fields = ('username', 'email', 'nombre', 'apellido', 'rol', 'fecha_creacion') 
+    search_fields = ('username', 'email', 'first_name', 'last_name', 'rol', 'fecha_creacion')
+    readonly_fields = ('fecha_creacion',)
 
 
 

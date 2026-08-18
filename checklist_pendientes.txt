@@ -1,0 +1,262 @@
+# CHECKLIST DE MÓDULOS PENDIENTES DEL SISTEMA ESCOLAR
+# Fecha: 2026-08-10
+# Marca cada ítem con [x] cuando esté completado.
+
+---
+
+## PRIORIDAD ALTA (core escolar)
+
+- [x] **Padres/tutores**: módulo de tutores vinculados a estudiantes con su propio login
+      (app tutores: modelo Tutor, CRUD, portal del tutor, rol 'tutor', fotos, vinculación
+      con estudiantes desde el form del estudiante y del tutor).
+- [x] **Horario de clases**: cuadro de horarios por sección/docente (el modelo
+      asignatura-sección-docente ya lo soporta, falta la vista/CRUD de horarios).
+      - academico/models.py: FranjaHoraria (bloques de tiempo por centro) y
+        HorarioClase (asignación + día + franja) con unique_together y validación
+        de choques (docente/sección/materia).
+      - Vistas: horario_list (grilla franjas × días con filtros grado/sección/año),
+        horario_clase_create/update/delete, franja CRUD.
+      - Acceso desde administracion/templates/administracion/mantenimiento.html
+        (tarjeta "Horario de Clases").
+
+## EXPEDIENTE ACADÉMICO (VERIFICADO - YA EXISTE)
+
+- [x] **Expediente académico completo**: promedios por periodo y acumulado + historial
+      por materia.
+      - estudiantes/services/kardex.py: construir_kardex (promedios por periodo, acumulado,
+        asistencia, observaciones)
+      - estudiantes/services/kardex.py: construir_record_notas (record oficial MINERD
+        con ciclos 1er/2do ciclo, modalidad académica)
+      - Vistas: estudiante_detail (kardex), kardex_imprimir, historial_estudiantes,
+        constancias.
+
+---
+
+## PRIORIDAD MEDIA (gestión diaria)
+
+- [x] **Nómina de empleados**: verificado completo (app nomina). Catálogos (AFP, ARS,
+      cargos, tipos de ingreso/descuento), configuración por empleado (salario, AFP, ARS)
+      vinculada a Docente/Administrativo, ingresos/descuentos personalizados, períodos
+      automáticos (mensual/quincenal/semanal), motor de generación con prorrateo, TSS e
+      ISR (DGII), boletas, historial y estados (anular/cerrar).
+      - Falta acceso desde el menú lateral: se agregó "Nómina" en el sidebar
+        (home.html) para director (submenú Personal) y admin/superadmin.
+      - Tests: 24 en nomina/tests.py (prorrateo, ISR, generación, anulación, vistas).
+- [x] **Disciplina/conducta**: registro de faltas, amonestaciones y méritos por estudiante.
+      - estudiantes/forms.py: DisciplinaForm (estudiante + tipo + año + fecha + descripción).
+      - Vistas en estudiantes/views.py: disciplina (listado con filtros q/tipo/año/grado/sección
+        y resumen por tipo), disciplina_registrar, disciplina_eliminar.
+      - Template: estudiantes/templates/estudiantes/disciplina.html (form sticky + tabla + paginación).
+      - Acceso desde el sidebar (home.html) para director/secretaria/admin/superadmin.
+      - Tests: 8 en estudiantes/tests.py (DisciplinaTestCase).
+- [x] **Solicitudes de certificados**: flujo solicitud → aprobación → cobro → entrega.
+      - estudiantes/models.py: SolicitudCertificado (folio SC-AAAA-NNNN único, estudiante,
+        solicitante, tipo, estado pendiente/aprobada/rechazada/pagada/entregada/anulada,
+        motivo, monto, método de pago efectivo/en línea, referencia_pago, pagado/aprobado/
+        entregado con quién y cuándo).
+      - ConfiguracionCentro: modulo_certificados + precio_certificado (core/migrations/0008)
+        y permitir_pago_online ya existente (form y template de configuración actualizados).
+      - Portal estudiante: estudiantes/views.py estudiante_solicitudes (listado + solicitar
+        con precio del centro) y estudiante_solicitud_pagar (pago en línea). URL
+        estudiantes/urls.py, template estudiantes/estudiante_solicitudes.html, enlace en
+        sidebar.
+      - Portal tutor: tutores/views.py tutor_solicitudes (solicita para cualquiera de sus
+        estudiantes con selector). URL tutores/urls.py, template tutores/tutor_solicitudes.html,
+        enlace en sidebar.
+      - Panel admin (director/secretaria/admin/superadmin): solicitudes_certificados_list
+        (filtros q/estado/tipo + resumen por estado) y acciones solicitud_aprobar/
+        rechazar/cobrar/entregar/anular; listado cacheado (dominio estudiantes:{centro}).
+      - Pagos en línea: estudiantes/services/pagos.py (procesar_pago_online genera referencia
+        ONL-... y marca pagada; punto de integración preparado para pasarela real, respeta
+        permitir_pago_online). Reembolso listo para anulaciones.
+      - Tests: 8 en estudiantes/tests.py (SolicitudCertificadoTestCase) + 9 en
+        estudiantes/tests.py (SolicitudCertificadoAdminTestCase) + 2 de caché en
+        CacheEstudiantesTests + 4 en tutores/tests.py.
+      - Fix: core/views.py custom_404_view ya no exige rol superadmin (antes cualquier 404
+        de otro rol devolvía 403) y usa core:home.
+- [x] **Historial clínico/emergencia**: datos de contacto de emergencia y alergias por
+      estudiante.
+      - Modelos: HistorialClinicoEstudiante (OneToOne con Estudiante: grupo sanguíneo,
+        alergias, condiciones médicas, medicamentos, vacunas, 2 contactos de emergencia,
+        observaciones) y RegistroSalud (tipo, fecha, descripción, atención, medicamento,
+        notificado_a_tutor, registrado_por). Migración estudiantes/0015.
+      - Portales: estudiante (estudiante_historial_clinico, solo el suyo) y tutor
+        (tutor_historial_clinico, solo sus estudiantes). Enlaces en sidebar de home.html.
+      - Admin (director/secretaria/admin/superadmin): historial_clinico_list con filtros
+        q/grado/sección + paginación, historial_clinico_detalle con alta/eliminación de
+        registros, historial_clinico_editar.
+      - Forms: HistorialClinicoForm, RegistroSaludForm en estudiantes/forms.py.
+      - Tests: 8 en estudiantes/tests.py (HistorialClinicoTestCase) + 3 en tutores/tests.py.
+      - Suite completa: 116 OK.
+
+---
+
+## PRIORIDAD BAJA (extras)
+
+- [ ] **Comunicados/notificaciones**: anuncios del colegio por sección.
+- [ ] **Biblioteca**: préstamos de libros (ConfiguracionCentro ya tiene flag modulo_biblioteca).
+- [ ] **Transporte escolar**: rutas y paradas (ConfiguracionCentro ya tiene flag modulo_transporte).
+- [ ] **Matrícula en línea**: preinscripción con estado pendiente/aprobado.
+
+---
+
+## OBSERVACIONES
+
+- El módulo de estudiantes (expediente) ya estaba completo; solo se verificó.
+- El módulo de tutores fue creado el 2026-08-10 (app `tutores`).
+- El módulo de horario de clases fue creado el 2026-08-10 (models FranjaHoraria y
+  HorarioClase en academico; templates en academico/templates/academico/).
+- El módulo de nómina fue verificado el 2026-08-10; solo faltaba el enlace del menú
+  lateral (se agregó en core/templates/home.html).
+- El módulo de disciplina/conducta fue completado el 2026-08-10 (vista dedicada con
+  filtros y registro desde estudiantes/views.py y estudiantes/forms.py).
+- El módulo de solicitudes de certificados fue completado el 2026-08-10 (modelo
+  SolicitudCertificado, portales de estudiante y tutor, pago en línea preparado en
+  estudiantes/services/pagos.py). Panel de administración completado el 2026-08-11:
+  listado con filtros (q/estado/tipo) + resumen por estado, acciones aprobar/
+  rechazar (con motivo)/cobrar en caja (con referencia)/entregar/anular (con
+  reembolso de pagos en línea); URL solicitudes_certificados en
+  estudiantes/urls.py, template estudiantes/solicitudes_certificados.html y enlace
+  en el sidebar. La lista se cachea bajo `estudiantes:{centro}` (señal en
+  estudiantes/signals.py). Pendiente: integrar pasarela de pago real.
+- Flags de configuración existentes en ConfiguracionCentro: modulo_biblioteca,
+  modulo_transporte, modulo_mensajeria, modulo_cafeteria, modulo_inventario.
+
+---
+
+## RENDIMIENTO Y ESCALABILIDAD (2026-08-10)
+
+### Hecho en desarrollo local (Windows + SQLite)
+- [x] **Capa de caché env-driven**: `REDIS_URL` vacía → LocMemCache (dev); definida →
+      RedisCache (prod). TTL configurables (CACHE_TTL_CORTO/MEDIO/LARGO).- [x] **Sesiones en caché**: `SESSION_ENGINE=cached_db` reduce escrituras a la BD.
+- [x] **Context processor `configuracion_centro` cacheado**: configuración del centro
+      y módulos del sidebar se cachean (ya no se consulta la BD en cada request).
+- [x] **Kardex/Record cacheados**: `construir_kardex` y `construir_record_notas` con
+      invalidación automática por señales (Calificacion, Inscripcion, Observacion,
+      Asistencia, Periodo, DocenteMateria, ConfiguracionCentro).
+- [x] **Dashboard admin cacheado**: métricas se calculan una vez cada CACHE_TTL_CORTO
+      y se invalidan al registrar pagos/inscripciones/sesiones de caja.
+- [x] **IdleTimeout optimizado**: ya no escribe `session.modified=True` en cada request
+      (solo actualiza la marca de actividad cada 60s).
+- [x] **Índices de BD** agregados por migración a campos de filtrado frecuente
+      (Inscripcion, Calificacion, DocenteMateria, PeriodoAnio, Estudiante, Asistencia,
+      Pago, Egreso, ObservacionEstudiante, RegistroSalud, AnioEscolar).
+- [x] **Whitenoise** activo para servir estáticos comprimidos con caché en producción.
+- [x] Suite de tests: 119 OK tras los cambios.
+
+### Caché de listados y métricas (2026-08-11)
+- [x] **caja**: cacheados `pagos_del_centro`, `egresos_del_centro`, `metricas_dia`,
+      `metricas_reporte_diario`, `balance_por_concepto`, `balance_estudiante`,
+      `calcular_cuentas_por_cobrar(+detalle)` con dominio `pagos:{centro}`.
+      Vistas caja_inicio, reporte_diario, lista_pagos y lista_egresos filtran en
+      memoria sobre la lista base cacheada (señales: Pago, Egreso,
+      AsignacionConcepto, ConceptoPago, SesionCaja).
+- [x] **facturacion**: cacheados `facturas_del_centro` y `metricas_facturas` con
+      dominio `facturas:{centro}` (signal nuevo en facturacion/signals.py +
+      apps.py). Vistas facturacion_inicio y lista_facturas.
+- [x] **estudiantes**: cacheadas `estudiantes_del_centro` y nueva
+      `inscripciones_del_centro` (historial) con dominio `estudiantes:{centro}`;
+      filtros de estudiante_list/historial_estudiantes en memoria.
+- [x] **administracion**: cacheados `obtener_metricas_reportes` y nuevo
+      `obtener_stats_personal` (dominio `personal:{centro}` con signal para
+      Administrativo).
+- [x] Tests: suite completa 130 OK (incluye caja/tests.py nuevos y tests de caché
+      en facturacion/tests.py). Verificado con datos reales: 2ª llamada = 0 queries.
+
+### PENDIENTE: cachear más módulos (2026-08-11)
+- [x] **nomina**: dashboard, historial_nomina, periodo_detalle y boleta_pago
+      (totales por periodo). Prioridad alta.
+      - nomina/services.py: métricas_dashboard, datos_periodo_detalle,
+        historial_nomina y datos_boleta_pago con dominio `nomina:{centro}`
+        (versionado + prefetch/select_related).
+      - nomina/signals.py: invalida `nomina:{centro}` en save/delete de
+        Nomina, PeriodoNomina, ConfiguracionNomina, IngresoNomina,
+        DescuentoNomina (resuelve el centro vía periodo/nomina si falta).
+      - Tests: 8 en nomina/tests.py (CacheNominaTests: 2ª llamada sin queries
+        e invalidación por cambio de estado/anulación).
+- [x] **administracion**: lista_boletines (agregados de boletines por acta).
+      Prioridad alta.
+      - administracion/views.py: actas_del_centro con dominio `actas:{centro}`
+        (versionado + select_related); la vista filtra y pagina en memoria.
+      - administracion/signals.py: invalida `actas:{centro}` en save/delete de Acta.
+      - Tests: 2 en administracion/tests.py (CacheActasDelCentroTests).
+- [x] **academico**: catálogos de estructura (nivel, grado, seccion, area,
+      asignatura, competencia, periodo, docentemateria, anio_escolar, franja,
+      horario) con dominio `estructura:{centro}`. Prioridad media.
+- [x] **academico**: curriculo y estructura_minerd (consultas de estructura
+      pesadas). Prioridad media.
+      - La vista `curriculo` ya consume los catálogos cacheados de
+        `estructura` (areas, asignaturas, grado_asignaturas, competencias,
+        docentes_materia) y pagina en memoria. `estructura_minerd` es
+        constantes en memoria (sin consultas a la BD).
+- [x] **asistencia**: resumen_asistencia y estado_asistencia (agregados por
+      inscripción). Prioridad media.
+      - asistencia/services.py: `_registros_asistencia_anio` (mapa
+        {inscripcion: {fecha: estado}} por año) y `registros_del_dia` con
+        dominio `asistencia:{centro}`; `calcular_promedio_inscripcion` acepta
+        el mapa para no consultar por inscripción; `_fechas_no_docencia`
+        cacheado.
+      - asistencia/signals.py: invalida `asistencia:{centro}` en save/delete
+        de AsistenciaEstudiante (centro vía inscripción) y DiaNoDocencia.
+      - vistas: resumen_asistencia agrega en memoria; estado_asistencia usa
+        `registros_del_dia` (una sola consulta cacheada en vez de un
+        `.exists()` por sección).
+      - Tests: 5 en asistencia/tests.py (CacheAsistenciaTests: 2ª llamada sin
+        queries e invalidación por alta/borrado/asistencia y no docencia).
+- [x] **estudiantes**: disciplina (reporte agregado) y constancias. Baja.
+      - estudiantes/services/listados.py: `observaciones_del_centro` (lista
+        base con estudiante + anio_escolar + inscripciones del estudiante
+        prefetchadas) bajo el dominio `estudiantes:{centro}`; la vista
+        disciplina filtra/agrega/ordena en memoria (q, tipo, año, grado,
+        sección, resumen por tipo).
+      - estudiantes/signals.py: `invalidar_por_observacion` ahora también
+        invalida `estudiantes:{centro}` (resuelve el centro vía estudiante).
+      - constancias reusa `estudiantes_del_centro(centro, anio_actual)`
+        (ya cacheado) en lugar de 2 consultas por request.
+      - Dropdowns de disciplina (años, grados, secciones) reusan
+        `estructura.anios_escolares/grados/secciones` ya cacheados.
+      - Tests: 3 en estudiantes/tests.py (CacheEstudiantesTests).
+- [x] **docentes**: docente_list y panel del docente. Baja.
+      - docentes/services.py: `docentes_del_centro` y `datos_dashboard_docente`
+        (una sola consulta SQL agregada por (grado_id, nombre de sección) con
+        total de asignaciones, estudiantes y % de notas) con dominio
+        `docentes:{centro}`.
+      - docentes/signals.py: invalida `docentes:{centro}` en save/delete de
+        Docente, DocenteMateria, Acta, Inscripcion y PeriodoAnio (centro vía
+        docente/periodo si falta).
+      - vistas: docente_list y dashboard_docente (maneja anio_actual None).
+      - Tests: 5 en docentes/tests.py (CacheDocentesTests).
+- [x] **tutores**: tutor_list y panel del tutor. Baja.
+      - tutores/services.py: `tutores_del_centro` (con estudiantes prefeteado)
+        y `datos_inicio_tutor` (estudiantes + inscripción activa con un solo
+        prefetch) con dominio `tutores:{centro}`.
+      - tutores/signals.py: invalida en save/delete de Tutor, Inscripcion y
+        Estudiante + `m2m_changed` de la M2M Tutor.estudiantes (el post_save
+        del through NO se dispara en add/remove).
+      - vistas: tutor_list filtra/pagina en memoria; tutor_inicio usa el panel
+        cacheado.
+      - Tests: 5 en tutores/tests.py (CacheTutoresTests).
+- [x] **core**: centro_list (listado de centros). Baja.
+      - core/services.py: `centros_listado` (dominio global `centros`, sin
+        prefijo por centro).
+      - core/signals.py: invalida `centros` en save/delete de CentroEducativo.
+      - Tests: 3 en core/tests.py (CacheCentrosListadoTests).
+
+### Pendiente PARA PRODUCCIÓN (escala 500-1500 usuarios simultáneos)
+- [ ] **Usar PostgreSQL** (`DB_ENGINE=postgresql` + credenciales en .env). SQLite solo
+      sirve para desarrollo de 1-2 usuarios; con concurrencia real se bloquea.
+- [ ] **Levantar Redis** y definir `REDIS_URL`. El caché LocMem NO se comparte entre
+      workers: con 2+ workers cada uno tendría su copia y las invalidaciones no
+      viajarían entre ellos. Redis es obligatorio con multiworker.
+- [ ] **Servir con Gunicorn multiworker**: `gunicorn mycolegiofavorito.wsgi:application
+      --workers $(nproc x 2 + 1) --threads 2 --timeout 60`. El número de workers
+      depende de la RAM del servidor.
+- [ ] **Nginx como reverse proxy** delante de Gunicorn (SSL, static, compression).
+- [ ] **`collectstatic`** al desplegar (Whitenoise servirá /static/ comprimido).
+- [ ] **Ajustar ALLOWED_HOSTS y CSRF_TRUSTED_ORIGINS** al dominio real.
+- [ ] **Backups automáticos** de la BD (PostgreSQL) y de /media/.
+- [ ] **Monitoreo**: vigilar slow queries, uso de RAM de workers y Redis (INFO stats).
+- [ ] Si se superan los ~1500 usuarios: escalar a 2+ servidores con balanceador
+      (Nginx upstream) + sesiones/caché en Redis (ya configurado) + archivos en
+      almacenamiento compartido.
+

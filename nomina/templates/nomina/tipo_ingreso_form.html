@@ -1,0 +1,58 @@
+{% extends 'home.html' %}
+
+{% block content %}
+
+<div class="form-card">
+
+    <div class="form-header">
+        <h1>{{ accion }} Tipo de Ingreso</h1>
+        <p class="form-subtitle">Ej.: Bonificación, Gratificación, Horas extras</p>
+    </div>
+
+    <form method="post" class="custom-form">
+
+        {% csrf_token %}
+
+        <div class="form-grid">
+
+            {% for field in form %}
+
+            <div class="form-group">
+
+                <label>
+                    {{ field.label }}
+                </label>
+
+                {{ field }}
+
+                {% if field.help_text %}
+                    <small class="help-text">{{ field.help_text }}</small>
+                {% endif %}
+
+                {% for error in field.errors %}
+                    <p class="error-text">{{ error }}</p>
+                {% endfor %}
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+        <div class="form-actions">
+
+            <button type="submit" class="btn-primary">
+                Guardar
+            </button>
+
+            <a href="{% url 'nomina:tipo_ingreso_list' %}" class="btn-secondary">
+                Volver
+            </a>
+
+        </div>
+
+    </form>
+
+</div>
+
+{% endblock %}

@@ -1,0 +1,284 @@
+{% extends "home.html" %}
+{% load formatos %}
+
+{% block title %}Historial clínico - {{ estudiante.nombre_completo }}{% endblock %}
+
+{% block content %}
+
+<div class="max-w-7xl mx-auto">
+
+    <!-- Encabezado -->
+    <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6">
+        <div>
+            <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                <i class="fas fa-heartbeat text-red-500"></i>
+                Historial clínico
+            </h2>
+            <p class="text-sm text-gray-500 mt-1">
+                {{ estudiante.nombre_completo }}
+                <span class="text-gray-400">— Matrícula {{ estudiante.matricula }}</span>
+            </p>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <a href="{% url 'historial_clinico_list' %}"
+               class="inline-flex items-center gap-2 bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 text-sm font-semibold">
+                <i class="fas fa-arrow-left"></i>
+                Volver
+            </a>
+
+            <a href="{% url 'historial_clinico_editar' estudiante.pk %}"
+               class="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm font-semibold">
+                <i class="fas fa-pen"></i>
+                Editar historial
+            </a>
+        </div>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="mb-4 rounded-xl px-4 py-3 text-sm font-medium {% if message.tags == 'success' %}bg-emerald-50 text-emerald-700 border border-emerald-200{% elif message.tags == 'error' %}bg-red-50 text-red-700 border border-red-200{% else %}bg-blue-50 text-blue-700 border border-blue-200{% endif %}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        <!-- Columna principal -->
+        <div class="lg:col-span-2 space-y-6">
+
+            <!-- Datos generales -->
+            <div class="bg-white shadow-sm rounded-xl border border-gray-200 p-5">
+                <h3 class="font-semibold text-gray-800 flex items-center gap-2 mb-4">
+                    <i class="fas fa-droplet text-red-500"></i>
+                    Datos generales
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                    <div>
+                        <p class="text-gray-400">Grupo sanguíneo</p>
+                        <p class="font-semibold text-gray-800">{{ historial.get_grupo_sanguineo_display }}</p>
+                    </div>
+                    <div>
+                        <p class="text-gray-400">Creado</p>
+                        <p class="text-gray-700">{{ historial.created_at|date:"d/m/Y" }}</p>
+                    </div>
+                    <div>
+                        <p class="text-gray-400">Actualizado</p>
+                        <p class="text-gray-700">{{ historial.updated_at|date:"d/m/Y" }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Alergias -->
+            <div class="bg-white shadow-sm rounded-xl border border-gray-200 p-5">
+                <h3 class="font-semibold text-gray-800 flex items-center gap-2 mb-4">
+                    <i class="fas fa-allergies text-amber-500"></i>
+                    Alergias
+                </h3>
+                {% if historial.alergias %}
+                    <p class="text-sm text-gray-700 whitespace-pre-line">{{ historial.alergias }}</p>
+                {% else %}
+                    <p class="text-sm text-gray-400">Sin alergias registradas.</p>
+                {% endif %}
+            </div>
+
+            <!-- Condiciones médicas -->
+            <div class="bg-white shadow-sm rounded-xl border border-gray-200 p-5">
+                <h3 class="font-semibold text-gray-800 flex items-center gap-2 mb-4">
+                    <i class="fas fa-stethoscope text-blue-500"></i>
+                    Condiciones médicas
+                </h3>
+                {% if historial.condiciones_medicas %}
+                    <p class="text-sm text-gray-700 whitespace-pre-line">{{ historial.condiciones_medicas }}</p>
+                {% else %}
+                    <p class="text-sm text-gray-400">Sin condiciones médicas registradas.</p>
+                {% endif %}
+            </div>
+
+            <!-- Medicamentos -->
+            <div class="bg-white shadow-sm rounded-xl border border-gray-200 p-5">
+                <h3 class="font-semibold text-gray-800 flex items-center gap-2 mb-4">
+                    <i class="fas fa-pills text-emerald-500"></i>
+                    Medicamentos habituales
+                </h3>
+                {% if historial.medicamentos_habituales %}
+                    <p class="text-sm text-gray-700 whitespace-pre-line">{{ historial.medicamentos_habituales }}</p>
+                {% else %}
+                    <p class="text-sm text-gray-400">Sin medicamentos registrados.</p>
+                {% endif %}
+            </div>
+
+            <!-- Vacunas -->
+            {% if historial.vacunas %}
+            <div class="bg-white shadow-sm rounded-xl border border-gray-200 p-5">
+                <h3 class="font-semibold text-gray-800 flex items-center gap-2 mb-4">
+                    <i class="fas fa-syringe text-purple-500"></i>
+                    Vacunas
+                </h3>
+                <p class="text-sm text-gray-700 whitespace-pre-line">{{ historial.vacunas }}</p>
+            </div>
+            {% endif %}
+
+            <!-- Observaciones -->
+            {% if historial.observaciones %}
+            <div class="bg-white shadow-sm rounded-xl border border-gray-200 p-5">
+                <h3 class="font-semibold text-gray-800 flex items-center gap-2 mb-4">
+                    <i class="fas fa-note-sticky text-slate-500"></i>
+                    Observaciones
+                </h3>
+                <p class="text-sm text-gray-700 whitespace-pre-line">{{ historial.observaciones }}</p>
+            </div>
+            {% endif %}
+
+            <!-- Registros de salud -->
+            <div class="bg-white shadow-sm rounded-xl border border-gray-200 p-5">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="font-semibold text-gray-800 flex items-center gap-2">
+                        <i class="fas fa-file-medical text-teal-500"></i>
+                        Registros de salud
+                    </h3>
+                    <span class="text-sm text-gray-400">{{ registros|length }} registro(s)</span>
+                </div>
+
+                <form method="post" action="{% url 'registro_salud_crear' estudiante.pk %}"
+                      class="mb-6 bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-3">
+                    {% csrf_token %}
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Tipo</label>
+                            <select name="tipo" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                                {% for value, label in form_tipo_opciones %}
+                                    <option value="{{ value }}">{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Fecha</label>
+                            <input type="date" name="fecha" required
+                                   class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                        </div>
+                        <div class="flex items-end">
+                            <label class="flex items-center gap-2 text-xs font-medium text-gray-600 mb-2">
+                                <input type="checkbox" name="notificado_a_tutor" class="rounded">
+                                Notificado al tutor
+                            </label>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-600 mb-1">Descripción</label>
+                        <textarea name="descripcion" rows="2" required
+                                  class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"></textarea>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Atención proporcionada</label>
+                            <textarea name="atencion_proporcionada" rows="2"
+                                      class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Medicamento</label>
+                            <input type="text" name="medicamento"
+                                   class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                        </div>
+                    </div>
+                    <button type="submit"
+                            class="inline-flex items-center gap-2 bg-teal-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700 text-sm font-semibold">
+                        <i class="fas fa-plus"></i>
+                        Registrar atención
+                    </button>
+                </form>
+
+                {% for registro in registros %}
+                <div class="border-t border-gray-100 py-4 first:border-t-0 first:pt-0">
+                    <div class="flex items-center justify-between gap-2">
+                        <span class="text-sm font-semibold text-gray-800">
+                            {{ registro.get_tipo_display }}
+                        </span>
+                        <div class="flex items-center gap-3">
+                            <span class="text-xs text-gray-400">{{ registro.fecha|date:"d/m/Y" }}</span>
+                            {% if registro.notificado_a_tutor %}
+                                <span class="text-xs text-amber-600">
+                                    <i class="fas fa-bell"></i> Tutor notificado
+                                </span>
+                            {% endif %}
+                            <form method="post" action="{% url 'registro_salud_eliminar' registro.pk %}"
+                                  onsubmit="return confirm('¿Eliminar este registro de salud?');">
+                                {% csrf_token %}
+                                <button type="submit"
+                                        class="text-red-500 hover:text-red-700 text-sm" title="Eliminar">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    <p class="text-sm text-gray-700 mt-1">{{ registro.descripcion }}</p>
+                    {% if registro.atencion_proporcionada %}
+                        <p class="text-xs text-gray-500 mt-1">Atención: {{ registro.atencion_proporcionada }}</p>
+                    {% endif %}
+                    {% if registro.medicamento %}
+                        <p class="text-xs text-gray-500">Medicamento: {{ registro.medicamento }}</p>
+                    {% endif %}
+                    {% if registro.registrado_por %}
+                        <p class="text-xs text-gray-400 mt-1">
+                            Registrado por {{ registro.registrado_por.get_full_name|default:registro.registrado_por.username }}
+                        </p>
+                    {% endif %}
+                </div>
+                {% empty %}
+                    <p class="text-sm text-gray-400">No hay registros de salud.</p>
+                {% endfor %}
+            </div>
+
+        </div>
+
+        <!-- Columna lateral -->
+        <div class="space-y-6">
+            <div class="bg-white shadow-sm rounded-xl border border-gray-200 p-5">
+                <h3 class="font-semibold text-gray-800 flex items-center gap-2 mb-4">
+                    <i class="fas fa-phone-volume text-red-500"></i>
+                    Contactos de emergencia
+                </h3>
+
+                <div class="space-y-3 text-sm">
+                    <div class="rounded-xl bg-red-50 border border-red-100 p-3">
+                        <p class="text-xs text-gray-400 mb-1">Contacto principal</p>
+                        <p class="font-semibold text-gray-800">
+                            {{ historial.contacto_emergencia_nombre|default:"No registrado" }}
+                        </p>
+                        {% if historial.contacto_emergencia_parentesco %}
+                            <p class="text-xs text-gray-500">{{ historial.contacto_emergencia_parentesco }}</p>
+                        {% endif %}
+                        {% if historial.contacto_emergencia_telefono %}
+                            <p class="text-xs font-medium text-red-700 mt-1">
+                                {{ historial.contacto_emergencia_telefono }}
+                            </p>
+                        {% endif %}
+                    </div>
+
+                    <div class="rounded-xl bg-slate-50 border border-gray-100 p-3">
+                        <p class="text-xs text-gray-400 mb-1">Contacto secundario</p>
+                        <p class="font-semibold text-gray-800">
+                            {{ historial.contacto_emergencia_secundario_nombre|default:"No registrado" }}
+                        </p>
+                        {% if historial.contacto_emergencia_secundario_telefono %}
+                            <p class="text-xs font-medium text-gray-600 mt-1">
+                                {{ historial.contacto_emergencia_secundario_telefono }}
+                            </p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <a href="{% url 'historial_clinico_editar' estudiante.pk %}"
+                   class="mt-4 inline-flex items-center gap-2 bg-blue-50 text-blue-700 px-4 py-2 rounded-lg hover:bg-blue-100 text-sm font-semibold w-full justify-center">
+                    <i class="fas fa-pen"></i>
+                    Editar
+                </a>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

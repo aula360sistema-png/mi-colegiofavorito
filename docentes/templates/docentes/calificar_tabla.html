@@ -1,5 +1,6 @@
 {% extends "home.html" %}
 {% load notas_extras %}
+{% load formatos %}
 
 {% block content %}
 
@@ -30,17 +31,17 @@
                         Estudiante
                     </th>
 
-                    {% for ac in area_competencias %}
+                    {% for c in competencias %}
                         <th colspan="{{ periodos|length }}"
                             class="border px-3 py-2 font-semibold">
-                            {{ ac.competencia.nombre }}
+                            {{ c.nombre }}
                         </th>
                     {% endfor %}
 
                     <!-- PROMEDIO DE COMPETENCIAS -->
-                    <th colspan="{{ area_competencias|length }}"
+                    <th colspan="{{ competencias|length }}"
                         class="border px-3 py-2 font-semibold">
-                        Promedio Competencias
+                        Promedio grupo de competencias específicas
                     </th>
 
                     <th rowspan="2" class="border px-3 py-2">
@@ -54,16 +55,16 @@
 
                 <!-- FILA 2 -->
                 <tr>
-                    {% for ac in area_competencias %}
+                    {% for c in competencias %}
                         {% for p in periodos %}
-                            <th class="border px-2 py-1 text-xs">
+                            <th class="border px-1 py-1 text-xs">
                                 {{ p.nombre }}
                             </th>
                         {% endfor %}
                     {% endfor %}
 
-                    {% for ac in area_competencias %}
-                        <th class="border px-2 py-1 text-xs font-semibold">
+                    {% for c in competencias %}
+                        <th class="border px-1.5 py-1 text-xs font-semibold">
                             PC {{ forloop.counter }}
                         </th>
                     {% endfor %}
@@ -78,41 +79,44 @@
                 <tr class="hover:bg-gray-50">
 
                     <!-- ESTUDIANTE -->
-                    <td class="border px-3 py-2 text-left font-medium">
-                        {{ ins.estudiante.nombre_completo }}
+                    <td class="border px-2 py-1.5 text-left font-medium text-xs leading-tight">
+                        <div class="flex items-center gap-1.5">
+                            {% avatar ins.estudiante size='w-6 h-6' texto='text-[9px]' %}
+                            <span class="min-w-0 break-words">{{ ins.estudiante.nombre_completo }}</span>
+                        </div>
                     </td>
 
                     <!-- NOTAS -->
-                    {% for ac in area_competencias %}
+                    {% for c in competencias %}
                         {% for p in periodos %}
-                        <td class="border px-1">
+                        <td class="border px-0.5">
                             <input
                                 type="number"
                                 step="0.01"
                                 min="0"
                                 max="100"
-                                class="nota-input w-20 text-center border rounded"
+                                class="nota-input w-14 text-center border rounded"
                                 data-inscripcion="{{ ins.id }}"
-                                data-competencia="{{ ac.competencia.id }}"
+                                data-competencia="{{ c.id }}"
                                 data-periodo="{{ p.id }}"
-                                value="{{ notas|get_item:ins.id|get_item:ac.competencia.id|get_item:p.id }}"
-                                {% if p.cerrado %}disabled{% endif %}
+                                value="{{ notas|get_item:ins.id|get_item:c.id|get_item:p.id }}"
+                                {% if p.id in periodos_cerrados %}disabled{% endif %}
                             >
                         </td>
                         {% endfor %}
                     {% endfor %}
 
                     <!-- PC POR COMPETENCIA -->
-                    {% for ac in area_competencias %}
-                    <td class="border px-1 font-semibold pc"
+                    {% for c in competencias %}
+                    <td class="border px-0.5 font-semibold pc text-xs"
                         data-inscripcion="{{ ins.id }}"
-                        data-competencia="{{ ac.competencia.id }}">
+                        data-competencia="{{ c.id }}">
                         —
                     </td>
                     {% endfor %}
 
                     <!-- PF -->
-                    <td class="border px-1 font-bold pf"
+                    <td class="border px-1 font-bold pf text-xs"
                         data-inscripcion="{{ ins.id }}">
                         —
                     </td>
@@ -132,8 +136,6 @@
     🔒 Cerrado
 </td>
 {% endif %}
-          
-                    </td>
 
                 </tr>
             {% endfor %}

@@ -54,7 +54,7 @@ class ConceptoPagoForm(forms.ModelForm):
 class PagoForm(forms.ModelForm):
     class Meta:
         model = Pago
-        fields = ['estudiante', 'concepto', 'monto', 'metodo_pago', 'fecha']
+        fields = ['estudiante', 'concepto', 'monto', 'metodo_pago', 'fecha', 'voucher']
         widgets = {
             'estudiante': forms.Select(attrs={
                 'class': INPUT,
@@ -71,11 +71,11 @@ class PagoForm(forms.ModelForm):
                 'min': '0.01',
                 'placeholder': '0.00',
             }),
-            'metodo_pago': forms.RadioSelect(attrs={'class': 'sr-only peer'}),
+            'metodo_pago': forms.HiddenInput(),
+            'voucher': forms.HiddenInput(),
             'fecha': forms.DateInput(attrs={
+                'type': 'hidden',
                 'class': INPUT,
-                'id': 'id-fecha',
-                'type': 'date',
             }),
         }
 
@@ -99,8 +99,12 @@ class PagoForm(forms.ModelForm):
             self.fields['estudiante'].queryset = qs
 
         self.fields['estudiante'].empty_label = "Busca y selecciona el estudiante"
+        self.fields['estudiante'].label_from_instance = self._label_estudiante
         self.fields['concepto'].empty_label = "Selecciona el concepto"
         self.fields['concepto'].label_from_instance = self._label_concepto
+
+    def _label_estudiante(self, obj):
+        return f"{obj.nombre_completo()} · {obj.matricula}"
 
     def _label_concepto(self, obj):
         return f"{obj.nombre} — RD$ {obj.monto:,.2f}"

@@ -18,7 +18,7 @@
 
     <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 flex items-center justify-between">
         <p class="text-sm text-gray-500">Total de salidas registradas</p>
-        <p class="text-xl font-bold text-rose-600">RD$ {{ total_general|floatformat:2 }}</p>
+        <p class="text-xl font-bold text-rose-600">RD$ {{ total_general|dop }}</p>
     </div>
 
     <form method="GET" class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 flex gap-3 items-end flex-wrap">
@@ -64,7 +64,7 @@
                         <td class="px-4 py-2.5 font-medium text-gray-800">{{ egreso.concepto }}</td>
                         <td class="px-4 py-2.5">{{ egreso.beneficiario|default:"—" }}</td>
                         <td class="px-4 py-2.5">{{ egreso.get_metodo_pago_display }}</td>
-                        <td class="px-4 py-2.5 text-right font-semibold text-rose-600">RD$ {{ egreso.monto|floatformat:2 }}</td>
+                        <td class="px-4 py-2.5 text-right font-semibold text-rose-600">RD$ {{ egreso.monto|dop }}</td>
                         <td class="px-4 py-2.5 text-gray-500">
                             {% if egreso.sesion %}
                                 <a href="{% url 'caja:detalle_sesion' egreso.sesion.id %}" class="text-blue-600 hover:underline">Caja #{{ egreso.sesion.id }}</a>

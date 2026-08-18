@@ -18,23 +18,42 @@ class Nivel(models.Model):
     def __str__(self):
         return self.nombre
 
+    class Meta:
+        unique_together = ('centro', 'tipo')
+
 
 class Grado(models.Model):
     nivel = models.ForeignKey(Nivel, on_delete=models.CASCADE)
     nombre = models.CharField(max_length=50)
     orden = models.PositiveIntegerField(default=0)
+    ciclo = models.PositiveIntegerField(
+        default=1,
+        help_text='Ciclo del nivel según el currículo MINERD (1 o 2).'
+    )
+    secciones = models.ManyToManyField(
+        'Seccion',
+        blank=True,
+        related_name='grados',
+        help_text='Secciones que usa este grado (ej: A, B, C).'
+    )
     def __str__(self):
             return self.nombre
 
     class Meta:
         ordering = ['nivel', 'orden', 'nombre']
+        unique_together = ('nivel', 'nombre')
 
 
 class Seccion(models.Model):
-    grado = models.ForeignKey(Grado, on_delete=models.CASCADE)
+    centro = models.ForeignKey('core.CentroEducativo', on_delete=models.CASCADE)
     nombre = models.CharField(max_length=5)
+
+    class Meta:
+        ordering = ['nombre']
+        unique_together = ('centro', 'nombre')
+
     def __str__(self):
-            return self.nombre
+        return self.nombre
 
 
 class AreaCurricular(models.Model):
@@ -64,7 +83,20 @@ class GradoAsignatura(models.Model):
 
 
 class Competencia(models.Model):
+    nivel = models.ForeignKey(
+        Nivel,
+        on_delete=models.CASCADE,
+        related_name='competencias',
+        verbose_name='Nivel',
+    )
     nombre = models.CharField(max_length=150)
+    orden = models.PositiveIntegerField(default=0)
+    activo = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ['nivel', 'orden', 'nombre']
+        unique_together = ('nivel', 'nombre')
+
     def __str__(self):
         return self.nombre
 
@@ -74,21 +106,47 @@ class AreaCompetencia(models.Model):
     peso = models.DecimalField(max_digits=5, decimal_places=2)
 
 class Periodo(models.Model):
+    # Catálogo reutilizable por centro (sin anio_escolar).
+    # El estado por año escolar vive en PeriodoAnio.
     centro = models.ForeignKey('core.CentroEducativo', on_delete=models.CASCADE)
-    anio_escolar = models.ForeignKey('core.AnioEscolar', on_delete=models.CASCADE)
-
     nombre = models.CharField(max_length=20)  # P1, P2...
     orden = models.PositiveIntegerField()
-    activo = models.BooleanField(default=True)
     es_completivo = models.BooleanField(default=False)
-    # 🔒 NUEVO
-    cerrado = models.BooleanField(default=False)
-    fecha_cierre = models.DateField(null=True, blank=True)
+
     class Meta:
-        ordering = ['orden']
+        ordering = ['orden', 'nombre']
+        unique_together = ('centro', 'nombre')
 
     def __str__(self):
         return self.nombre
+
+
+class PeriodoAnio(models.Model):
+    # Estado de un período del catálogo para un año escolar concreto.
+    periodo = models.ForeignKey(
+        Periodo,
+        on_delete=models.CASCADE,
+        related_name='estados'
+    )
+    anio_escolar = models.ForeignKey(
+        'core.AnioEscolar',
+        on_delete=models.CASCADE,
+        related_name='periodos_estado'
+    )
+    activo = models.BooleanField(default=True)
+    cerrado = models.BooleanField(default=False)
+    fecha_cierre = models.DateField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['periodo__orden', 'periodo__nombre']
+        unique_together = ('periodo', 'anio_escolar')
+
+        indexes = [
+            models.Index(fields=['anio_escolar'], name='pa_anio'),
+        ]
+
+    def __str__(self):
+        return f"{self.periodo} - {self.anio_escolar}"
 
 
 class DocenteMateria(models.Model):
@@ -112,12 +170,20 @@ class DocenteMateria(models.Model):
 
     class Meta:
         unique_together = (
-       
+
             'asignatura',
             'grado',
             'seccion',
             'anio_escolar'
         )
+
+        indexes = [
+            models.Index(
+                fields=['grado', 'seccion', 'anio_escolar'],
+                name='dm_grado_seccion_anio',
+            ),
+            models.Index(fields=['docente', 'anio_escolar'], name='dm_docente_anio'),
+        ]
     
 
 
@@ -140,4 +206,61 @@ class Calificacion(models.Model):
             'asignatura',
             'competencia',
             'periodo'
+        )
+
+        indexes = [
+            models.Index(fields=['inscripcion'], name='cal_inscripcion'),
+            models.Index(fields=['periodo'], name='cal_periodo'),
+            models.Index(fields=['asignatura'], name='cal_asignatura'),
+        ]
+
+
+class FranjaHoraria(models.Model):
+    centro = models.ForeignKey(
+        'core.CentroEducativo',
+        on_delete=models.CASCADE,
+        related_name='franjas_horarias'
+    )
+    nombre = models.CharField(max_length=80, help_text='Ej: 1ra hora, Recreo, 3ra hora')
+    hora_inicio = models.TimeField()
+    hora_fin = models.TimeField()
+    orden = models.PositiveIntegerField(default=1)
+
+    class Meta:
+        ordering = ['orden', 'hora_inicio']
+        unique_together = ('centro', 'nombre')
+
+    def __str__(self):
+        return f"{self.nombre} ({self.hora_inicio:%H:%M} - {self.hora_fin:%H:%M})"
+
+
+class HorarioClase(models.Model):
+    DIAS_SEMANA = (
+        (1, 'Lunes'),
+        (2, 'Martes'),
+        (3, 'Miércoles'),
+        (4, 'Jueves'),
+        (5, 'Viernes'),
+    )
+
+    asignacion = models.ForeignKey(
+        DocenteMateria,
+        on_delete=models.CASCADE,
+        related_name='horarios'
+    )
+    dia_semana = models.PositiveSmallIntegerField(choices=DIAS_SEMANA)
+    franja = models.ForeignKey(
+        FranjaHoraria,
+        on_delete=models.CASCADE,
+        related_name='clases'
+    )
+
+    class Meta:
+        ordering = ['dia_semana', 'franja__orden']
+        unique_together = ('asignacion', 'dia_semana', 'franja')
+
+    def __str__(self):
+        return (
+            f"{self.get_dia_semana_display()} {self.franja.nombre} | "
+            f"{self.asignacion}"
         )

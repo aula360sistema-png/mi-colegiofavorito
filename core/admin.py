@@ -7,7 +7,7 @@ from estudiantes.models import Estudiante, HistorialAcademico, Inscripcion
 from docentes.models import Docente, AsignacionDocente
 from academico.models import (
     Nivel, Grado, Seccion, AreaCurricular, Asignatura,
-    GradoAsignatura, Competencia, AreaCompetencia, Periodo,
+    GradoAsignatura, Competencia, Periodo, PeriodoAnio,
     Calificacion, DocenteMateria
 )
 
@@ -140,12 +140,13 @@ class GradoAdmin(admin.ModelAdmin):
     search_fields = ('nombre', 'nivel__nombre')
     list_filter = ('nivel__centro',)
     inlines = [GradoAsignaturaInline]
+    filter_horizontal = ('secciones',)
 
 @admin.register(Seccion)
 class SeccionAdmin(admin.ModelAdmin):
-    list_display = ('nombre', 'grado')
-    search_fields = ('nombre', 'grado__nombre')
-    list_filter = ('grado__nivel__centro',)
+    list_display = ('nombre', 'centro')
+    search_fields = ('nombre', 'centro__nombre')
+    list_filter = ('centro',)
 
 @admin.register(AreaCurricular)
 class AreaCurricularAdmin(admin.ModelAdmin):
@@ -161,20 +162,21 @@ class AsignaturaAdmin(admin.ModelAdmin):
 
 @admin.register(Competencia)
 class CompetenciaAdmin(admin.ModelAdmin):
-    list_display = ('nombre',)
-    search_fields = ('nombre',)
-
-@admin.register(AreaCompetencia)
-class AreaCompetenciaAdmin(admin.ModelAdmin):
-    list_display = ('area', 'competencia', 'peso')
-    list_filter = ('area__centro',)
-    search_fields = ('area__nombre', 'competencia__nombre')
+    list_display = ('nombre', 'nivel', 'activo')
+    list_filter = ('nivel', 'activo')
+    search_fields = ('nombre', 'nivel__nombre')
 
 @admin.register(Periodo)
 class PeriodoAdmin(admin.ModelAdmin):
-    list_display = ('nombre', 'centro', 'anio_escolar', 'orden', 'activo', 'es_completivo')
-    list_filter = ('centro', 'anio_escolar', 'activo', 'es_completivo')
+    list_display = ('nombre', 'centro', 'orden', 'es_completivo')
+    list_filter = ('centro', 'es_completivo')
     search_fields = ('nombre',)
+
+@admin.register(PeriodoAnio)
+class PeriodoAnioAdmin(admin.ModelAdmin):
+    list_display = ('periodo', 'anio_escolar', 'activo', 'cerrado', 'fecha_cierre')
+    list_filter = ('anio_escolar', 'activo', 'cerrado')
+    search_fields = ('periodo__nombre', 'anio_escolar__nombre')
 
 @admin.register(Calificacion)
 class CalificacionAdmin(admin.ModelAdmin):

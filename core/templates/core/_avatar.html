@@ -1,0 +1,9 @@
+{% if avatar_obj.foto %}
+<img src="{{ avatar_obj.foto.url }}"
+     alt="{{ avatar_iniciales }}"
+     class="{{ avatar_size }} rounded-full object-cover ring-2 ring-white/60 shrink-0 {{ avatar_extra }}">
+{% else %}
+<div class="{{ avatar_size }} rounded-full bg-gradient-to-br {{ avatar_color }} text-white flex items-center justify-center {{ avatar_texto }} font-bold uppercase shrink-0 {{ avatar_extra }}">
+    {{ avatar_iniciales }}
+</div>
+{% endif %}

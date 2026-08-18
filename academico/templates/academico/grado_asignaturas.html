@@ -1,4 +1,5 @@
 {% extends "home.html" %}
+{% load formatos %}
 
 {% block content %}
 <div class="max-w-5xl mx-auto">
@@ -28,7 +29,10 @@
                     <td class="px-4 py-2">{{ a.seccion.nombre }}</td>
                     <td class="px-4 py-2">{{ a.asignatura.nombre }}</td>
                     <td class="px-4 py-2">
-                        {{ a.docente.nombre_completo }}
+                        <div class="flex items-center gap-2">
+                            {% avatar a.docente size='w-8 h-8' texto='text-xs' %}
+                            {{ a.docente.nombre_completo }}
+                        </div>
                     </td>
                 </tr>
                 {% endfor %}

@@ -6,10 +6,16 @@
 
 <div class="max-w-2xl mx-auto">
 
-    <div class="mb-4 flex justify-end">
+    <div class="mb-4 flex flex-wrap justify-end gap-2">
+        {% if factura %}
+        <a href="{% url 'facturacion:detalle_factura' factura.id %}?print=1" target="_blank"
+           class="inline-flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded shadow hover:bg-indigo-700">
+            🧾 Imprimir factura
+        </a>
+        {% endif %}
         <button onclick="window.print()"
-                class="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700">
-            🖨️ Imprimir
+                class="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700">
+            🖨️ Imprimir boleta
         </button>
     </div>
 
@@ -45,13 +51,17 @@
 
                 <div><strong>Método de pago:</strong> {{ pago.get_metodo_pago_display }}</div>
 
+                {% if pago.metodo_pago == 'tarjeta' and pago.voucher %}
+                <div><strong>Voucher (Verifone):</strong> {{ pago.voucher }}</div>
+                {% endif %}
+
                 <div><strong>Registrado por:</strong> {{ pago.creado_por.get_full_name|default:"—" }}</div>
 
             </div>
 
             <div class="flex justify-between border-t border-gray-300 pt-4">
                 <span class="font-bold">Total pagado</span>
-                <span class="font-bold text-green-800">RD$ {{ pago.monto }}</span>
+                <span class="font-bold text-green-800">RD$ {{ pago.monto|dop }}</span>
             </div>
 
         </div>

@@ -2,122 +2,168 @@
 {% block title %}Mantenimiento{% endblock %}
 
 {% block content %}
-<h2 class="text-2xl font-semibold mb-6">
-    🛠️ Mantenimiento Académico
-</h2>
 
-<p class="text-sm text-gray-500 mb-6">
-    Centro: <strong>{{ centro.nombre }}</strong>
-</p>
+<div class="max-w-7xl mx-auto">
 
-<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <!-- Encabezado -->
+    <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6">
 
-    <!-- Año Escolar (NUEVO, NO QUITA NADA) -->
-    <a href="{% url 'anio_escolar_list' %}"
-       class="bg-white shadow rounded p-5 hover:shadow-lg transition">
-        <h3 class="font-semibold text-lg mb-1">📆 Año Escolar</h3>
-        <p class="text-sm text-gray-500">Gestión del año académico activo</p>
-    </a>
-
-    <!-- Niveles -->
-    <a href="{% url 'nivel_list' %}"
-       class="bg-white shadow rounded p-5 hover:shadow-lg transition">
-        <h3 class="font-semibold text-lg mb-1">📚 Niveles</h3>
-        <p class="text-sm text-gray-500">Inicial, Primaria, Secundaria</p>
-    </a>
-
-    <!-- Grados -->
-    <a href="{% url 'grado_list' %}"
-       class="bg-white shadow rounded p-5 hover:shadow-lg transition">
-        <h3 class="font-semibold text-lg mb-1">🏫 Grados</h3>
-        <p class="text-sm text-gray-500">Grados por nivel</p>
-    </a>
-
-    <!-- Secciones -->
-    <a href="{% url 'seccion_list' %}"
-       class="bg-white shadow rounded p-5 hover:shadow-lg transition">
-        <h3 class="font-semibold text-lg mb-1">🧩 Secciones</h3>
-        <p class="text-sm text-gray-500">A, B, C…</p>
-    </a>
-
-    <!-- Áreas -->
-    <a href="{% url 'area_list' %}"
-       class="bg-white shadow rounded p-5 hover:shadow-lg transition">
-        <h3 class="font-semibold text-lg mb-1">📘 Áreas Curriculares</h3>
-        <p class="text-sm text-gray-500">Lengua, Matemática…</p>
-    </a>
-
-    <!-- Asignaturas -->
-    <a href="{% url 'asignatura_list' %}"
-       class="bg-white shadow rounded p-5 hover:shadow-lg transition">
-        <h3 class="font-semibold text-lg mb-1">📖 Asignaturas</h3>
-        <p class="text-sm text-gray-500">Por área y centro</p>
-    </a>
-<!-- Asignación Asignatura por Grado -->
-<a href="{% url 'grado_asignatura_list' %}"
-   class="bg-white shadow rounded p-5 hover:shadow-lg transition">
-    <h3 class="font-semibold text-lg mb-1">🧠 Asignaturas por Grado</h3>
-    <p class="text-sm text-gray-500">
-        Define qué asignaturas corresponden a cada grado
-    </p>
-</a>
-
-    <!-- Competencias -->
-    <a href="{% url 'competencia_list' %}"
-       class="bg-white shadow rounded p-5 hover:shadow-lg transition">
-        <h3 class="font-semibold text-lg mb-1">🎯 Competencias</h3>
-        <p class="text-sm text-gray-500">Evaluación académica</p>
-    </a>
-
-    <!-- Asignación Área–Competencia -->
-    <a href="{% url 'area_competencia_list' %}"
-       class="bg-white shadow rounded p-5 hover:shadow-lg transition">
-        <h3 class="font-semibold text-lg mb-1">👨‍🏫 Asignación de Competencias</h3>
-        <p class="text-sm text-gray-500">Competencias por asignatura</p>
-    </a>
-
-    <!-- Periodos -->
-    <a href="{% url 'periodo_list' %}"
-       class="bg-white shadow rounded p-5 hover:shadow-lg transition">
-        <h3 class="font-semibold text-lg mb-1">🗓 Períodos</h3>
-        <p class="text-sm text-gray-500">P1, P2, completivo…</p>
-    </a>
-
-    <!-- Docente Materia -->
-    <a href="{% url 'docentemateria_list' %}"
-       class="bg-white shadow rounded p-5 hover:shadow-lg transition">
-        <h3 class="font-semibold text-lg mb-1">👨‍🏫 Docente / Materia</h3>
-        <p class="text-sm text-gray-500">Asignación académica</p>
-    </a>
-
-    <!-- Generar boletines -->
-    {% if not todos_cerrados %}
-    <form method="post"
-          action="{% url 'administracion:generar_boletines' %}"
-          class="bg-white shadow rounded p-5 hover:shadow-lg transition cursor-pointer">
-        {% csrf_token %}
-        <button type="submit" class="w-full text-left">
-            <h3 class="font-semibold text-lg mb-1">📄 Generar boletines oficiales</h3>
-            <p class="text-sm text-gray-500">
-                Genera los boletines finales de todos los estudiantes
+        <div>
+            <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                <i class="fas fa-tools text-blue-600"></i>
+                Mantenimiento Académico
+            </h2>
+            <p class="text-sm text-gray-500 mt-1">
+                <i class="fas fa-school mr-1"></i>
+                {{ centro.nombre }}
             </p>
-        </button>
-    </form>
-    {% else %}
-    <div class="bg-gray-100 shadow rounded p-5 opacity-50 cursor-not-allowed">
-        <h3 class="font-semibold text-lg mb-1">📄 Generar boletines oficiales</h3>
-        <p class="text-sm text-gray-500">
-            ❌ No disponible: hay períodos abiertos
-        </p>
+        </div>
+
+        {% if todos_cerrados %}
+        <form method="post" action="{% url 'administracion:generar_boletines' %}">
+            {% csrf_token %}
+            <button type="submit"
+                    class="inline-flex items-center gap-2 bg-emerald-600 text-white px-5 py-2.5 rounded-lg shadow-sm hover:bg-emerald-700 hover:shadow transition text-sm font-semibold">
+                <i class="fas fa-file-signature"></i>
+                Generar boletines oficiales
+            </button>
+        </form>
+        {% endif %}
+
+    </div>
+
+    {% if not todos_cerrados %}
+    <div class="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-800 flex items-center gap-2 mb-6">
+        <i class="fas fa-info-circle"></i>
+        No disponible: hay períodos abiertos. Cierra todos los períodos para generar boletines.
     </div>
     {% endif %}
 
-    <!-- Lista de boletines -->
-    <a href="{% url 'administracion:lista_boletines' %}"
-       class="bg-white shadow rounded p-5 hover:shadow-lg transition">
-        <h3 class="font-semibold text-lg mb-1">📑 Boletines</h3>
-        <p class="text-sm text-gray-500">Boletines oficiales generados</p>
-    </a>
+    <!-- Tarjetas -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+
+        <!-- Año Escolar -->
+        <a href="{% url 'anio_escolar_list' %}"
+           class="bg-white shadow-sm rounded-xl border border-gray-200 p-5 hover:shadow-md hover:border-blue-300 transition group">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center text-xl group-hover:bg-blue-600 group-hover:text-white transition">
+                    <i class="fas fa-calendar-days"></i>
+                </div>
+                <div class="flex-1">
+                    <p class="font-semibold text-gray-800">Año Escolar</p>
+                    <p class="text-xs text-gray-500">Gestión del año académico activo</p>
+                </div>
+                <span class="text-2xl font-bold text-gray-800">{{ conteos.anios }}</span>
+            </div>
+        </a>
+
+        <!-- Niveles -->
+        <a href="{% url 'nivel_list' %}"
+           class="bg-white shadow-sm rounded-xl border border-gray-200 p-5 hover:shadow-md hover:border-blue-300 transition group">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center text-xl group-hover:bg-indigo-600 group-hover:text-white transition">
+                    <i class="fas fa-layer-group"></i>
+                </div>
+                <div class="flex-1">
+                    <p class="font-semibold text-gray-800">Niveles</p>
+                    <p class="text-xs text-gray-500">Inicial, Primaria, Secundaria</p>
+                </div>
+                <span class="text-2xl font-bold text-gray-800">{{ conteos.niveles }}</span>
+            </div>
+        </a>
+
+        <!-- Grados -->
+        <a href="{% url 'grado_list' %}"
+           class="bg-white shadow-sm rounded-xl border border-gray-200 p-5 hover:shadow-md hover:border-blue-300 transition group">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center text-xl group-hover:bg-emerald-600 group-hover:text-white transition">
+                    <i class="fas fa-school"></i>
+                </div>
+                <div class="flex-1">
+                    <p class="font-semibold text-gray-800">Grados</p>
+                    <p class="text-xs text-gray-500">Grados por nivel</p>
+                </div>
+                <span class="text-2xl font-bold text-gray-800">{{ conteos.grados }}</span>
+            </div>
+        </a>
+
+        <!-- Secciones -->
+        <a href="{% url 'seccion_list' %}"
+           class="bg-white shadow-sm rounded-xl border border-gray-200 p-5 hover:shadow-md hover:border-blue-300 transition group">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center text-xl group-hover:bg-amber-600 group-hover:text-white transition">
+                    <i class="fas fa-door-open"></i>
+                </div>
+                <div class="flex-1">
+                    <p class="font-semibold text-gray-800">Secciones</p>
+                    <p class="text-xs text-gray-500">A, B, C…</p>
+                </div>
+                <span class="text-2xl font-bold text-gray-800">{{ conteos.secciones }}</span>
+            </div>
+        </a>
+
+        <!-- Currículo -->
+        <a href="{% url 'curriculo' %}"
+           class="bg-white shadow-sm rounded-xl border border-gray-200 p-5 hover:shadow-md hover:border-blue-300 transition group">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-lg bg-violet-100 text-violet-600 flex items-center justify-center text-xl group-hover:bg-violet-600 group-hover:text-white transition">
+                    <i class="fas fa-book"></i>
+                </div>
+                <div class="flex-1">
+                    <p class="font-semibold text-gray-800">Currículo</p>
+                    <p class="text-xs text-gray-500">Áreas, asignaturas y asignaciones</p>
+                </div>
+                <i class="fas fa-arrow-right text-gray-300 group-hover:text-blue-500 transition"></i>
+            </div>
+        </a>
+
+        <!-- Periodos -->
+        <a href="{% url 'periodo_list' %}"
+           class="bg-white shadow-sm rounded-xl border border-gray-200 p-5 hover:shadow-md hover:border-blue-300 transition group">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-lg bg-orange-100 text-orange-600 flex items-center justify-center text-xl group-hover:bg-orange-600 group-hover:text-white transition">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <div class="flex-1">
+                    <p class="font-semibold text-gray-800">Períodos</p>
+                    <p class="text-xs text-gray-500">P1, P2, completivo…</p>
+                </div>
+                <span class="text-2xl font-bold text-gray-800">{{ conteos.periodos }}</span>
+            </div>
+        </a>
+
+        <!-- Boletines -->
+        <a href="{% url 'administracion:lista_boletines' %}"
+           class="bg-white shadow-sm rounded-xl border border-gray-200 p-5 hover:shadow-md hover:border-blue-300 transition group">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center text-xl group-hover:bg-slate-600 group-hover:text-white transition">
+                    <i class="fas fa-file-lines"></i>
+                </div>
+                <div class="flex-1">
+                    <p class="font-semibold text-gray-800">Boletines</p>
+                    <p class="text-xs text-gray-500">Boletines oficiales generados</p>
+                </div>
+                <i class="fas fa-arrow-right text-gray-300 group-hover:text-blue-500 transition"></i>
+            </div>
+        </a>
+
+        <!-- Horario de Clases -->
+        <a href="{% url 'horario_list' %}"
+           class="bg-white shadow-sm rounded-xl border border-gray-200 p-5 hover:shadow-md hover:border-blue-300 transition group">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-lg bg-teal-100 text-teal-600 flex items-center justify-center text-xl group-hover:bg-teal-600 group-hover:text-white transition">
+                    <i class="fas fa-calendar-days"></i>
+                </div>
+                <div class="flex-1">
+                    <p class="font-semibold text-gray-800">Horario de Clases</p>
+                    <p class="text-xs text-gray-500">Grilla de materias por sección</p>
+                </div>
+                <i class="fas fa-arrow-right text-gray-300 group-hover:text-blue-500 transition"></i>
+            </div>
+        </a>
+
+    </div>
 
 </div>
+
 {% endblock %}

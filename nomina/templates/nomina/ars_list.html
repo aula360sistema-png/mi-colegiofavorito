@@ -6,7 +6,7 @@
 
     <div>
         <h1 class="page-title">
-            ARS
+            Aseguradoras de Riesgos de Salud (ARS)
         </h1>
 
         <p class="page-subtitle">
@@ -29,6 +29,8 @@
                 <th>Nombre</th>
                 <th>% Empleado</th>
                 <th>% Empresa</th>
+                <th>Estado</th>
+                <th>Acciones</th>
             </tr>
         </thead>
 
@@ -44,8 +46,44 @@
 
                 <td>{{ ars.porcentaje_empresa }}%</td>
 
+                <td>
+                    {% if ars.activo %}
+                        <span class="badge-success">Activa</span>
+                    {% else %}
+                        <span class="badge-danger">Inactiva</span>
+                    {% endif %}
+                </td>
+
+                <td>
+                    <div class="table-actions">
+                        <a href="{% url 'nomina:ars_edit' ars.pk %}" class="btn-action" title="Editar">
+                            <i class="fas fa-pen"></i>
+                        </a>
+
+                        <form method="post" action="{% url 'nomina:ars_toggle' ars.pk %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn-action" title="Alternar estado">
+                                {% if ars.activo %}
+                                    <i class="fas fa-ban"></i>
+                                {% else %}
+                                    <i class="fas fa-check"></i>
+                                {% endif %}
+                            </button>
+                        </form>
+                    </div>
+                </td>
+
             </tr>
 
+            {% empty %}
+            <tr>
+                <td colspan="5">
+                    <div class="empty-state">
+                        <i class="fas fa-heart-pulse"></i>
+                        <p>No hay ARS registradas</p>
+                    </div>
+                </td>
+            </tr>
             {% endfor %}
 
         </tbody>

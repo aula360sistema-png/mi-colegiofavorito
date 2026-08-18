@@ -1,0 +1,235 @@
+{% extends 'home.html' %}
+{% load formatos %}
+
+{% block title %}
+  Mi Colegio - Inicio Tutor
+{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-8">
+
+  <div class="bg-white rounded-2xl shadow p-8">
+    <div class="flex items-center gap-4 mb-4">
+      {% avatar tutor size='w-14 h-14' texto='text-xl' extra='ring-2 ring-indigo-100' %}
+
+      <div>
+        <h1 class="text-2xl font-bold text-slate-800">
+          Hola, {{ tutor.nombre_completo }}
+        </h1>
+
+        <p class="text-slate-500">
+          {{ tutor.get_parentesco_display }} · {{ tutor.estudiantes.count }} estudiante(s) a cargo
+        </p>
+      </div>
+    </div>
+
+    <p class="text-slate-600">
+      Bienvenido a tu portal. Aquí puedes consultar tus datos y la información
+      académica de los estudiantes a tu cargo.
+    </p>
+  </div>
+
+  <!-- ==================== MIS DATOS ==================== -->
+  <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+    <div class="px-6 py-4 border-b border-gray-100">
+      <h3 class="font-semibold text-gray-800 flex items-center gap-2">
+        <i class="fas fa-id-card text-teal-500"></i> Mis datos
+      </h3>
+    </div>
+
+    <dl class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-3 text-sm p-6">
+      <div>
+        <dt class="text-gray-500 text-xs">Cédula</dt>
+        <dd class="font-medium">{{ tutor.cedula }}</dd>
+      </div>
+
+      <div>
+        <dt class="text-gray-500 text-xs">Sexo</dt>
+        <dd class="font-medium">{{ tutor.get_sexo_display }}</dd>
+      </div>
+
+      <div>
+        <dt class="text-gray-500 text-xs">Fecha de nacimiento</dt>
+        <dd class="font-medium">{{ tutor.fecha_nacimiento }}</dd>
+      </div>
+
+      <div>
+        <dt class="text-gray-500 text-xs">Nacionalidad</dt>
+        <dd class="font-medium">{{ tutor.nacionalidad }}</dd>
+      </div>
+
+      <div>
+        <dt class="text-gray-500 text-xs">Teléfono</dt>
+        <dd class="font-medium">{{ tutor.telefono }}</dd>
+      </div>
+
+      <div>
+        <dt class="text-gray-500 text-xs">Teléfono secundario</dt>
+        <dd class="font-medium">{{ tutor.telefono_secundario|default:"No registrado" }}</dd>
+      </div>
+
+      <div>
+        <dt class="text-gray-500 text-xs">Correo</dt>
+        <dd class="font-medium">{{ tutor.correo_personal|default:"No registrado" }}</dd>
+      </div>
+
+      <div>
+        <dt class="text-gray-500 text-xs">Parentesco</dt>
+        <dd class="font-medium">{{ tutor.get_parentesco_display }}</dd>
+      </div>
+
+      <div>
+        <dt class="text-gray-500 text-xs">Estado</dt>
+        <dd class="font-medium">{{ tutor.get_estado_display }}</dd>
+      </div>
+
+      <div class="sm:col-span-2 lg:col-span-3">
+        <dt class="text-gray-500 text-xs">Dirección</dt>
+        <dd class="font-medium">{{ tutor.direccion|default:"No registrada" }}</dd>
+      </div>
+    </dl>
+  </div>
+
+  {% if estudiantes %}
+
+  <!-- ==================== MI DEUDA ==================== -->
+  <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+    <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+      <h3 class="font-semibold text-gray-800 flex items-center gap-2">
+        <i class="fas fa-wallet text-teal-500"></i> Estado de mis deudas
+      </h3>
+    </div>
+
+    {% if deuda_total.tiene_deuda %}
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 p-6">
+      <div class="rounded-xl border border-gray-100 p-4">
+        <p class="text-xs text-gray-500 font-medium">Saldo pendiente</p>
+        <p class="text-2xl font-bold text-slate-800 mt-1">
+          RD$ {{ deuda_total.saldo_total|dop0 }}
+        </p>
+      </div>
+      <div class="rounded-xl border border-red-100 bg-red-50 p-4">
+        <p class="text-xs text-red-500 font-medium">Vencida</p>
+        <p class="text-2xl font-bold text-red-600 mt-1">
+          RD$ {{ deuda_total.vencida|dop0 }}
+        </p>
+      </div>
+      <div class="rounded-xl border border-amber-100 bg-amber-50 p-4">
+        <p class="text-xs text-amber-500 font-medium">Próximo a vencer</p>
+        <p class="text-2xl font-bold text-amber-600 mt-1">
+          RD$ {{ deuda_total.proxima|dop0 }}
+        </p>
+      </div>
+    </div>
+    <p class="px-6 pb-5 text-xs text-slate-500">
+      Recuerda que con deuda pendiente no se pueden solicitar certificados.
+    </p>
+    {% else %}
+    <div class="p-6 flex items-center gap-3">
+      <span class="bg-green-100 text-green-600 w-10 h-10 rounded-full flex items-center justify-center">
+        <i class="fas fa-check"></i>
+      </span>
+      <div>
+        <p class="font-semibold text-green-700">Estás al día</p>
+        <p class="text-xs text-slate-500">
+          No tienes deuda pendiente en el año escolar activo.
+        </p>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <div>
+    <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+      <i class="fas fa-user-graduate text-teal-600"></i>
+      Estudiantes a mi cargo
+    </h2>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+      {% for item in estudiantes %}
+
+      <div class="bg-white rounded-2xl shadow border border-gray-200 overflow-hidden">
+
+        <div class="p-5 flex items-center gap-4">
+
+          {% avatar item.estudiante size='w-14 h-14' texto='text-xl' %}
+
+          <div class="flex-1 min-w-0">
+            <p class="font-semibold text-gray-800 truncate">
+              {{ item.estudiante.nombre_completo }}
+            </p>
+            <p class="text-xs text-gray-500">
+              Matrícula {{ item.estudiante.matricula }}
+            </p>
+
+            {% if item.inscripcion_actual %}
+            <div class="flex items-center gap-1.5 mt-2">
+              <span class="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-md text-xs font-semibold">
+                {{ item.inscripcion_actual.grado.nombre }}
+              </span>
+              <span class="bg-gray-100 text-gray-600 px-2 py-0.5 rounded-md text-xs font-medium">
+                {{ item.inscripcion_actual.seccion.nombre }}
+              </span>
+              <span class="text-xs text-gray-400">{{ item.inscripcion_actual.anio_escolar.nombre }}</span>
+            </div>
+            {% else %}
+            <p class="text-xs text-amber-600 mt-2">
+              Sin inscripción en el año escolar activo
+            </p>
+            {% endif %}
+
+            <div class="mt-2 flex flex-wrap items-center gap-1.5">
+              {% if item.deuda.tiene_deuda %}
+                {% if item.deuda.vencida %}
+                <span class="bg-red-100 text-red-700 px-2 py-0.5 rounded-md text-xs font-semibold">
+                  Vencida RD$ {{ item.deuda.vencida|dop0 }}
+                </span>
+                {% endif %}
+                {% if item.deuda.proxima %}
+                <span class="bg-amber-100 text-amber-700 px-2 py-0.5 rounded-md text-xs font-semibold">
+                  Próxima RD$ {{ item.deuda.proxima|dop0 }}
+                </span>
+                {% endif %}
+              {% else %}
+                <span class="bg-green-100 text-green-700 px-2 py-0.5 rounded-md text-xs font-semibold">
+                  Al día
+                </span>
+              {% endif %}
+            </div>
+
+          </div>
+
+        </div>
+
+        <div class="flex items-center gap-2 px-5 py-3 border-t border-gray-100 bg-gray-50">
+
+          <a href="{% url 'tutores:tutor_estudiante' item.estudiante.id %}"
+             class="inline-flex items-center gap-1.5 text-xs font-medium text-teal-700 bg-teal-50 hover:bg-teal-100 px-3 py-1.5 rounded-lg transition">
+            <i class="fas fa-file-lines"></i>
+            Datos y calificaciones
+          </a>
+
+        </div>
+
+      </div>
+
+      {% endfor %}
+
+    </div>
+  </div>
+
+  {% else %}
+
+  <div class="bg-white rounded-2xl shadow p-12 text-center">
+    <i class="fas fa-user-graduate text-4xl text-gray-300 mb-4 block"></i>
+    <p class="text-gray-500 font-medium">No tienes estudiantes a cargo.</p>
+    <p class="text-xs text-gray-400 mt-1">
+      Contacta con la administración del centro para vincular tus estudiantes.
+    </p>
+  </div>
+
+  {% endif %}
+
+</div>
+{% endblock %}

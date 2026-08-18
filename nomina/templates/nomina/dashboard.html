@@ -1,0 +1,146 @@
+{% extends 'home.html' %}
+
+{% block title %}
+Panel de Nómina
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Panel de Nómina</h1>
+        <p class="page-subtitle">{{ centro.nombre }} · Nómina y personal</p>
+    </div>
+
+    <div class="header-actions">
+        <a href="{% url 'nomina:configuracion_nomina_list' %}" class="btn-secondary">
+            <i class="fas fa-users-cog"></i>
+            Empleados
+        </a>
+        <a href="{% url 'nomina:periodo_nomina_list' %}" class="btn-primary">
+            <i class="fas fa-play"></i>
+            Generar nómina
+        </a>
+    </div>
+</div>
+
+<div class="stat-grid">
+
+    <div class="stat-card">
+        <div class="stat-icon stat-icon-indigo">
+            <i class="fas fa-users"></i>
+        </div>
+        <div>
+            <p class="stat-label">Empleados activos</p>
+            <p class="stat-value">{{ cantidad_empleados }}</p>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-icon stat-icon-blue">
+            <i class="fas fa-calendar-day"></i>
+        </div>
+        <div>
+            <p class="stat-label">Período actual</p>
+            <p class="stat-value">
+                {% if periodo_actual %}
+                    {{ periodo_actual.descripcion }}
+                {% else %}
+                    —
+                {% endif %}
+            </p>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-icon stat-icon-green">
+            <i class="fas fa-money-bill-wave"></i>
+        </div>
+        <div>
+            <p class="stat-label">Última nómina (neto)</p>
+            <p class="stat-value">RD$ {{ total_ultima|dop }}</p>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-icon stat-icon-purple">
+            <i class="fas fa-user-check"></i>
+        </div>
+        <div>
+            <p class="stat-label">Empleados en última nómina</p>
+            <p class="stat-value">{{ cantidad_pagados }}</p>
+        </div>
+    </div>
+
+</div>
+
+<div class="dashboard-grid">
+
+    <div class="panel-card">
+        <div class="panel-card-header">
+            <h2>Próximos períodos</h2>
+            <a href="{% url 'nomina:periodo_nomina_list' %}" class="panel-link">Ver todos</a>
+        </div>
+
+        <div class="panel-card-body">
+            {% for periodo in proximos_periodos %}
+            <div class="list-item">
+                <div class="list-item-icon">
+                    <i class="fas fa-calendar-alt"></i>
+                </div>
+                <div class="list-item-info">
+                    <strong>{{ periodo.descripcion }}</strong>
+                    <p>Pago: {{ periodo.fecha_pago|date:"d/m/Y" }}</p>
+                </div>
+                <a href="{% url 'nomina:periodo_detalle' periodo.id %}" class="btn-action">
+                    <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+            {% empty %}
+            <div class="empty-state">
+                <i class="fas fa-calendar-check"></i>
+                <p>No hay períodos pendientes por el momento</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="panel-card">
+        <div class="panel-card-header">
+            <h2>Alertas del personal</h2>
+        </div>
+
+        <div class="panel-card-body">
+            {% for alerta in alertas %}
+            <div class="list-item list-item-warning">
+                <div class="list-item-icon">
+                    <i class="fas fa-triangle-exclamation"></i>
+                </div>
+                <div class="list-item-info">
+                    <strong>{{ alerta }}</strong>
+                </div>
+            </div>
+            {% empty %}
+            <div class="empty-state">
+                <i class="fas fa-circle-check"></i>
+                <p>Todo el personal está correctamente configurado</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+</div>
+
+{% if ultima_nomina %}
+<div class="panel-card mt-4">
+    <div class="panel-card-header">
+        <h2>Última nómina generada: {{ ultima_nomina.descripcion }}</h2>
+        <a href="{% url 'nomina:periodo_detalle' ultima_nomina.id %}" class="btn-secondary btn-sm">
+            <i class="fas fa-eye"></i>
+            Ver detalle
+        </a>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}

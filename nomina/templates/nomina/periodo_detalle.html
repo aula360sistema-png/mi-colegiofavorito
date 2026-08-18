@@ -1,0 +1,601 @@
+{% extends 'home.html' %}
+{% load static %}
+
+{% load nomina_extras %}
+
+{% block title %}
+Nómina {{ periodo.descripcion }}
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">{{ periodo.descripcion }}</h1>
+        <p class="page-subtitle">
+            {{ periodo.fecha_inicio|date:"d/m/Y" }} al {{ periodo.fecha_fin|date:"d/m/Y" }}
+        </p>
+
+        <div class="mt-2 flex gap-2 flex-wrap">
+            {% if periodo.cerrado %}
+                <span class="badge-danger"><i class="fas fa-lock"></i> Período cerrado</span>
+            {% elif periodo.nomina_generada %}
+                <span class="badge-success"><i class="fas fa-check"></i> Nómina generada</span>
+            {% else %}
+                <span class="badge-warning"><i class="fas fa-hourglass-half"></i> Pendiente</span>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="header-actions">
+        {% if not periodo.cerrado and not periodo.nomina_generada %}
+            <button class="btn-nomina btn-sm" id="btn-generar" onclick="generarNomina({{ periodo.id }})">
+                <i class="fas fa-play"></i> Generar nómina
+            </button>
+        {% endif %}
+
+        {% if not periodo.cerrado and periodo.nomina_generada %}
+            <form method="post" action="{% url 'nomina:periodo_anular' periodo.id %}"
+                  onsubmit="return confirm('¿Anular la nómina de este período? Se eliminarán todos los cálculos y podrás regenerar.')">
+                {% csrf_token %}
+                <button type="submit" class="btn-danger btn-sm">
+                    <i class="fas fa-rotate-left"></i> Anular y regenerar
+                </button>
+            </form>
+
+            <form method="post" action="{% url 'nomina:periodo_cerrar' periodo.id %}"
+                  onsubmit="return confirm('¿Cerrar el período? Ya no se podrán hacer cambios.')">
+                {% csrf_token %}
+                <button type="submit" class="btn-secondary btn-sm">
+                    <i class="fas fa-lock"></i> Cerrar período
+                </button>
+            </form>
+        {% endif %}
+
+        {% if periodo.nomina_generada %}
+            <button class="btn-secondary btn-sm" onclick="imprimirNomina()">
+                <i class="fas fa-print"></i> Imprimir
+            </button>
+        {% endif %}
+
+        <a href="{% url 'nomina:periodo_nomina_list' %}" class="btn-secondary">
+            <i class="fas fa-arrow-left"></i> Períodos
+        </a>
+    </div>
+</div>
+
+{# ========================== INFO DEL PERÍODO ========================== #}
+
+<div class="period-info-grid">
+    <div class="period-info-item">
+        <div class="period-info-icon"><i class="fas fa-calendar-day"></i></div>
+        <div>
+            <span class="period-info-label">Fecha inicio</span>
+            <strong>{{ periodo.fecha_inicio|date:"d/m/Y" }}</strong>
+        </div>
+    </div>
+
+    <div class="period-info-item">
+        <div class="period-info-icon"><i class="fas fa-calendar-check"></i></div>
+        <div>
+            <span class="period-info-label">Fecha fin</span>
+            <strong>{{ periodo.fecha_fin|date:"d/m/Y" }}</strong>
+        </div>
+    </div>
+
+    <div class="period-info-item">
+        <div class="period-info-icon"><i class="fas fa-money-check-dollar"></i></div>
+        <div>
+            <span class="period-info-label">Fecha de pago</span>
+            <strong>{{ periodo.fecha_pago|date:"d/m/Y" }}</strong>
+        </div>
+    </div>
+
+    <div class="period-info-item">
+        <div class="period-info-icon"><i class="fas fa-hashtag"></i></div>
+        <div>
+            <span class="period-info-label">Período No.</span>
+            <strong>{{ periodo.numero_periodo }}</strong>
+        </div>
+    </div>
+</div>
+
+{% if periodo.nomina_generada %}
+
+{# ========================== RESUMEN ========================== #}
+
+<div class="stat-grid">
+
+    <div class="stat-card">
+        <div class="stat-icon stat-icon-indigo">
+            <i class="fas fa-briefcase"></i>
+        </div>
+        <div>
+            <p class="stat-label">Salarios base</p>
+            <p class="stat-value">RD$ {{ totales.salarios|dop }}</p>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-icon stat-icon-green">
+            <i class="fas fa-arrow-up"></i>
+        </div>
+        <div>
+            <p class="stat-label">Total devengado</p>
+            <p class="stat-value">RD$ {{ totales.ingresos|dop }}</p>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-icon stat-icon-red">
+            <i class="fas fa-arrow-down"></i>
+        </div>
+        <div>
+            <p class="stat-label">Total descuentos</p>
+            <p class="stat-value">RD$ {{ totales.descuentos|dop }}</p>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-icon stat-icon-blue">
+            <i class="fas fa-file-invoice-dollar"></i>
+        </div>
+        <div>
+            <p class="stat-label">Neto a pagar</p>
+            <p class="stat-value">RD$ {{ totales.neto|dop }}</p>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-icon stat-icon-purple">
+            <i class="fas fa-users"></i>
+        </div>
+        <div>
+            <p class="stat-label">Empleados</p>
+            <p class="stat-value">{{ totales.cantidad }}</p>
+        </div>
+    </div>
+
+</div>
+
+{# ========================== HERRAMIENTAS ========================== #}
+
+<div class="toolbar-row">
+    <div class="search-form">
+        <i class="fas fa-magnifying-glass toolbar-search-icon"></i>
+        <input type="text" id="buscar-empleado" placeholder="Buscar empleado..." oninput="filtrarTabla()">
+    </div>
+
+    <div class="summary-chips">
+        <span class="badge-neutral"><i class="fas fa-heart-pulse"></i> AFP: RD$ {{ totales.afp|dop }}</span>
+        <span class="badge-neutral"><i class="fas fa-shield-halved"></i> ARS: RD$ {{ totales.ars|dop }}</span>
+        <span class="badge-neutral"><i class="fas fa-file-invoice-dollar"></i> ISR: RD$ {{ totales.isr|dop }}</span>
+    </div>
+</div>
+
+{# ========================== TABLA ========================== #}
+
+<div class="table-card mt-4">
+    <table class="custom-table">
+        <thead>
+            <tr>
+                <th>Empleado</th>
+                <th>Cargo</th>
+                <th>Salario</th>
+                <th>Ingresos</th>
+                <th>AFP</th>
+                <th>ARS</th>
+                <th>ISR</th>
+                <th>Descuentos</th>
+                <th>Neto</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for nomina in nominas %}
+            <tr class="nomina-row">
+                <td>
+                    <strong>{{ nomina.usuario.get_full_name }}</strong>
+                    <br>
+                    <small class="text-muted">{{ nomina.usuario.username }}</small>
+                </td>
+                <td>{{ nomina.configuracion.cargo|default:"—" }}</td>
+                <td>RD$ {{ nomina.salario_base|dop }}</td>
+                <td>RD$ {{ nomina.total_ingresos|dop }}</td>
+                <td>RD$ {{ nomina.monto_afp|dop }}</td>
+                <td>RD$ {{ nomina.monto_ars|dop }}</td>
+                <td>RD$ {{ nomina.monto_isr|dop }}</td>
+                <td>RD$ {{ nomina.total_descuentos|dop }}</td>
+                <td><strong>RD$ {{ nomina.neto_pagar|dop }}</strong></td>
+                <td>
+                    {% if nomina.estado == 'PAGADA' %}
+                        <span class="badge-success">Pagada</span>
+                    {% elif nomina.estado == 'ANULADA' %}
+                        <span class="badge-danger">Anulada</span>
+                    {% elif nomina.estado == 'APROBADA' %}
+                        <span class="badge-warning">Aprobada</span>
+                    {% elif nomina.estado == 'REVISADA' %}
+                        <span class="badge-neutral">Revisada</span>
+                    {% else %}
+                        <span class="badge-neutral">Generada</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <div class="table-actions">
+                        <button type="button" class="btn-action" title="Ver desglose"
+                                onclick="alternarDesglose('desglose-{{ nomina.id }}', this)">
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+
+                        <a href="{% url 'nomina:boleta_pago' nomina.id %}" class="btn-action" title="Boleta de pago">
+                            <i class="fas fa-file-invoice"></i>
+                        </a>
+
+                        {% if not periodo.cerrado and nomina.estado != 'PAGADA' and nomina.estado != 'ANULADA' %}
+                            {% if nomina.estado == 'GENERADA' %}
+                                <form method="post" action="{% url 'nomina:nomina_estado' nomina.id %}">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="accion" value="revisar">
+                                    <button type="submit" class="btn-action" title="Marcar revisada">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </form>
+                            {% endif %}
+
+                            {% if nomina.estado != 'REVISADA' and nomina.estado != 'APROBADA' %}
+                                <form method="post" action="{% url 'nomina:nomina_estado' nomina.id %}">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="accion" value="aprobar">
+                                    <button type="submit" class="btn-action" title="Aprobar">
+                                        <i class="fas fa-check"></i>
+                                    </button>
+                                </form>
+                            {% endif %}
+
+                            <form method="post" action="{% url 'nomina:nomina_estado' nomina.id %}">
+                                {% csrf_token %}
+                                <input type="hidden" name="accion" value="pagar">
+                                <button type="submit" class="btn-action btn-action-green" title="Marcar pagada"
+                                        onclick="return confirm('¿Confirmar el pago de {{ nomina.usuario.get_full_name }}?')">
+                                    <i class="fas fa-money-bill-wave"></i>
+                                </button>
+                            </form>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+
+            <tr class="desglose-row" id="desglose-{{ nomina.id }}" style="display:none;">
+                <td colspan="11">
+                    <div class="desglose-grid">
+                        <div class="desglose-col">
+                            <h4><i class="fas fa-arrow-up"></i> Ingresos</h4>
+                            <ul class="desglose-list">
+                                {% for ingreso in nomina.ingresos.all %}
+                                <li>
+                                    <span>{{ ingreso.descripcion }}</span>
+                                    <strong>RD$ {{ ingreso.monto|dop }}</strong>
+                                </li>
+                                {% empty %}
+                                <li class="text-muted">Sin ingresos</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+
+                        <div class="desglose-col">
+                            <h4><i class="fas fa-arrow-down"></i> Descuentos</h4>
+                            <ul class="desglose-list">
+                                {% for descuento in nomina.descuentos.all %}
+                                <li>
+                                    <span>{{ descuento.descripcion }}</span>
+                                    <strong>RD$ {{ descuento.monto|dop }}</strong>
+                                </li>
+                                {% empty %}
+                                <li class="text-muted">Sin descuentos</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+
+                        <div class="desglose-col desglose-net">
+                            <h4><i class="fas fa-hand-holding-dollar"></i> Resumen</h4>
+                            <ul class="desglose-list">
+                                <li><span>Salario base</span><strong>RD$ {{ nomina.salario_base|dop }}</strong></li>
+                                <li><span>Ingresos totales</span><strong>RD$ {{ nomina.total_ingresos|dop }}</strong></li>
+                                <li><span>Descuentos totales</span><strong>RD$ {{ nomina.total_descuentos|dop }}</strong></li>
+                                <li class="desglose-total"><span>Neto a pagar</span><strong>RD$ {{ nomina.neto_pagar|dop }}</strong></li>
+                            </ul>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="11">
+                    <div class="empty-state">
+                        <i class="fas fa-users-slash"></i>
+                        <p>No hay nóminas generadas en este período</p>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        {% if nominas %}
+        <tfoot>
+            <tr class="tabla-totales">
+                <td>Totales</td>
+                <td></td>
+                <td>RD$ {{ totales.salarios|dop }}</td>
+                <td>RD$ {{ totales.ingresos|dop }}</td>
+                <td>RD$ {{ totales.afp|dop }}</td>
+                <td>RD$ {{ totales.ars|dop }}</td>
+                <td>RD$ {{ totales.isr|dop }}</td>
+                <td>RD$ {{ totales.descuentos|dop }}</td>
+                <td>RD$ {{ totales.neto|dop }}</td>
+                <td></td>
+                <td></td>
+            </tr>
+        </tfoot>
+        {% endif %}
+    </table>
+</div>
+
+{# ========================== RESUMEN FINAL ========================== #}
+
+<div class="panel-card mt-4 resumen-final">
+    <div class="panel-card-header">
+        <h2><i class="fas fa-file-invoice-dollar"></i> Resumen final del período</h2>
+    </div>
+    <div class="resumen-final-body">
+        <div>
+            <span>Total salarios base</span>
+            <strong>RD$ {{ totales.salarios|dop }}</strong>
+        </div>
+        <div>
+            <span>Total ingresos (devengado)</span>
+            <strong>RD$ {{ totales.ingresos|dop }}</strong>
+        </div>
+        <div>
+            <span>Total descuentos</span>
+            <strong>RD$ {{ totales.descuentos|dop }}</strong>
+        </div>
+        <div class="resumen-final-net">
+            <span>Total a pagar</span>
+            <strong>RD$ {{ totales.neto|dop }}</strong>
+        </div>
+    </div>
+</div>
+
+{% else %}
+
+<div class="panel-card">
+    <div class="empty-state">
+        <i class="fas fa-cash-register"></i>
+        <p>Este período aún no tiene nómina generada</p>
+        <button class="btn-nomina" onclick="generarNomina({{ periodo.id }})">
+            <i class="fas fa-play"></i> Generar nómina ahora
+        </button>
+    </div>
+</div>
+
+{% endif %}
+
+{{ datos_impresion|json_script:"datos-impresion" }}
+
+<script>
+function imprimirNomina() {
+    const datos = JSON.parse(document.getElementById('datos-impresion').textContent);
+
+    if (!datos.filas.length) {
+        Swal.fire('Sin datos', 'No hay nóminas para imprimir.', 'warning');
+        return;
+    }
+
+    const fmt = (v) => v.toLocaleString('es-DO', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+
+    const totales = { salario: 0, ingresos: 0, afp: 0, ars: 0, isr: 0, descuentos: 0, neto: 0 };
+    const claves = Object.keys(totales);
+
+    let filas = '';
+    datos.filas.forEach((f, i) => {
+        claves.forEach((c) => { totales[c] += f[c]; });
+        filas += `<tr>
+            <td class="c">${i + 1}</td>
+            <td>${f.nombre}</td>
+            <td>${f.cargo}</td>
+            <td class="d">RD$ ${fmt(f.salario)}</td>
+            <td class="d">RD$ ${fmt(f.ingresos)}</td>
+            <td class="d">RD$ ${fmt(f.afp)}</td>
+            <td class="d">RD$ ${fmt(f.ars)}</td>
+            <td class="d">RD$ ${fmt(f.isr)}</td>
+            <td class="d">RD$ ${fmt(f.descuentos)}</td>
+            <td class="d neto">RD$ ${fmt(f.neto)}</td>
+        </tr>`;
+    });
+
+    const html = `<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>${datos.titulo}</title>
+<link rel="stylesheet" href="{% static 'vendor/fontawesome/css/all.min.css' %}">
+<style>
+    @page { size: letter landscape; margin: 12mm; }
+    * { box-sizing: border-box; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; color: #111; margin: 0; }
+    .membrete { display: flex; align-items: center; gap: 14px; border-bottom: 3px solid #111; padding-bottom: 10px; }
+    .escudo { width: 52px; height: 52px; border-radius: 50%; border: 2px solid #111; display: flex; align-items: center; justify-content: center; font-size: 22px; color: #111; }
+    .membrete h1 { margin: 0; font-size: 19px; text-transform: uppercase; letter-spacing: .5px; }
+    .membrete p { margin: 2px 0 0; font-size: 11px; color: #444; }
+    .titulo { text-align: center; margin: 14px 0 12px; }
+    .titulo h2 { margin: 0; font-size: 16px; text-transform: uppercase; }
+    .titulo p { margin: 4px 0 0; font-size: 12px; color: #444; }
+    table { width: 100%; border-collapse: collapse; font-size: 11px; }
+    th { background: #111; color: #fff; padding: 6px 8px; border: 1px solid #111; text-transform: uppercase; font-size: 9.5px; text-align: left; }
+    td { padding: 5px 8px; border: 1px solid #bbb; vertical-align: top; }
+    tr:nth-child(even) td { background: #f3f4f6; }
+    .c { text-align: center; }
+    .d { text-align: right; white-space: nowrap; }
+    .neto { font-weight: 700; background: #eef2ff; }
+    .tot td { font-weight: 700; background: #e5e7eb; border-top: 2px solid #111; }
+</style>
+</head>
+<body>
+    <div class="membrete">
+        <div class="escudo"><i class="fas fa-graduation-cap"></i></div>
+        <div>
+            <h1>${datos.centro}</h1>
+            <p>Código MINERD: ${datos.codigo}${datos.direccion ? ' · ' + datos.direccion : ''}</p>
+        </div>
+    </div>
+    <div class="titulo">
+        <h2>${datos.titulo}</h2>
+        <p>${datos.fecha_inicio} al ${datos.fecha_fin} · Pago: ${datos.fecha_pago}</p>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>No.</th>
+                <th>Empleado</th>
+                <th>Cargo</th>
+                <th>Salario</th>
+                <th>Ingresos</th>
+                <th>AFP</th>
+                <th>ARS</th>
+                <th>ISR</th>
+                <th>Descuentos</th>
+                <th>Neto</th>
+            </tr>
+        </thead>
+        <tbody>
+            ${filas}
+            <tr class="tot">
+                <td colspan="3">TOTALES</td>
+                <td class="d">RD$ ${fmt(totales.salario)}</td>
+                <td class="d">RD$ ${fmt(totales.ingresos)}</td>
+                <td class="d">RD$ ${fmt(totales.afp)}</td>
+                <td class="d">RD$ ${fmt(totales.ars)}</td>
+                <td class="d">RD$ ${fmt(totales.isr)}</td>
+                <td class="d">RD$ ${fmt(totales.descuentos)}</td>
+                <td class="d neto">RD$ ${fmt(totales.neto)}</td>
+            </tr>
+        </tbody>
+    </table>
+</body>
+</html>`;
+
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'fixed';
+    iframe.style.right = '0';
+    iframe.style.bottom = '0';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = '0';
+    document.body.appendChild(iframe);
+
+    const doc = iframe.contentWindow.document;
+    doc.open();
+    doc.write(html);
+    doc.close();
+
+    iframe.contentWindow.focus();
+    setTimeout(() => {
+        iframe.contentWindow.print();
+        setTimeout(() => document.body.removeChild(iframe), 1000);
+    }, 300);
+}
+
+function generarNomina(periodoId) {
+    const btn = document.getElementById('btn-generar') || null;
+
+    Swal.fire({
+        title: '¿Generar nómina?',
+        html: 'Se calculará automáticamente:<br><br>' +
+              '• Salario base (prorrateado)<br>' +
+              '• Ingresos extras<br>' +
+              '• AFP · ARS · ISR<br>' +
+              '• Descuentos<br>' +
+              '• Neto a pagar',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, generar',
+        cancelButtonText: 'Cancelar',
+        reverseButtons: true
+    }).then((result) => {
+        if (!result.isConfirmed) return;
+
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generando...';
+        }
+
+        fetch(`/nomina/generar/${periodoId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                Swal.fire({
+                    title: 'Nómina generada',
+                    text: data.message,
+                    icon: 'success',
+                    confirmButtonText: 'Aceptar'
+                }).then(() => location.reload());
+            } else {
+                Swal.fire('Error', data.message, 'error');
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-play"></i> Generar nómina';
+                }
+            }
+        })
+        .catch(() => {
+            Swal.fire('Error', 'Ocurrió un error del servidor', 'error');
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-play"></i> Generar nómina';
+            }
+        });
+    });
+}
+
+function alternarDesglose(id, btn) {
+    const fila = document.getElementById(id);
+    if (!fila) return;
+
+    const visible = fila.style.display !== 'none';
+    fila.style.display = visible ? 'none' : '';
+
+    const icono = btn.querySelector('i');
+    if (icono) {
+        icono.classList.toggle('fa-chevron-down', visible);
+        icono.classList.toggle('fa-chevron-up', !visible);
+    }
+}
+
+function filtrarTabla() {
+    const termino = document.getElementById('buscar-empleado').value.toLowerCase();
+    const filas = document.querySelectorAll('.nomina-row');
+
+    filas.forEach((fila) => {
+        const texto = fila.cells[0].textContent.toLowerCase();
+        const visible = texto.includes(termino);
+        fila.style.display = visible ? '' : 'none';
+        if (!visible) {
+            const siguiente = fila.nextElementSibling;
+            if (siguiente && siguiente.classList.contains('desglose-row')) {
+                siguiente.style.display = 'none';
+            }
+        }
+    });
+}
+</script>
+
+{% endblock %}

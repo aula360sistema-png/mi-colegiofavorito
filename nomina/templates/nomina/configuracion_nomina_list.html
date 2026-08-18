@@ -6,17 +6,26 @@
 
     <div>
         <h1 class="page-title">
-            Configuración Nómina
+            Empleados en Nómina
         </h1>
 
         <p class="page-subtitle">
-            Empleados configurados para nómina
+            {{ activos }} empleado(s) activos para nómina
         </p>
     </div>
 
-    <a href="{% url 'nomina:configuracion_nomina_create' %}" class="btn-primary">
-        Nueva Configuración
-    </a>
+    <div class="header-actions">
+        <form method="get" class="search-form">
+            <input type="text" name="q" value="{{ q }}" placeholder="Buscar empleado o cargo...">
+            <button type="submit" class="btn-secondary btn-sm">
+                <i class="fas fa-search"></i>
+            </button>
+        </form>
+
+        <a href="{% url 'nomina:configuracion_nomina_create' %}" class="btn-primary">
+            Nueva Configuración
+        </a>
+    </div>
 
 </div>
 
@@ -31,7 +40,9 @@
                 <th>Salario</th>
                 <th>AFP</th>
                 <th>ARS</th>
+                <th>Tipo de pago</th>
                 <th>Estado</th>
+                <th>Acciones</th>
             </tr>
         </thead>
 
@@ -42,7 +53,9 @@
             <tr>
 
                 <td>
-                    {{ emp.usuario.get_full_name }}
+                    <strong>{{ emp.usuario.get_full_name }}</strong>
+                    <br>
+                    <small class="text-muted">{{ emp.usuario.username }}</small>
                 </td>
 
                 <td>
@@ -50,20 +63,24 @@
                 </td>
 
                 <td>
-                    RD$ {{ emp.salario_base }}
+                    RD$ {{ emp.salario_base|dop }}
                 </td>
 
                 <td>
-                    {{ emp.afp }}
+                    {{ emp.afp|default:"—" }}
                 </td>
 
                 <td>
-                    {{ emp.ars }}
+                    {{ emp.ars|default:"—" }}
+                </td>
+
+                <td>
+                    {{ emp.get_tipo_pago_display }}
                 </td>
 
                 <td>
 
-                    {% if emp.activo %}
+                    {% if emp.activo_nomina %}
                         <span class="badge-success">
                             Activo
                         </span>
@@ -75,6 +92,53 @@
 
                 </td>
 
+                <td>
+                    <div class="table-actions">
+
+                        <a href="{% url 'nomina:empleado_detalle' emp.id %}" class="btn-action" title="Ingresos y descuentos">
+                            <i class="fas fa-wallet"></i>
+                        </a>
+
+                        <a href="{% url 'nomina:configuracion_nomina_edit' emp.id %}" class="btn-action" title="Editar">
+                            <i class="fas fa-pen"></i>
+                        </a>
+
+                        <form method="post" action="{% url 'nomina:configuracion_nomina_toggle' emp.id %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn-action" title="Activar/desactivar para nómina">
+                                {% if emp.activo_nomina %}
+                                    <i class="fas fa-ban"></i>
+                                {% else %}
+                                    <i class="fas fa-check"></i>
+                                {% endif %}
+                            </button>
+                        </form>
+
+                        <form method="post" action="{% url 'nomina:configuracion_nomina_delete' emp.id %}"
+                              onsubmit="return confirm('¿Eliminar la configuración de {{ emp.usuario.get_full_name }}?')">
+                            {% csrf_token %}
+                            <button type="submit" class="btn-action btn-action-danger" title="Eliminar">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </form>
+
+                    </div>
+                </td>
+
+            </tr>
+
+            {% empty %}
+
+            <tr>
+                <td colspan="8">
+                    <div class="empty-state">
+                        <i class="fas fa-user-slash"></i>
+                        <p>No hay empleados configurados para nómina</p>
+                        <a href="{% url 'nomina:configuracion_nomina_create' %}" class="btn-primary btn-sm">
+                            Configurar el primer empleado
+                        </a>
+                    </div>
+                </td>
             </tr>
 
             {% endfor %}

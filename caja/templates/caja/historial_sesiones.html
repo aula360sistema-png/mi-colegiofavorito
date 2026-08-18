@@ -41,10 +41,10 @@
                             {% if s.fecha_cierre %}{{ s.fecha_cierre|date:"d/m/Y H:i" }}{% else %}—{% endif %}
                         </td>
                         <td class="px-4 py-2.5">{{ s.usuario_apertura|default:"—" }}</td>
-                        <td class="px-4 py-2.5 text-right">RD$ {{ s.monto_inicial|floatformat:2 }}</td>
-                        <td class="px-4 py-2.5 text-right text-emerald-600">RD$ {{ s.totales.entradas|floatformat:2 }}</td>
-                        <td class="px-4 py-2.5 text-right text-rose-600">RD$ {{ s.totales.salidas|floatformat:2 }}</td>
-                        <td class="px-4 py-2.5 text-right font-semibold">RD$ {{ s.totales.saldo|floatformat:2 }}</td>
+                        <td class="px-4 py-2.5 text-right">RD$ {{ s.monto_inicial|dop }}</td>
+                        <td class="px-4 py-2.5 text-right text-emerald-600">RD$ {{ s.totales.entradas|dop }}</td>
+                        <td class="px-4 py-2.5 text-right text-rose-600">RD$ {{ s.totales.salidas|dop }}</td>
+                        <td class="px-4 py-2.5 text-right font-semibold">RD$ {{ s.totales.saldo|dop }}</td>
                         <td class="px-4 py-2.5 text-center">
                             {% if s.estado == 'abierta' %}
                                 <span class="px-2 py-1 bg-emerald-100 text-emerald-700 rounded-full text-xs font-medium">Abierta</span>

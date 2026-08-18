@@ -1,0 +1,206 @@
+{% extends "home.html" %}
+
+{% block title %}
+{% if campania %}Editar Campaña{% else %}Nueva Campaña{% endif %}
+{% endblock %}
+
+{% block content %}
+
+<div class="max-w-4xl mx-auto">
+
+    <div class="flex items-center justify-between mb-6">
+
+        <div>
+            <a href="{% url 'comunicaciones:campania_list' %}"
+               class="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-blue-600 mb-2 transition">
+                <i class="fas fa-arrow-left"></i>
+                Volver al centro de correo
+            </a>
+
+            <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                {% if campania %}
+                <i class="fas fa-pen text-blue-600"></i>
+                Editar Campaña
+                {% else %}
+                <i class="fas fa-paper-plane text-blue-600"></i>
+                Nueva Campaña
+                {% endif %}
+            </h2>
+
+            <p class="text-sm text-gray-500 mt-1">
+                Envía correos o WhatsApp a los tutores: fechas importantes,
+                reuniones, avisos y más.
+            </p>
+        </div>
+
+    </div>
+
+    {% if form.non_field_errors %}
+    <div class="mb-6 bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3">
+        <i class="fas fa-exclamation-triangle text-red-600 mt-0.5"></i>
+        <div>
+            <h4 class="font-semibold text-red-700 mb-1">Corrija los errores indicados:</h4>
+            {% for error in form.non_field_errors %}
+            <p class="text-sm text-red-600">{{ error }}</p>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <form method="post" class="space-y-6">
+
+        {% csrf_token %}
+
+        <!-- MENSAJE -->
+        <section class="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
+
+            <div class="flex items-center gap-3 px-6 py-4 border-b border-gray-200 bg-gray-50">
+                <div class="w-9 h-9 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center">
+                    <i class="fas fa-envelope-open-text"></i>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-gray-800">Mensaje</h3>
+                    <p class="text-xs text-gray-500">Redacta la comunicación que recibirán los tutores</p>
+                </div>
+            </div>
+
+            <div class="p-6 space-y-5">
+
+                <div>
+                    <label for="{{ form.asunto.id_for_label }}"
+                           class="block text-sm font-medium text-gray-600 mb-1.5">
+                        {{ form.asunto.label }}{% if form.asunto.field.required %} <span class="text-red-500">*</span>{% endif %}
+                    </label>
+                    {{ form.asunto }}
+                    {% if form.asunto.errors %}
+                    <p class="text-xs text-red-600 mt-1">{{ form.asunto.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <label for="{{ form.mensaje.id_for_label }}"
+                           class="block text-sm font-medium text-gray-600 mb-1.5">
+                        {{ form.mensaje.label }}{% if form.mensaje.field.required %} <span class="text-red-500">*</span>{% endif %}
+                    </label>
+                    {{ form.mensaje }}
+                    {% if form.mensaje.errors %}
+                    <p class="text-xs text-red-600 mt-1">{{ form.mensaje.errors.0 }}</p>
+                    {% endif %}
+                    <p class="text-xs text-gray-400 mt-2">
+                        Usa <code class="bg-gray-100 px-1 rounded">{% templatetag openvariable %}tutor{% templatetag closevariable %}</code>
+                        y <code class="bg-gray-100 px-1 rounded">{% templatetag openvariable %}estudiante{% templatetag closevariable %}</code>
+                        para personalizar el mensaje por destinatario.
+                    </p>
+                </div>
+
+            </div>
+
+        </section>
+
+        <!-- CANAL Y ALCANCE -->
+        <section class="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
+
+            <div class="flex items-center gap-3 px-6 py-4 border-b border-gray-200 bg-gray-50">
+                <div class="w-9 h-9 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center">
+                    <i class="fas fa-bullseye"></i>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-gray-800">Canal y destinatarios</h3>
+                    <p class="text-xs text-gray-500">¿Por dónde se envía y a quién?</p>
+                </div>
+            </div>
+
+            <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-5">
+
+                <div>
+                    <label for="{{ form.canal.id_for_label }}"
+                           class="block text-sm font-medium text-gray-600 mb-1.5">
+                        {{ form.canal.label }}{% if form.canal.field.required %} <span class="text-red-500">*</span>{% endif %}
+                    </label>
+                    {{ form.canal }}
+                    {% if form.canal.errors %}
+                    <p class="text-xs text-red-600 mt-1">{{ form.canal.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <label for="{{ form.alcance.id_for_label }}"
+                           class="block text-sm font-medium text-gray-600 mb-1.5">
+                        {{ form.alcance.label }}{% if form.alcance.field.required %} <span class="text-red-500">*</span>{% endif %}
+                    </label>
+                    {{ form.alcance }}
+                    {% if form.alcance.errors %}
+                    <p class="text-xs text-red-600 mt-1">{{ form.alcance.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <div id="campo-grado" class="hidden">
+                    <label for="{{ form.grado.id_for_label }}"
+                           class="block text-sm font-medium text-gray-600 mb-1.5">
+                        {{ form.grado.label }}
+                    </label>
+                    {{ form.grado }}
+                    {% if form.grado.errors %}
+                    <p class="text-xs text-red-600 mt-1">{{ form.grado.errors.0 }}</p>
+                    {% endif %}
+                    <p class="text-xs text-gray-400 mt-1">{{ form.grado.help_text }}</p>
+                </div>
+
+                <div id="campo-tutores" class="hidden md:col-span-2">
+                    <label for="{{ form.tutores.id_for_label }}"
+                           class="block text-sm font-medium text-gray-600 mb-1.5">
+                        {{ form.tutores.label }}
+                    </label>
+                    {{ form.tutores }}
+                    {% if form.tutores.errors %}
+                    <p class="text-xs text-red-600 mt-1">{{ form.tutores.errors.0 }}</p>
+                    {% endif %}
+                    <p class="text-xs text-gray-400 mt-1">{{ form.tutores.help_text }}</p>
+                </div>
+
+            </div>
+
+        </section>
+
+        <!-- Acciones -->
+        <div class="flex items-center justify-between gap-3 bg-white shadow-sm rounded-xl border border-gray-200 p-4">
+
+            <a href="{% url 'comunicaciones:campania_list' %}"
+               class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 transition">
+                <i class="fas fa-times"></i>
+                Cancelar
+            </a>
+
+            <button
+                type="submit"
+                class="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-2.5 rounded-lg shadow-sm hover:bg-blue-700 hover:shadow transition text-sm font-semibold">
+                <i class="fas fa-save"></i>
+                {% if campania %}Guardar cambios{% else %}Crear campaña{% endif %}
+            </button>
+
+        </div>
+
+    </form>
+
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var selectAlcance = document.getElementById('{{ form.alcance.id_for_label }}');
+        var campoGrado = document.getElementById('campo-grado');
+        var campoTutores = document.getElementById('campo-tutores');
+
+        if (!selectAlcance) return;
+
+        function actualizarCampos() {
+            var valor = selectAlcance.value;
+            campoGrado.classList.toggle('hidden', valor !== 'grado');
+            campoTutores.classList.toggle('hidden', valor !== 'seleccion');
+        }
+
+        selectAlcance.addEventListener('change', actualizarCampos);
+        actualizarCampos();
+    });
+</script>
+
+{% endblock %}

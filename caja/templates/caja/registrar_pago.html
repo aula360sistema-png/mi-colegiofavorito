@@ -3,6 +3,12 @@
 {% block title %}Registrar Pago{% endblock %}
 
 {% block content %}
+<style>
+    @keyframes modal-pop { from { opacity: 0; transform: translateY(14px) scale(.96); } to { opacity: 1; transform: none; } }
+    @keyframes modal-fade { from { opacity: 0; } to { opacity: 1; } }
+    .modal-panel { animation: modal-pop .2s ease-out; }
+    .modal-backdrop { animation: modal-fade .18s ease-out; }
+</style>
 <div class="max-w-6xl mx-auto space-y-6">
 
     <!-- ================= HERO ================= -->
@@ -43,6 +49,16 @@
         </div>
     </div>
 
+    {% if messages %}
+    <div class="space-y-2">
+        {% for message in messages %}
+        <div class="rounded-2xl px-4 py-3 text-sm font-medium {% if message.tags == 'success' %}bg-emerald-50 text-emerald-700 border border-emerald-200{% elif message.tags == 'error' %}bg-red-50 text-red-700 border border-red-200{% else %}bg-blue-50 text-blue-700 border border-blue-200{% endif %}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
     {% if form.non_field_errors %}
     <div class="bg-red-50 border border-red-200 rounded-2xl p-4 text-red-700 text-sm">
         {{ form.non_field_errors }}
@@ -56,6 +72,10 @@
         <div class="lg:col-span-2 space-y-6">
             <form method="post" id="form-pago">
                 {% csrf_token %}
+                {{ form.metodo_pago }}
+                {{ form.fecha }}
+                {{ form.voucher }}
+                <input type="hidden" name="tipo_comprobante" id="id-tipo-comprobante" value="sin_comprobante">
 
                 <!-- Estudiante -->
                 <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
@@ -63,14 +83,19 @@
                         <i class="fas fa-user-graduate text-indigo-500"></i> Estudiante
                     </h3>
 
-                    <div class="relative mb-3">
-                        <i class="fas fa-search absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
-                        <input type="text" id="estudiante-buscador"
-                               class="w-full rounded-lg border border-gray-300 bg-gray-50 pl-10 pr-3.5 py-2.5 text-sm text-gray-800 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
-                               placeholder="Escribe nombre o matrícula para filtrar…">
+                    <div class="relative" id="estudiante-combo">
+                        <i class="fas fa-search absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none"></i>
+                        <input type="text" id="estudiante-buscador" autocomplete="off"
+                               class="w-full rounded-lg border border-gray-300 bg-gray-50 pl-10 pr-10 py-2.5 text-sm text-gray-800 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
+                               placeholder="Busca estudiante por nombre o matrícula…">
+                        <button type="button" id="estudiante-clear" class="hidden absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-sm">
+                            <i class="fas fa-circle-xmark"></i>
+                        </button>
+                        <div id="estudiante-sugerencias"
+                             class="hidden absolute z-30 mt-1.5 w-full max-h-64 overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-xl shadow-slate-900/10"></div>
                     </div>
 
-                    {{ form.estudiante }}
+                    <div class="hidden">{{ form.estudiante }}</div>
                     {% if form.estudiante.errors %}
                     <div class="text-red-600 text-sm mt-1">{{ form.estudiante.errors }}</div>
                     {% endif %}
@@ -107,8 +132,11 @@
                             </button>
                         </div>
                         <div class="relative">
-                            <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 font-semibold text-sm">RD$</span>
-                            {{ form.monto }}
+                            <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 font-semibold text-sm pointer-events-none">RD$</span>
+                            <input type="hidden" id="id-monto" name="monto" value="{{ form.monto.value|default_if_none:'' }}">
+                            <input type="text" id="monto-visual" inputmode="decimal" autocomplete="off"
+                                   class="w-full rounded-lg border border-gray-300 bg-gray-50 pl-12 pr-3.5 py-2.5 text-sm text-gray-800 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
+                                   placeholder="0.00">
                         </div>
                         {% if form.monto.errors %}
                         <div class="text-red-600 text-sm mt-1">{{ form.monto.errors }}</div>
@@ -117,45 +145,25 @@
                     </div>
                 </div>
 
-                <!-- Método de pago -->
+                <!-- Método de pago y comprobante -->
                 <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
                     <h3 class="font-semibold text-gray-700 mb-4 flex items-center gap-2">
-                        <i class="fas fa-hand-holding-usd text-amber-500"></i> Método de pago
+                        <i class="fas fa-hand-holding-usd text-amber-500"></i> Método de pago y comprobante
                     </h3>
 
-                    <div class="grid grid-cols-2 gap-3" id="metodos-pago">
-                        {% for radio in form.metodo_pago %}
-                        <label for="{{ radio.id_for_label }}" class="relative cursor-pointer">
-                            {{ radio.tag }}
-                            <div class="peer-checked:border-emerald-500 peer-checked:bg-emerald-50 peer-checked:ring-2 peer-checked:ring-emerald-200 flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-700 transition">
-                                <span class="text-lg">
-                                    {% if radio.choice_label == "Efectivo" %}💵
-                                    {% elif radio.choice_label == "Cheque" %}🏦
-                                    {% elif radio.choice_label == "Transferencia bancaria" %}🏧
-                                    {% elif radio.choice_label == "Tarjeta" %}💳
-                                    {% else %}💲{% endif %}
-                                </span>
-                                {{ radio.choice_label }}
-                            </div>
-                        </label>
-                        {% endfor %}
+                    <div id="resumen-pago" class="flex flex-wrap items-center gap-2">
+                        <button type="button" onclick="abrirModalMetodo()"
+                                class="inline-flex items-center gap-2 rounded-xl border border-dashed border-gray-300 px-4 py-2.5 text-sm text-gray-500 hover:border-indigo-400 hover:text-indigo-600 transition">
+                            <i class="fas fa-plus"></i> Elegir método de pago
+                        </button>
                     </div>
                 </div>
 
-                <!-- Fecha y enviar -->
+                <!-- Enviar -->
                 <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                    <h3 class="font-semibold text-gray-700 mb-4 flex items-center gap-2">
-                        <i class="fas fa-calendar-check text-sky-500"></i> Fecha y confirmación
-                    </h3>
-
-                    <div class="mb-5 max-w-xs">
-                        <label class="block text-sm font-medium text-gray-600 mb-1.5">Fecha del pago</label>
-                        {{ form.fecha }}
-                    </div>
-
-                    <button type="submit" id="btn-registrar"
+                    <button type="button" id="btn-registrar"
                             class="w-full inline-flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-semibold rounded-xl px-6 py-3.5 shadow-lg transition">
-                        <i class="fas fa-receipt"></i> Registrar pago y generar recibo
+                        <i class="fas fa-receipt"></i> Pagar
                     </button>
                 </div>
             </form>
@@ -232,14 +240,133 @@
 
 </div>
 
+<!-- ================= MODAL: MÉTODO DE PAGO ================= -->
+<div id="modal-metodo" class="fixed inset-0 z-[60] hidden items-center justify-center p-4">
+    <div class="modal-backdrop absolute inset-0 bg-slate-900/70 backdrop-blur-sm" onclick="cerrarModalMetodo()"></div>
+    <div class="modal-panel relative w-full max-w-md rounded-2xl bg-white shadow-2xl ring-1 ring-black/5 overflow-hidden">
+        <div class="relative px-6 py-5 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 overflow-hidden">
+            <div class="absolute -right-8 -top-8 h-28 w-28 rounded-full bg-emerald-500/20 blur-2xl"></div>
+            <div class="absolute -left-6 -bottom-10 h-24 w-24 rounded-full bg-indigo-500/20 blur-2xl"></div>
+            <p class="relative text-[11px] font-semibold uppercase tracking-widest text-emerald-400">
+                <i class="fas fa-hand-holding-usd mr-1"></i>{% if config and config.permitir_facturacion %}Paso 1 de 2{% else %}Paso 1 de 1{% endif %} · Método de pago
+            </p>
+            <h3 class="relative text-xl font-bold text-white mt-1.5">¿Cómo desea pagar?</h3>
+            <p class="relative text-sm text-slate-400 mt-0.5">Seleccione una de las siguientes opciones</p>
+            <button type="button" onclick="cerrarModalMetodo()"
+                    class="absolute right-4 top-4 grid h-8 w-8 place-items-center rounded-full text-slate-400 transition hover:bg-white/10 hover:text-white">
+                <i class="fas fa-xmark"></i>
+            </button>
+        </div>
+
+        <div class="p-5 space-y-3 max-h-[55vh] overflow-y-auto">
+            {% for valor, etiqueta in metodos_pago %}
+            <button type="button" data-metodo="{{ valor }}" data-etiqueta="{{ etiqueta }}"
+                    class="opcion-metodo group w-full flex items-center gap-4 rounded-xl border border-gray-200 bg-white px-4 py-3.5 text-left transition hover:border-emerald-500 hover:bg-emerald-50/60 hover:shadow-md">
+                <span class="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-slate-100 text-xl transition group-hover:bg-emerald-100">
+                    {% if valor == 'efectivo' %}💵
+                    {% elif valor == 'cheque' %}🏦
+                    {% elif valor == 'transferencia' %}🏧
+                    {% else %}💳{% endif %}
+                </span>
+                <span class="min-w-0 flex-1">
+                    <span class="block text-sm font-semibold text-gray-800">{{ etiqueta }}</span>
+                    <span class="block text-xs text-gray-500">
+                        {% if valor == 'efectivo' %}Pago en efectivo al momento.{% elif valor == 'cheque' %}Cheque a nombre del centro.{% elif valor == 'transferencia' %}Depósito o transferencia bancaria.{% else %}Tarjeta de débito o crédito.{% endif %}
+                    </span>
+                </span>
+                <span class="check-opcion hidden shrink-0 text-emerald-500"><i class="fas fa-circle-check text-lg"></i></span>
+                <i class="fas fa-chevron-right text-xs text-gray-300 transition group-hover:text-emerald-500"></i>
+            </button>
+            {% endfor %}
+
+            <div id="voucher-wrap" class="hidden rounded-xl border border-amber-200 bg-amber-50/70 p-4">
+                <label for="voucher-input" class="block text-xs font-bold uppercase tracking-wide text-amber-700 mb-1.5">
+                    <i class="fas fa-credit-card mr-1"></i>Código de voucher (Verifone)
+                </label>
+                <input type="text" id="voucher-input" maxlength="50" autocomplete="off"
+                       class="w-full rounded-lg border border-amber-300 bg-white px-3.5 py-2.5 text-sm text-gray-800 outline-none transition focus:border-amber-500 focus:ring-2 focus:ring-amber-200"
+                       placeholder="Ej.: 0C4A2B7F19">
+                <p id="voucher-error" class="hidden mt-1.5 text-xs text-red-600">
+                    <i class="fas fa-circle-exclamation mr-1"></i>Ingresa el código de voucher impreso en el datáfono.
+                </p>
+            </div>
+        </div>
+
+        <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between gap-3">
+            <button type="button" onclick="cerrarModalMetodo()"
+                    class="inline-flex items-center gap-1.5 text-sm font-medium text-gray-500 transition hover:text-gray-700">
+                <i class="fas fa-xmark"></i> Cancelar
+            </button>
+            <button type="button" id="btn-continuar-metodo" class="hidden items-center gap-2 rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700">
+                Continuar <i class="fas fa-arrow-right text-xs"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ================= MODAL: COMPROBANTE ================= -->
+<div id="modal-comprobante" class="fixed inset-0 z-[70] hidden items-center justify-center p-4">
+    <div class="modal-backdrop absolute inset-0 bg-slate-900/70 backdrop-blur-sm" onclick="cerrarModalComprobante()"></div>
+    <div class="modal-panel relative w-full max-w-md rounded-2xl bg-white shadow-2xl ring-1 ring-black/5 overflow-hidden">
+        <div class="relative px-6 py-5 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 overflow-hidden">
+            <div class="absolute -right-8 -top-8 h-28 w-28 rounded-full bg-sky-500/20 blur-2xl"></div>
+            <div class="absolute -left-6 -bottom-10 h-24 w-24 rounded-full bg-emerald-500/20 blur-2xl"></div>
+            <p class="relative text-[11px] font-semibold uppercase tracking-widest text-sky-400">
+                <i class="fas fa-file-invoice-dollar mr-1"></i>{% if config and config.permitir_facturacion %}Paso 2 de 2{% else %}Paso 1 de 1{% endif %} · Comprobante
+            </p>
+            <h3 class="relative text-xl font-bold text-white mt-1.5">¿Tipo de comprobante?</h3>
+            <p class="relative text-sm text-slate-400 mt-0.5">¿Emitimos factura fiscal o solo recibo?</p>
+            <button type="button" onclick="cerrarModalComprobante()"
+                    class="absolute right-4 top-4 grid h-8 w-8 place-items-center rounded-full text-slate-400 transition hover:bg-white/10 hover:text-white">
+                <i class="fas fa-xmark"></i>
+            </button>
+        </div>
+        <div class="p-5 space-y-3">
+            {% if config and config.permitir_facturacion %}
+            <button type="button" data-comprobante="e_ncf"
+                    class="opcion-comprobante group w-full flex items-start gap-4 rounded-xl border border-gray-200 bg-white px-4 py-4 text-left transition hover:border-sky-500 hover:bg-sky-50/60 hover:shadow-md">
+                <span class="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-sky-100 text-xl text-sky-500 transition group-hover:bg-sky-500 group-hover:text-white">
+                    <i class="fas fa-file-invoice-dollar"></i>
+                </span>
+                <span class="min-w-0 flex-1">
+                    <span class="block text-sm font-semibold text-gray-800">Con E-NCF · Factura fiscal</span>
+                    <span class="block text-xs text-gray-500 mt-0.5">Genera una factura fiscal electrónica con NCF{% if config and config.facturacion_itbis %} (incluye desglose de ITBIS 18%){% endif %}.</span>
+                </span>
+                <span class="check-opcion hidden shrink-0 text-sky-500"><i class="fas fa-circle-check text-lg"></i></span>
+            </button>
+            {% endif %}
+            <button type="button" data-comprobante="sin_comprobante"
+                    class="opcion-comprobante group w-full flex items-start gap-4 rounded-xl border border-gray-200 bg-white px-4 py-4 text-left transition hover:border-emerald-500 hover:bg-emerald-50/60 hover:shadow-md">
+                <span class="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-emerald-100 text-xl text-emerald-500 transition group-hover:bg-emerald-500 group-hover:text-white">
+                    <i class="fas fa-receipt"></i>
+                </span>
+                <span class="min-w-0 flex-1">
+                    <span class="block text-sm font-semibold text-gray-800">Sin comprobante · Consumidor final</span>
+                    <span class="block text-xs text-gray-500 mt-0.5">Solo recibo de pago, sin factura fiscal ni NCF.</span>
+                </span>
+                <span class="check-opcion hidden shrink-0 text-emerald-500"><i class="fas fa-circle-check text-lg"></i></span>
+            </button>
+        </div>
+        <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
+            <button type="button" onclick="volverAMetodo()"
+                    class="inline-flex items-center gap-1.5 text-sm font-medium text-gray-500 transition hover:text-gray-700">
+                <i class="fas fa-arrow-left"></i> Atrás
+            </button>
+            <button type="button" id="btn-confirmar-comprobante" disabled
+                    class="rounded-lg bg-emerald-600 text-white text-sm font-semibold px-5 py-2.5 shadow-sm transition hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed">
+                Confirmar <i class="fas fa-check text-xs ml-1"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
 <script>
 (function () {
     const URL_BALANCE = "{% url 'caja:api_balance_pago' 0 %}";
+    const PERMITE_FACTURACION = {% if config and config.permitir_facturacion %}true{% else %}false{% endif %};
 
     const estudianteSel = document.getElementById('id-estudiante');
     const conceptoSel   = document.getElementById('id-concepto');
-    const montoInput    = document.getElementById('id-monto');
-    const buscador      = document.getElementById('estudiante-buscador');
     const btnUsarMonto  = document.getElementById('btn-usar-monto');
 
     const infoConcepto  = document.getElementById('info-concepto');
@@ -251,10 +378,40 @@
     const cuentaCont    = document.getElementById('cuenta-contenido');
     const bannerEst     = document.getElementById('banner-estudiante');
 
-    const formPago     = document.getElementById('form-pago');
-    const btnRegistrar = document.getElementById('btn-registrar');
+    const formPago      = document.getElementById('form-pago');
+    const btnRegistrar  = document.getElementById('btn-registrar');
+
+    const campoMetodo       = formPago.elements['metodo_pago'];
+    const campoComprobante  = document.getElementById('id-tipo-comprobante');
+    const campoVoucher      = formPago.elements['voucher'];
+    const resumenPago       = document.getElementById('resumen-pago');
+
+    const modalMetodo       = document.getElementById('modal-metodo');
+    const modalComprobante  = document.getElementById('modal-comprobante');
+    const btnConfirmarComp  = document.getElementById('btn-confirmar-comprobante');
+
+    const comboInput    = document.getElementById('estudiante-buscador');
+    const comboLista    = document.getElementById('estudiante-sugerencias');
+    const btnLimpiarEst = document.getElementById('estudiante-clear');
+
+    const montoVisual   = document.getElementById('monto-visual');
+    const campoMonto    = document.getElementById('id-monto');
+
+    const voucherWrap   = document.getElementById('voucher-wrap');
+    const voucherInput  = document.getElementById('voucher-input');
+    const voucherError  = document.getElementById('voucher-error');
+    const btnContinuar  = document.getElementById('btn-continuar-metodo');
 
     let balance = { estudiante: null, anio: null, enrolado: true, conceptos: [] };
+    let metodoSeleccionado = '';
+    let etiquetaMetodo = '';
+    let comprobanteSeleccionado = campoComprobante.value || 'sin_comprobante';
+    let voucherTexto = '';
+
+    const METODO_LABELS = {};
+    document.querySelectorAll('.opcion-metodo').forEach(b => {
+        METODO_LABELS[b.dataset.metodo] = b.dataset.etiqueta;
+    });
 
     function setSubmitBloqueado(bloqueado) {
         btnRegistrar.disabled = bloqueado;
@@ -277,6 +434,24 @@
             minimumFractionDigits: 2,
             maximumFractionDigits: 2
         });
+    }
+
+    function fmtNum(n) {
+        return (Number(n) || 0).toLocaleString('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+    }
+
+    function setMonto(raw) {
+        if (raw === '' || raw == null) {
+            campoMonto.value = '';
+            montoVisual.value = '';
+        } else {
+            campoMonto.value = raw;
+            montoVisual.value = fmtNum(raw);
+        }
+        pintarAlertaMonto();
     }
 
     function chip(texto, estilo) {
@@ -308,7 +483,7 @@
 
     function pintarAlertaMonto() {
         const c = conceptoActual();
-        const m = parseFloat(montoInput.value);
+        const m = parseFloat(campoMonto.value);
         alertaMonto.innerHTML = '';
 
         if (!c || !m || m <= 0) return;
@@ -331,9 +506,22 @@
         document.getElementById('anio-balance').textContent = 'Año escolar ' + (balance.anio || '—');
 
         if (balance.estudiante) {
-            const partes = (balance.estudiante || '').split(' ').filter(Boolean);
-            const iniciales = partes.slice(0, 2).map(p => p[0]).join('').toUpperCase();
-            document.getElementById('avatar-estudiante').textContent = iniciales || '?';
+            const avatar = document.getElementById('avatar-estudiante');
+            if (balance.foto) {
+                avatar.textContent = '';
+                avatar.className = 'w-11 h-11 rounded-full object-cover shrink-0';
+                const img = document.createElement('img');
+                img.src = balance.foto;
+                img.alt = balance.estudiante;
+                img.className = 'w-11 h-11 rounded-full object-cover';
+                avatar.appendChild(img);
+            } else {
+                const partes = (balance.estudiante || '').split(' ').filter(Boolean);
+                const iniciales = partes.slice(0, 2).map(p => p[0]).join('').toUpperCase();
+                avatar.innerHTML = '';
+                avatar.className = 'w-11 h-11 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 text-white flex items-center justify-center font-bold shrink-0';
+                avatar.textContent = iniciales || '?';
+            }
             document.getElementById('nombre-estudiante').textContent = balance.estudiante;
             document.getElementById('matricula-estudiante').textContent = 'Matrícula ' + balance.matricula;
         }
@@ -450,54 +638,360 @@
         }
 
         setSubmitBloqueado(false);
-        montoInput.value = c.saldo > 0 ? c.saldo : c.monto;
+        setMonto(c.saldo > 0 ? c.saldo : c.monto);
         btnUsarMonto.classList.add('hidden');
         pintarChipsConcepto();
         pintarAlertaMonto();
     }
 
-    conceptoSel.addEventListener('change', syncConcepto);
+    conceptoSel.addEventListener('change', function () {
+        syncConcepto();
+        if (conceptoActual()) {
+            abrirModalMetodo();
+        }
+    });
 
-    montoInput.addEventListener('input', function () {
+    montoVisual.addEventListener('input', function () {
+        let v = this.value.replace(/[^\d.]/g, '');
+        const i = v.indexOf('.');
+        if (i !== -1) {
+            v = v.slice(0, i + 1) + v.slice(i + 1).replace(/\./g, '').slice(0, 2);
+        }
+        const partes = v.split('.');
+        const entero = partes[0].replace(/^0+(?=\d)/, '');
+        const decimal = partes[1] !== undefined ? partes[1] : null;
+        campoMonto.value = (v === '' || v === '.') ? '' : (decimal !== null ? entero + '.' + decimal : entero);
+        this.value = entero.replace(/\B(?=(\d{3})+(?!\d))/g, ',') + (decimal !== null ? '.' + decimal : '');
         const c = conceptoActual();
         btnUsarMonto.classList.toggle('hidden', !c);
         pintarAlertaMonto();
     });
 
-    btnUsarMonto.addEventListener('click', function () {
-        const c = conceptoActual();
-        if (c) montoInput.value = c.monto;
-        pintarAlertaMonto();
+    montoVisual.addEventListener('blur', function () {
+        if (campoMonto.value) this.value = fmtNum(campoMonto.value);
     });
 
-    buscador.addEventListener('input', function () {
-        const q = (this.value || '').toLowerCase().trim();
-        Array.from(estudianteSel.options).forEach(opt => {
-            if (!opt.value) return;
-            const coincide = opt.text.toLowerCase().indexOf(q) !== -1;
-            opt.hidden = !coincide;
-        });
-        if (q) {
-            const visible = Array.from(estudianteSel.options).filter(o => o.value && !o.hidden);
-            if (visible.length === 1) {
-                estudianteSel.value = visible[0].value;
-                cargarBalance(visible[0].value);
+    btnUsarMonto.addEventListener('click', function () {
+        const c = conceptoActual();
+        if (c) setMonto(c.monto);
+    });
+
+    /* ================= COMBOBOX DE ESTUDIANTES ================= */
+
+    function iniciales(nombre) {
+        return (nombre || '').split(' ').filter(Boolean).slice(0, 2).map(p => p[0]).join('').toUpperCase() || '?';
+    }
+
+    function opcionesEstudiantes() {
+        return Array.from(estudianteSel.options)
+            .filter(o => o.value)
+            .map(o => {
+                const sep = o.text.indexOf(' · ');
+                return {
+                    id: o.value,
+                    nombre: sep !== -1 ? o.text.slice(0, sep) : o.text,
+                    matricula: sep !== -1 ? o.text.slice(sep + 3) : ''
+                };
+            });
+    }
+
+    function pintarSugerencias(q) {
+        q = (q || '').toLowerCase().trim();
+        const items = opcionesEstudiantes();
+        const filtradas = q
+            ? items.filter(it => (it.nombre + ' ' + it.matricula).toLowerCase().indexOf(q) !== -1)
+            : items;
+
+        if (filtradas.length === 0) {
+            comboLista.innerHTML = '<div class="px-4 py-3 text-sm text-gray-400">Sin coincidencias.</div>';
+            comboLista.classList.remove('hidden');
+            return;
+        }
+
+        comboLista.innerHTML = filtradas.slice(0, 50).map(it =>
+            '<button type="button" data-id="' + it.id + '" class="w-full flex items-center gap-3 px-3.5 py-2.5 text-left transition hover:bg-indigo-50">' +
+            '<span class="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-indigo-100 text-xs font-bold text-indigo-600">' + iniciales(it.nombre) + '</span>' +
+            '<span class="min-w-0">' +
+            '<span class="block truncate text-sm font-medium text-gray-800">' + it.nombre + '</span>' +
+            (it.matricula ? '<span class="block text-xs text-gray-400">' + it.matricula + '</span>' : '') +
+            '</span></button>'
+        ).join('');
+        comboLista.classList.remove('hidden');
+    }
+
+    function seleccionarEstudiante(id, nombre) {
+        estudianteSel.value = id;
+        comboInput.value = nombre || '';
+        btnLimpiarEst.classList.toggle('hidden', !comboInput.value);
+        comboLista.classList.add('hidden');
+        cargarBalance(id);
+    }
+
+    comboInput.addEventListener('input', function () {
+        btnLimpiarEst.classList.toggle('hidden', !this.value);
+        pintarSugerencias(this.value);
+    });
+
+    comboInput.addEventListener('focus', function () {
+        pintarSugerencias(this.value);
+    });
+
+    comboInput.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') {
+            const primero = comboLista.querySelector('button[data-id]');
+            if (primero) {
+                e.preventDefault();
+                seleccionarEstudiante(primero.dataset.id, primero.querySelector('span.block.truncate').textContent);
             }
+        } else if (e.key === 'Escape') {
+            comboLista.classList.add('hidden');
         }
     });
 
+    comboLista.addEventListener('mousedown', function (e) {
+        const btn = e.target.closest('button[data-id]');
+        if (!btn) return;
+        e.preventDefault();
+        seleccionarEstudiante(btn.dataset.id, btn.querySelector('span.block.truncate').textContent);
+    });
+
+    document.addEventListener('click', function (e) {
+        if (!comboInput.contains(e.target) && !comboLista.contains(e.target)) {
+            comboLista.classList.add('hidden');
+        }
+    });
+
+    btnLimpiarEst.addEventListener('click', function () {
+        estudianteSel.value = '';
+        comboInput.value = '';
+        btnLimpiarEst.classList.add('hidden');
+        comboLista.classList.add('hidden');
+        cargarBalance('');
+    });
+
+    if (campoMonto.value) {
+        montoVisual.value = fmtNum(String(campoMonto.value).replace(/,/g, ''));
+    }
+
     if (estudianteSel.value) {
+        const optInicial = estudianteSel.options[estudianteSel.selectedIndex];
+        if (optInicial) {
+            const sep = optInicial.text.indexOf(' · ');
+            comboInput.value = sep !== -1 ? optInicial.text.slice(0, sep) : optInicial.text;
+            btnLimpiarEst.classList.remove('hidden');
+        }
         cargarBalance(estudianteSel.value);
     } else {
         syncConcepto();
     }
 
-    // Evitar doble envío: deshabilitar el botón al primer clic
-    formPago.addEventListener('submit', function () {
-        btnRegistrar.disabled = true;
-        btnRegistrar.classList.add('opacity-60', 'cursor-not-allowed');
-        btnRegistrar.innerHTML =
-            '<i class="fas fa-spinner fa-spin"></i> Registrando pago…';
+    /* ================= MODALES ================= */
+
+    function marcarOpcionMetodo() {
+        document.querySelectorAll('.opcion-metodo').forEach(b => {
+            const sel = b.dataset.metodo === metodoSeleccionado;
+            b.classList.toggle('border-emerald-500', sel);
+            b.classList.toggle('bg-emerald-50/60', sel);
+            b.classList.toggle('ring-2', sel);
+            b.classList.toggle('ring-emerald-200', sel);
+            const check = b.querySelector('.check-opcion');
+            if (check) check.classList.toggle('hidden', !sel);
+        });
+    }
+
+    function marcarOpcionComprobante() {
+        document.querySelectorAll('.opcion-comprobante').forEach(b => {
+            const sel = b.dataset.comprobante === comprobanteSeleccionado;
+            b.classList.toggle('border-indigo-500', sel);
+            b.classList.toggle('bg-indigo-50/50', sel);
+            b.classList.toggle('ring-2', sel);
+            b.classList.toggle('ring-indigo-200', sel);
+            const check = b.querySelector('.check-opcion');
+            if (check) check.classList.toggle('hidden', !sel);
+        });
+    }
+
+    function abrirModalMetodo() {
+        marcarOpcionMetodo();
+        const esTarjeta = metodoSeleccionado === 'tarjeta';
+        voucherWrap.classList.toggle('hidden', !esTarjeta);
+        btnContinuar.classList.toggle('hidden', !esTarjeta);
+        voucherInput.value = voucherTexto;
+        modalMetodo.classList.remove('hidden');
+        modalMetodo.classList.add('flex');
+    }
+
+    function cerrarModalMetodo() {
+        modalMetodo.classList.add('hidden');
+        modalMetodo.classList.remove('flex');
+    }
+
+    function abrirModalComprobante() {
+        btnConfirmarComp.disabled = true;
+        marcarOpcionComprobante();
+        modalComprobante.classList.remove('hidden');
+        modalComprobante.classList.add('flex');
+    }
+
+    function cerrarModalComprobante() {
+        modalComprobante.classList.add('hidden');
+        modalComprobante.classList.remove('flex');
+    }
+
+    function volverAMetodo() {
+        cerrarModalComprobante();
+        abrirModalMetodo();
+    }
+
+    function continuarAMetodo() {
+        cerrarModalMetodo();
+        if (PERMITE_FACTURACION) {
+            abrirModalComprobante();
+        } else {
+            comprobanteSeleccionado = 'sin_comprobante';
+            campoComprobante.value = 'sin_comprobante';
+            finalizarComprobante();
+        }
+    }
+
+    function finalizarComprobante() {
+        cerrarModalComprobante();
+        pintarResumen();
+    }
+
+    function pintarResumen() {
+        etiquetaMetodo = METODO_LABELS[metodoSeleccionado] || metodoSeleccionado;
+        const labelComp = comprobanteSeleccionado === 'e_ncf' ? 'E-NCF · Factura fiscal' : 'Sin comprobante';
+        let html =
+            chip('<i class="fas fa-hand-holding-usd"></i> ' + etiquetaMetodo, 'bg-amber-100 text-amber-700') +
+            chip('<i class="fas fa-file-invoice-dollar"></i> ' + labelComp,
+                 comprobanteSeleccionado === 'e_ncf' ? 'bg-sky-100 text-sky-700' : 'bg-emerald-100 text-emerald-700');
+        if (metodoSeleccionado === 'tarjeta' && voucherTexto) {
+            html += chip('<i class="fas fa-credit-card"></i> Voucher: ' + voucherTexto, 'bg-slate-100 text-slate-600');
+        }
+        resumenPago.innerHTML = html +
+            '<button type="button" onclick="abrirModalMetodo()" class="text-xs font-semibold text-indigo-600 hover:text-indigo-700 hover:underline">Editar</button>';
+    }
+
+    document.querySelectorAll('.opcion-metodo').forEach(boton => {
+        boton.addEventListener('click', function () {
+            const metodo = this.dataset.metodo;
+            metodoSeleccionado = metodo;
+            etiquetaMetodo = this.dataset.etiqueta;
+            campoMetodo.value = metodo;
+            voucherError.classList.add('hidden');
+            marcarOpcionMetodo();
+
+            if (metodo === 'tarjeta') {
+                voucherWrap.classList.remove('hidden');
+                btnContinuar.classList.remove('hidden');
+                voucherInput.focus();
+            } else {
+                voucherTexto = '';
+                campoVoucher.value = '';
+                voucherWrap.classList.add('hidden');
+                btnContinuar.classList.add('hidden');
+                continuarAMetodo();
+            }
+        });
+    });
+
+    btnContinuar.addEventListener('click', function () {
+        const codigo = voucherInput.value.trim();
+        if (!codigo) {
+            voucherError.classList.remove('hidden');
+            voucherInput.focus();
+            return;
+        }
+        voucherError.classList.add('hidden');
+        voucherTexto = codigo;
+        campoVoucher.value = codigo;
+        continuarAMetodo();
+    });
+
+    voucherInput.addEventListener('input', function () {
+        voucherError.classList.add('hidden');
+    });
+
+    document.querySelectorAll('.opcion-comprobante').forEach(boton => {
+        boton.addEventListener('click', function () {
+            comprobanteSeleccionado = this.dataset.comprobante;
+            campoComprobante.value = comprobanteSeleccionado;
+            btnConfirmarComp.disabled = false;
+            marcarOpcionComprobante();
+        });
+    });
+
+    btnConfirmarComp.addEventListener('click', finalizarComprobante);
+
+    window.abrirModalMetodo = abrirModalMetodo;
+    window.cerrarModalMetodo = cerrarModalMetodo;
+    window.cerrarModalComprobante = cerrarModalComprobante;
+    window.volverAMetodo = volverAMetodo;
+
+    /* ================= CONFIRMACIÓN Y ENVÍO ================= */
+
+    btnRegistrar.addEventListener('click', function () {
+        if (btnRegistrar.disabled) return;
+
+        const c = conceptoActual();
+        if (!estudianteSel.value) {
+            Swal.fire('Falta el estudiante', 'Selecciona el estudiante para continuar.', 'warning');
+            return;
+        }
+        if (!c) {
+            Swal.fire('Falta el concepto', 'Selecciona el concepto para continuar.', 'warning');
+            return;
+        }
+        const m = parseFloat(campoMonto.value);
+        if (!m || m <= 0) {
+            Swal.fire('Monto inválido', 'Ingresa un monto mayor a 0.', 'warning');
+            return;
+        }
+        if (!metodoSeleccionado) {
+            abrirModalMetodo();
+            return;
+        }
+        if (metodoSeleccionado === 'tarjeta' && !voucherTexto) {
+            abrirModalMetodo();
+            voucherWrap.classList.remove('hidden');
+            btnContinuar.classList.remove('hidden');
+            voucherError.classList.remove('hidden');
+            voucherInput.focus();
+            return;
+        }
+
+        const labelComp = comprobanteSeleccionado === 'e_ncf' ? 'Factura fiscal (E-NCF)' : 'Sin comprobante (Consumidor final)';
+        const esAbono = c.saldo > m + 0.001;
+        const filaVoucher = metodoSeleccionado === 'tarjeta' && voucherTexto
+            ? '<p class="flex justify-between"><span class="text-gray-500">Voucher</span><span class="font-semibold">' + voucherTexto + '</span></p>'
+            : '';
+
+        Swal.fire({
+            title: '¿Confirmar el pago?',
+            html:
+                '<div class="text-left text-sm space-y-2">' +
+                '<p class="flex justify-between"><span class="text-gray-500">Estudiante</span><span class="font-semibold">' + (balance.estudiante || '') + '</span></p>' +
+                '<p class="flex justify-between"><span class="text-gray-500">Concepto</span><span class="font-semibold">' + c.nombre + '</span></p>' +
+                '<p class="flex justify-between"><span class="text-gray-500">Método</span><span class="font-semibold">' + (METODO_LABELS[metodoSeleccionado] || metodoSeleccionado) + '</span></p>' +
+                '<p class="flex justify-between"><span class="text-gray-500">Comprobante</span><span class="font-semibold">' + labelComp + '</span></p>' +
+                filaVoucher +
+                '<p class="flex justify-between border-t border-gray-200 pt-2 mt-2"><span class="text-gray-500">Monto</span><span class="font-semibold text-emerald-700 text-base">' + fmt(m) + '</span></p>' +
+                (esAbono ? '<p class="text-xs text-amber-600 text-center">Se registrará como abono. Pendiente restante: ' + fmt(c.saldo - m) + '.</p>' : '') +
+                '</div>',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, pagar',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#059669',
+        }).then((result) => {
+            if (result.isConfirmed) {
+                btnRegistrar.disabled = true;
+                btnRegistrar.classList.add('opacity-60', 'cursor-not-allowed');
+                btnRegistrar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Registrando pago…';
+                formPago.submit();
+            }
+        });
     });
 })();
 </script>

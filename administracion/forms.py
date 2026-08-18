@@ -1,8 +1,5 @@
 from django import forms
-from administracion.models import Administrativo
-
-from django import forms
-from .models import AnioEscolar
+from .models import AnioEscolar, Administrativo
 
 class AnioEscolarForm(forms.ModelForm):
     class Meta:
@@ -33,25 +30,51 @@ class AdministrativoForm(forms.ModelForm):
         exclude = ['usuario', 'created_at', 'updated_at', 'fecha_ingreso', 'centro']
 
     # Campos personales
-    primer_nombre = forms.CharField(widget=forms.TextInput(attrs={'placeholder': 'Primer Nombre', 'class': 'form-input'}))
-    segundo_nombre = forms.CharField(required=False, widget=forms.TextInput(attrs={'placeholder': 'Segundo Nombre', 'class': 'form-input'}))
-    primer_apellido = forms.CharField(widget=forms.TextInput(attrs={'placeholder': 'Primer Apellido', 'class': 'form-input'}))
-    segundo_apellido = forms.CharField(required=False, widget=forms.TextInput(attrs={'placeholder': 'Segundo Apellido', 'class': 'form-input'}))
-    cedula = forms.CharField(widget=forms.TextInput(attrs={'placeholder': 'Cédula', 'class': 'form-input'}))
-    sexo = forms.ChoiceField(choices=[('M', 'Masculino'), ('F', 'Femenino')], widget=forms.Select(attrs={'class': 'form-input'}))
-    fecha_nacimiento = forms.DateField(widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-input'}))
-    nacionalidad = forms.CharField(widget=forms.TextInput(attrs={'placeholder': 'Nacionalidad', 'class': 'form-input'}))
-    direccion = forms.CharField(widget=forms.Textarea(attrs={'placeholder': 'Dirección', 'rows': 3, 'class': 'form-input'}))
-    telefono = forms.CharField(widget=forms.TextInput(attrs={'placeholder': 'Teléfono', 'class': 'form-input'}))
-    correo_personal = forms.EmailField(required=False, widget=forms.EmailInput(attrs={'placeholder': 'Correo personal', 'class': 'form-input'}))
+    primer_nombre = forms.CharField(widget=forms.TextInput(attrs={'placeholder': 'Primer Nombre'}))
+    segundo_nombre = forms.CharField(required=False, widget=forms.TextInput(attrs={'placeholder': 'Segundo Nombre'}))
+    primer_apellido = forms.CharField(widget=forms.TextInput(attrs={'placeholder': 'Primer Apellido'}))
+    segundo_apellido = forms.CharField(required=False, widget=forms.TextInput(attrs={'placeholder': 'Segundo Apellido'}))
+    cedula = forms.CharField(widget=forms.TextInput(attrs={'placeholder': 'Cédula'}))
+    sexo = forms.ChoiceField(choices=[('M', 'Masculino'), ('F', 'Femenino')], widget=forms.Select())
+    fecha_nacimiento = forms.DateField(widget=forms.DateInput(attrs={'type': 'date'}))
+    nacionalidad = forms.CharField(widget=forms.TextInput(attrs={'placeholder': 'Nacionalidad'}))
+    direccion = forms.CharField(widget=forms.Textarea(attrs={'placeholder': 'Dirección', 'rows': 3}))
+    telefono = forms.CharField(widget=forms.TextInput(attrs={'placeholder': 'Teléfono'}))
+    correo_personal = forms.EmailField(required=False, widget=forms.EmailInput(attrs={'placeholder': 'Correo personal'}))
 
     # Cargo / rol (un solo campo)
     cargo = forms.ChoiceField(
         choices=[('director', 'Director'), ('secretaria', 'Secretaria'), ('cajero', 'Cajero')],
-        widget=forms.Select(attrs={'class': 'form-input'})
+        widget=forms.Select()
     )
 
     estado = forms.ChoiceField(
         choices=[('activo', 'Activo'), ('inactivo', 'Inactivo')],
-        widget=forms.Select(attrs={'class': 'form-input'})
+        widget=forms.Select()
     )
+
+    foto = forms.ImageField(
+        required=False,
+        label='Foto',
+        widget=forms.ClearableFileInput(attrs={'accept': 'image/*'})
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        for field in self.fields.values():
+            field.widget.attrs.update({
+                'class': (
+                    'w-full border rounded px-3 py-2 '
+                    'focus:outline-none focus:ring-2 '
+                    'focus:ring-blue-500'
+                )
+            })
+
+        if 'foto' in self.fields:
+            self.fields['foto'].widget.attrs.update({
+                'accept': 'image/*',
+                'class': 'w-full text-sm text-gray-500 file:mr-3 file:py-2 file:px-4 '
+                         'file:rounded-lg file:border-0 file:bg-blue-50 file:text-blue-700 '
+                         'file:font-semibold hover:file:bg-blue-100',
+            })

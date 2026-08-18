@@ -1,0 +1,197 @@
+{% extends "home.html" %}
+
+{% block title %}Record de Notas{% endblock %}
+
+{% block content %}
+
+<div class="max-w-5xl mx-auto">
+
+    <div class="mb-4 flex justify-end">
+        <a href="{% url 'estudiante_detail' estudiante.id %}"
+           class="bg-gray-600 text-white px-4 py-2 rounded shadow hover:bg-gray-700 mr-2">
+            ← Volver
+        </a>
+
+        <button onclick="window.print()"
+                class="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700">
+            🖨️ Imprimir
+        </button>
+    </div>
+
+    <div class="bg-white shadow rounded p-10 border-t-8 border-blue-800 text-sm">
+
+        <!-- Encabezado del centro -->
+        <div class="flex flex-wrap justify-between items-center border-b-2 border-gray-300 pb-4 mb-4">
+            <div class="font-bold text-blue-900">
+                {{ centro.nombre }}
+            </div>
+
+            <div class="text-gray-600">
+                Código de centro: {{ centro.codigo_minerd }}
+            </div>
+        </div>
+
+        <h2 class="text-center font-bold text-lg mb-4 uppercase tracking-wide">
+            Record de Notas / Escolaridad
+            {% if inscripcion_actual and inscripcion_actual.grado.nivel.tipo == 'secundaria' %}
+                del Nivel Secundario
+            {% endif %}
+        </h2>
+
+        <!-- Certificación -->
+        <p class="text-justify leading-6 mb-6">
+            Quien suscribe: <strong>{{ quien_suscribe }}</strong>,
+            Secretaria/o Docente/Encargado de Certificación de Estudios del Centro
+            Educativo <strong>{{ centro.nombre }}</strong>, Certifica que en los
+            archivos a su cargo figuran los datos correspondientes al estudiante:
+            <strong>{{ estudiante.nombre_completo }}</strong>,
+            Hijo/a de los Sres. <strong>{{ estudiante.nombre_tutor|default:"_____________" }}</strong>,
+            Nacido/a el día <strong>{{ estudiante.fecha_nacimiento|date:"j" }}</strong>
+            del mes de <strong>{{ estudiante.fecha_nacimiento|date:"F" }}</strong>
+            del año <strong>{{ estudiante.fecha_nacimiento|date:"Y" }}</strong>,
+            en la ciudad <strong>{{ estudiante.lugar_nacimiento|default:"_____________" }}</strong>.
+            {% if record.concluyo_primaria %}
+                Concluyó la Educación Primaria en el año escolar
+                <strong>{{ record.concluyo_primaria }}</strong>,
+            {% endif %}
+            registrado con el RNE / ID No. <strong>{{ estudiante.matricula }}</strong>.
+            {% if inscripcion_actual %}
+                Figura inscrito(a) en el <strong>{{ inscripcion_actual.grado.nombre }}</strong>
+                del <strong>{{ inscripcion_actual.grado.nivel.nombre }}</strong>,
+                sección <strong>{{ inscripcion_actual.seccion.nombre }}</strong>, para el año
+                lectivo <strong>{{ inscripcion_actual.anio_escolar.nombre }}</strong>.
+            {% endif %}
+        </p>
+
+        {% for nivel in record.niveles %}
+
+            {% for ciclo in nivel.ciclos %}
+
+            <div class="mb-8">
+
+                <h3 class="font-bold mb-2">
+                    {{ ciclo.nombre }}
+                    {% if 'Modalidad' in ciclo.nombre and record.modalidad_salida %}
+                        — Salida en <span class="underline">{{ record.modalidad_salida }}</span>
+                    {% endif %}
+                </h3>
+
+                <table class="w-full border border-gray-800 text-xs">
+
+                    <thead>
+                        <tr class="bg-gray-100">
+                            <th class="border border-gray-800 px-2 py-1 text-left">Asignaturas</th>
+                            {% for g in ciclo.grados %}
+                                <th colspan="2" class="border border-gray-800 px-2 py-1 text-center">
+                                    {{ g.grado.nombre }}
+                                </th>
+                            {% endfor %}
+                        </tr>
+
+                        <tr class="bg-gray-50">
+                            <th class="border border-gray-800 px-2 py-1"></th>
+                            {% for g in ciclo.grados %}
+                                <th class="border border-gray-800 px-2 py-1 text-center">Calificación final</th>
+                                <th class="border border-gray-800 px-2 py-1 text-center">Fecha de aprobación</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        {% for fila in ciclo.asignaturas %}
+
+                            {% ifchanged fila.area %}
+                            <tr class="bg-blue-50">
+                                <td colspan="{{ ciclo.grados|length|add:1 }}" class="border border-gray-800 px-2 py-1 font-semibold">
+                                    {{ fila.area }}
+                                </td>
+                            </tr>
+                            {% endifchanged %}
+
+                            <tr>
+                                <td class="border border-gray-800 px-2 py-1">{{ fila.asignatura }}</td>
+
+                                {% for celda in fila.celdas %}
+                                    <td class="border border-gray-800 px-2 py-1 text-center">{{ celda.calificacion|default:"" }}</td>
+                                    <td class="border border-gray-800 px-2 py-1 text-center">{{ celda.fecha|date:"m/Y"|default:"" }}</td>
+                                {% endfor %}
+                            </tr>
+
+                        {% empty %}
+
+                            <tr>
+                                <td colspan="{{ ciclo.grados|length|add:1 }}" class="border border-gray-800 px-2 py-3 text-center text-gray-500">
+                                    Sin asignaturas registradas.
+                                </td>
+                            </tr>
+
+                        {% endfor %}
+                    </tbody>
+
+                </table>
+
+            </div>
+
+            {% endfor %}
+
+        {% empty %}
+
+            <p class="text-gray-500">
+                Este estudiante no posee historial académico registrado.
+            </p>
+
+        {% endfor %}
+
+        <!-- Fecha -->
+        <p class="mt-6">
+            Dado en {{ centro.nombre }}, República Dominicana, a los
+            {% now "j" %} días del mes de {% now "F" %} del año {% now "Y" %}.
+        </p>
+
+        <!-- Leyenda -->
+        <div class="mt-8 border border-gray-400 rounded p-4 text-xs">
+
+            <strong class="block mb-1">Leyenda de calificaciones (Ordenanza 22-2017)</strong>
+
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+                <div>A: 90-100 — Excelente</div>
+                <div>B: 80-89 — Muy bueno</div>
+                <div>C: {{ record.nota_minima|floatformat:0 }}-79 — Bueno</div>
+                <div>D: 0-{{ record.nota_minima|floatformat:0|add:"-1" }} — Deficiente</div>
+            </div>
+
+        </div>
+
+        <!-- Firmas -->
+        <div class="mt-12 grid grid-cols-2 gap-8 text-center text-xs text-gray-700">
+
+            <div class="pt-2 border-t border-gray-500">
+                <p class="font-semibold">Nombre del Director del Centro</p>
+                <p>(Firma y sello)</p>
+            </div>
+
+            <div class="pt-2 border-t border-gray-500">
+                <p class="font-semibold">Nombre del Secretario Docente /</p>
+                <p>Encargado de Certificación de Estudios</p>
+            </div>
+
+            <div class="col-span-2 pt-2 border-t border-gray-500">
+                <p class="font-semibold">Nombre del Director del Distrito Educativo</p>
+                <p>(Firma y sello)</p>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<style>
+    @media print {
+        .sidebar, .sidebar-footer, .main-content > div > .mb-4 {
+            display: none !important;
+        }
+    }
+</style>
+
+{% endblock %}

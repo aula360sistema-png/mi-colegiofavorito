@@ -2,10 +2,10 @@ from datetime import timedelta
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.db.models import Count, Q, Sum
 from django.shortcuts import get_object_or_404, redirect, render
 from django.http import JsonResponse
 from django.utils import timezone
+from django_ratelimit.decorators import ratelimit
 
 from core.decorators import centro_required, role_required
 from core.models import AnioEscolar
@@ -35,13 +35,19 @@ from .services import (
     balance_por_concepto,
     calcular_cuentas_por_cobrar_detalle,
     cajas_disponibles,
+    egresos_del_centro,
+    metricas_dia,
+    metricas_reporte_diario,
     obtener_sesion_abierta,
+    pagos_del_centro,
     saldo_por_concepto,
     siguiente_recibo,
     tiene_sesion_abierta,
 )
 
-ROLES_CAJA = ('director', 'admin', 'superadmin', 'cajero')
+from facturacion.services import emitir_factura
+
+ROLES_CAJA = ('director', 'admin', 'superadmin', 'cajero', 'secretaria')
 ROLES_GESTION_CAJAS = ('director', 'admin', 'superadmin')
 
 
@@ -63,24 +69,16 @@ def caja_inicio(request):
 
     ctx = _base_ctx(request)
 
+    metricas = metricas_dia(centro, hoy)
+
     ctx.update({
         'hoy': hoy,
-        'entradas_hoy': Pago.objects.filter(
-            centro=centro, fecha=hoy
-        ).aggregate(t=Sum('monto'))['t'] or 0,
-        'salidas_hoy': Egreso.objects.filter(
-            centro=centro, fecha=hoy
-        ).aggregate(t=Sum('monto'))['t'] or 0,
-        'pagos_hoy': Pago.objects.filter(
-            centro=centro, fecha=hoy
-        ).select_related('estudiante', 'concepto').order_by('-id')[:6],
-        'egresos_hoy': Egreso.objects.filter(
-            centro=centro, fecha=hoy
-        ).order_by('-id')[:6],
-        'total_entradas': Pago.objects.filter(centro=centro)
-        .aggregate(t=Sum('monto'))['t'] or 0,
-        'total_salidas': Egreso.objects.filter(centro=centro)
-        .aggregate(t=Sum('monto'))['t'] or 0,
+        'entradas_hoy': metricas['entradas_hoy'],
+        'salidas_hoy': metricas['salidas_hoy'],
+        'pagos_hoy': metricas['pagos_hoy'],
+        'egresos_hoy': metricas['egresos_hoy'],
+        'total_entradas': metricas['total_entradas'],
+        'total_salidas': metricas['total_salidas'],
         'cajas': Caja.objects.filter(centro=centro).prefetch_related('sesiones'),
         'ultimas_sesiones': SesionCaja.objects.filter(
             centro=centro
@@ -273,9 +271,7 @@ def alternar_caja(request, caja_id):
 def lista_pagos(request):
     centro = get_centro_activo(request)
 
-    pagos = Pago.objects.filter(centro=centro).select_related(
-        'estudiante', 'concepto', 'sesion'
-    )
+    pagos = pagos_del_centro(centro)
 
     q = request.GET.get('q', '').strip()
     concepto_id = request.GET.get('concepto')
@@ -283,34 +279,36 @@ def lista_pagos(request):
     sesion_id = request.GET.get('sesion')
 
     if q:
-        pagos = pagos.filter(
-            Q(estudiante__matricula__icontains=q) |
-            Q(estudiante__primer_nombre__icontains=q) |
-            Q(estudiante__primer_apellido__icontains=q)
-        )
+        q = q.lower()
+        pagos = [
+            p for p in pagos
+            if q in (p.estudiante.matricula or '').lower()
+            or q in (p.estudiante.primer_nombre or '').lower()
+            or q in (p.estudiante.primer_apellido or '').lower()
+        ]
 
     if concepto_id:
-        pagos = pagos.filter(concepto_id=concepto_id)
+        pagos = [p for p in pagos if str(p.concepto_id) == str(concepto_id)]
 
     if anio:
-        pagos = pagos.filter(fecha__year=anio)
+        pagos = [p for p in pagos if p.fecha.year == int(anio)]
 
     if sesion_id:
-        pagos = pagos.filter(sesion_id=sesion_id)
+        pagos = [p for p in pagos if str(p.sesion_id or '') == str(sesion_id)]
 
-    pagos = pagos.order_by('-fecha', '-id')
+    pagos = sorted(pagos, key=lambda p: (p.fecha, p.id), reverse=True)
 
-    total_general = pagos.aggregate(total=Sum('monto'))['total'] or 0
+    total_general = sum(p.monto for p in pagos) or 0
 
-    por_metodo = (
-        pagos.values('metodo_pago')
-        .annotate(total=Sum('monto'), cantidad=Count('id'))
-    )
+    por_metodo = []
+    metodos = {}
+    for p in pagos:
+        m = metodos.setdefault(p.metodo_pago, {'metodo_pago': p.metodo_pago, 'total': 0, 'cantidad': 0})
+        m['total'] += p.monto
+        m['cantidad'] += 1
+    por_metodo = list(metodos.values())
 
-    anios_disponibles = (
-        Pago.objects.filter(centro=centro)
-        .dates('fecha', 'year')
-    )
+    anios_disponibles = sorted({p.fecha.year for p in pagos}, reverse=True)
 
     ctx = _base_ctx(request)
     ctx.update({
@@ -318,7 +316,7 @@ def lista_pagos(request):
         'conceptos': ConceptoPago.objects.filter(centro=centro),
         'total_general': total_general,
         'por_metodo': por_metodo,
-        'anios_disponibles': [d.year for d in anios_disponibles],
+        'anios_disponibles': anios_disponibles,
         'q': q,
         'concepto_seleccionado': concepto_id,
         'anio_seleccionado': anio,
@@ -331,6 +329,7 @@ def lista_pagos(request):
 @login_required
 @centro_required
 @role_required(*ROLES_CAJA)
+@ratelimit(key='ip', rate='200/10m', method='POST', block=True)
 def registrar_pago(request, estudiante_id=None, concepto_id=None):
     centro = get_centro_activo(request)
 
@@ -409,11 +408,34 @@ def registrar_pago(request, estudiante_id=None, concepto_id=None):
 
             pago.save()
 
+            config = getattr(centro, 'configuracioncentro', None)
+            tipo_comprobante = request.POST.get(
+                'tipo_comprobante', 'sin_comprobante'
+            )
+            emitir = (
+                config
+                and config.permitir_facturacion
+                and tipo_comprobante == 'e_ncf'
+            )
+
+            factura = None
+            if emitir:
+                factura = emitir_factura(
+                    pago,
+                    aplicar_itbis=bool(config.facturacion_itbis),
+                    usuario=request.user,
+                )
+
             restante = max(saldo_antes - pago.monto, 0)
             if restante <= 0:
                 messages.success(
                     request,
                     f"Pago completado. Recibo No. {pago.recibo}"
+                    + (
+                        f" · Factura {factura.numero_legible}"
+                        if factura
+                        else ""
+                    )
                 )
             else:
                 messages.info(
@@ -422,10 +444,13 @@ def registrar_pago(request, estudiante_id=None, concepto_id=None):
                     f"Pendiente RD$ {restante:,.2f}"
                 )
 
-            return redirect('caja:lista_pagos')
+            return redirect('caja:recibo_pago', pago_id=pago.id)
 
     else:
-        initial = {'fecha': timezone.localdate()}
+        initial = {
+            'fecha': timezone.localdate(),
+            'metodo_pago': 'efectivo',
+        }
 
         if estudiante:
             initial['estudiante'] = estudiante
@@ -454,6 +479,8 @@ def registrar_pago(request, estudiante_id=None, concepto_id=None):
         'hoy': timezone.localdate(),
         'anio_activo': obtener_anio_activo(centro),
         'recibo_siguiente': siguiente_recibo(Pago, centro),
+        'config': getattr(centro, 'configuracioncentro', None),
+        'metodos_pago': Pago.METODO_PAGO_CHOICES,
         'estudiantes_disponibles': (
             Estudiante.objects.filter(centro=centro)
             .order_by('primer_apellido', 'primer_nombre')
@@ -480,6 +507,7 @@ def api_balance_pago(request, estudiante_id):
         return JsonResponse({
             'estudiante': estudiante.nombre_completo(),
             'matricula': estudiante.matricula,
+            'foto': estudiante.foto.url if estudiante.foto else None,
             'anio': None,
             'enrolado': False,
             'conceptos': [],
@@ -506,6 +534,7 @@ def api_balance_pago(request, estudiante_id):
     return JsonResponse({
         'estudiante': estudiante.nombre_completo(),
         'matricula': estudiante.matricula,
+        'foto': estudiante.foto.url if estudiante.foto else None,
         'anio': anio.nombre,
         'enrolado': inscrito,
         'conceptos': conceptos,
@@ -556,34 +585,34 @@ def registrar_egreso(request):
 def lista_egresos(request):
     centro = get_centro_activo(request)
 
-    egresos = Egreso.objects.filter(centro=centro).select_related('sesion')
+    egresos = egresos_del_centro(centro)
 
     q = request.GET.get('q', '').strip()
     anio = request.GET.get('anio')
 
     if q:
-        egresos = egresos.filter(
-            Q(concepto__icontains=q) |
-            Q(beneficiario__icontains=q) |
-            Q(nota__icontains=q)
-        )
+        q = q.lower()
+        egresos = [
+            e for e in egresos
+            if q in (e.concepto or '').lower()
+            or q in (e.beneficiario or '').lower()
+            or q in (e.nota or '').lower()
+        ]
 
     if anio:
-        egresos = egresos.filter(fecha__year=anio)
+        egresos = [e for e in egresos if e.fecha.year == int(anio)]
 
-    egresos = egresos.order_by('-fecha', '-id')
+    egresos = sorted(egresos, key=lambda e: (e.fecha, e.id), reverse=True)
 
-    total_general = egresos.aggregate(total=Sum('monto'))['total'] or 0
+    total_general = sum(e.monto for e in egresos) or 0
 
-    anios_disponibles = (
-        Egreso.objects.filter(centro=centro).dates('fecha', 'year')
-    )
+    anios_disponibles = sorted({e.fecha.year for e in egresos}, reverse=True)
 
     ctx = _base_ctx(request)
     ctx.update({
         'egresos': egresos,
         'total_general': total_general,
-        'anios_disponibles': [d.year for d in anios_disponibles],
+        'anios_disponibles': anios_disponibles,
         'q': q,
         'anio_seleccionado': anio,
     })
@@ -604,7 +633,11 @@ def recibo_pago(request, pago_id):
     )
 
     ctx = _base_ctx(request)
-    ctx['pago'] = pago
+    ctx.update({
+        'pago': pago,
+        'factura': getattr(pago, 'factura', None),
+        'config': getattr(centro, 'configuracioncentro', None),
+    })
     return render(request, 'caja/recibo_pago.html', ctx)
 
 
@@ -841,7 +874,7 @@ def asignaciones_conceptos(request):
         'anios': AnioEscolar.objects.filter(centro=centro),
         'conceptos': ConceptoPago.objects.filter(centro=centro),
         'grados': Grado.objects.filter(nivel__centro=centro),
-        'secciones': Seccion.objects.filter(grado__nivel__centro=centro),
+        'secciones': Seccion.objects.filter(centro=centro),
         'filas': filas,
         'asignaciones': asignaciones,
         'anio': anio_obj or anio_activo,
@@ -870,59 +903,32 @@ def reporte_diario(request):
     except ValueError:
         fecha = timezone.localdate()
 
-    pagos = Pago.objects.filter(centro=centro, fecha=fecha)
-    egresos = Egreso.objects.filter(centro=centro, fecha=fecha)
-
     caja_id = request.GET.get('caja')
-    if caja_id:
-        pagos = pagos.filter(sesion__caja_id=caja_id)
-        egresos = egresos.filter(sesion__caja_id=caja_id)
 
-    entradas = pagos.aggregate(t=Sum('monto'))['t'] or 0
-    salidas = egresos.aggregate(t=Sum('monto'))['t'] or 0
-
-    METODO_LABELS = dict(Pago.METODO_PAGO_CHOICES)
-
-    def _con_metodo(qs):
-        return [
-            {
-                'metodo': m['metodo_pago'],
-                'label': METODO_LABELS.get(m['metodo_pago'], m['metodo_pago']),
-                'total': m['total'],
-                'cantidad': m['cantidad'],
-            }
-            for m in qs
-        ]
-
-    por_concepto = (
-        pagos.values('concepto__nombre')
-        .annotate(total=Sum('monto'), cantidad=Count('id'))
-    )
-    por_metodo_pago = _con_metodo(
-        pagos.values('metodo_pago')
-        .annotate(total=Sum('monto'), cantidad=Count('id'))
-    )
-    por_metodo_egreso = _con_metodo(
-        egresos.values('metodo_pago')
-        .annotate(total=Sum('monto'), cantidad=Count('id'))
-    )
+    m = metricas_reporte_diario(centro, fecha, caja_id)
 
     sesiones = SesionCaja.objects.filter(
         centro=centro,
         fecha_apertura__date=fecha,
     )
 
+    pagos = Pago.objects.filter(centro=centro, fecha=fecha)
+    egresos = Egreso.objects.filter(centro=centro, fecha=fecha)
+    if caja_id:
+        pagos = pagos.filter(sesion__caja_id=caja_id)
+        egresos = egresos.filter(sesion__caja_id=caja_id)
+
     ctx = _base_ctx(request)
     ctx.update({
         'fecha': fecha,
-        'entradas': entradas,
-        'salidas': salidas,
-        'neto': entradas - salidas,
-        'cantidad_pagos': pagos.count(),
-        'cantidad_egresos': egresos.count(),
-        'por_concepto': por_concepto,
-        'por_metodo_pago': por_metodo_pago,
-        'por_metodo_egreso': por_metodo_egreso,
+        'entradas': m['entradas'],
+        'salidas': m['salidas'],
+        'neto': m['neto'],
+        'cantidad_pagos': m['cantidad_pagos'],
+        'cantidad_egresos': m['cantidad_egresos'],
+        'por_concepto': m['por_concepto'],
+        'por_metodo_pago': m['por_metodo_pago'],
+        'por_metodo_egreso': m['por_metodo_egreso'],
         'cajas': Caja.objects.filter(centro=centro),
         'caja_seleccionada': caja_id,
         'sesiones': sesiones,

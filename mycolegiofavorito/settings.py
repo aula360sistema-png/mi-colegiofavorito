@@ -29,6 +29,41 @@ ALLOWED_HOSTS = [host.strip() for host in os.getenv('ALLOWED_HOSTS', '').split('
 
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 
+# ---------------------------------------------------------------------------
+# CORREO (módulo de comunicaciones)
+# ---------------------------------------------------------------------------
+# Si no hay EMAIL_HOST configurado se usa el backend de consola, que imprime
+# los correos en la terminal (ideal para desarrollo).
+EMAIL_BACKEND = os.getenv(
+    'EMAIL_BACKEND',
+    (
+        'django.core.mail.backends.smtp.EmailBackend'
+        if os.getenv('EMAIL_HOST')
+        else 'django.core.mail.backends.console.EmailBackend'
+    ),
+)
+EMAIL_HOST = os.getenv('EMAIL_HOST', '')
+EMAIL_PORT = int(os.getenv('EMAIL_PORT', '587'))
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
+EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True') == 'True'
+EMAIL_USE_SSL = os.getenv('EMAIL_USE_SSL', 'False') == 'True'
+EMAIL_TIMEOUT = int(os.getenv('EMAIL_TIMEOUT', '30'))
+DEFAULT_FROM_EMAIL = os.getenv(
+    'DEFAULT_FROM_EMAIL',
+    'notificaciones@mi-colegio.com',
+)
+
+# ---------------------------------------------------------------------------
+# WHATSAPP (módulo de comunicaciones)
+# ---------------------------------------------------------------------------
+# Gateway HTTP genérico (Twilio, Meta Cloud API, un gateway propio, etc.).
+# Si WHATSAPP_GATEWAY_URL está vacío los envíos se simulan (se registran en
+# los logs y se marcan como enviados) para poder probar en desarrollo.
+WHATSAPP_GATEWAY_URL = os.getenv('WHATSAPP_GATEWAY_URL', '')
+WHATSAPP_GATEWAY_TOKEN = os.getenv('WHATSAPP_GATEWAY_TOKEN', '')
+WHATSAPP_FROM = os.getenv('WHATSAPP_FROM', '')
+
 # Application definition
 
 INSTALLED_APPS = [
@@ -39,8 +74,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'usuarios',
-    'core',
-    'estudiantes',
+    'core.apps.CoreConfig',
+    'estudiantes.apps.EstudiantesConfig',
     'docentes',
     'academico',
     'administracion',
@@ -48,18 +83,28 @@ INSTALLED_APPS = [
     'ia',
     'nomina',
     'asistencia',
-    'caja',
+    'caja.apps.CajaConfig',
+    'facturacion',
+    'tutores',
+    'comunicaciones.apps.ComunicacionesConfig',
+    'entrenamiento',
+    'orientacion',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware',
+    'core.middleware.AdminBruteForceMiddleware',
+    'core.middleware.IdleTimeoutMiddleware',
+    'core.middleware.PasswordExpiryMiddleware',
+    'core.middleware.SecurityHeadersMiddleware',
     'core.middleware.CentroMiddleware',
     'auditoria.middleware.AuditoriaMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
@@ -71,6 +116,9 @@ TEMPLATES = [
         'DIRS': [],
         'APP_DIRS': True,
         'OPTIONS': {
+            'builtins': [
+                'core.templatetags.formatos',
+            ],
             'context_processors': [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
@@ -85,13 +133,73 @@ WSGI_APPLICATION = 'mycolegiofavorito.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
+# SQLite para desarrollo local (Windows). En producción usa PostgreSQL
+# definiendo DB_ENGINE/DB_NAME/DB_USER/DB_PASSWORD/DB_HOST/DB_PORT en el .env.
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+_DB_ENGINE = os.getenv('DB_ENGINE', 'sqlite')
+
+if _DB_ENGINE == 'postgresql':
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.getenv('DB_NAME', 'mycolegiofavorito'),
+            'USER': os.getenv('DB_USER', ''),
+            'PASSWORD': os.getenv('DB_PASSWORD', ''),
+            'HOST': os.getenv('DB_HOST', '127.0.0.1'),
+            'PORT': os.getenv('DB_PORT', '5432'),
+            'CONN_MAX_AGE': int(os.getenv('DB_CONN_MAX_AGE', '60')),
+            'CONN_HEALTH_CHECKS': True,
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+            'CONN_MAX_AGE': int(os.getenv('DB_CONN_MAX_AGE', '0')),
+        }
+    }
+
+# ---------------------------------------------------------------------------
+# CACHÉ
+# ---------------------------------------------------------------------------
+# En desarrollo usa LocMemCache (no requiere dependencias externas). En
+# producción define REDIS_URL en el .env para activar Redis y así el caché
+# es compartido entre todos los workers de Gunicorn.
+
+REDIS_URL = os.getenv('REDIS_URL')
+
+if REDIS_URL:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+            'LOCATION': REDIS_URL,
+            'TIMEOUT': int(os.getenv('CACHE_TIMEOUT', '300')),
+            'OPTIONS': {
+                'db': int(os.getenv('REDIS_DB', '0')),
+            },
+            'KEY_PREFIX': os.getenv('CACHE_KEY_PREFIX', 'mcf'),
+        }
+    }
+else:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+            'LOCATION': 'mycolegiofavorito-cache',
+            'TIMEOUT': int(os.getenv('CACHE_TIMEOUT', '300')),
+            'KEY_PREFIX': os.getenv('CACHE_KEY_PREFIX', 'mcf'),
+        }
+    }
+
+# Sesiones en caché: reduce las escrituras a la BD (las lee del caché y
+# solo escribe a la BD cuando cambian). Evita que cada request toque SQLite.
+SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'
+SESSION_CACHE_ALIAS = 'default'
+
+# Punto único para los TTL usados por el proyecto
+CACHE_TTL_CORTO = int(os.getenv('CACHE_TTL_CORTO', '60'))     # métricas volátiles
+CACHE_TTL_MEDIO = int(os.getenv('CACHE_TTL_MEDIO', '300'))    # kardex, config
+CACHE_TTL_LARGO = int(os.getenv('CACHE_TTL_LARGO', '1800'))   # catálogos estáticos
 
 # Password validation
 # https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
@@ -102,6 +210,7 @@ AUTH_PASSWORD_VALIDATORS = [
     },
     {
         'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        'OPTIONS': {'min_length': 10},
     },
     {
         'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
@@ -109,7 +218,16 @@ AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
+    {
+        'NAME': 'usuarios.validators.PasswordStrengthValidator',
+    },
 ]
+
+# --- Política de contraseñas ---
+PASSWORD_MAX_DAYS = 90  # días de vigencia máxima de una contraseña
+
+# --- Sesión: auto-cierre por inactividad ---
+SESSION_IDLE_TIMEOUT_MINUTES = 30
 
 # Internationalization
 # https://docs.djangoproject.com/en/6.0/topics/i18n/
@@ -130,14 +248,104 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media/')
 
 STATIC_URL = 'static/'
 STATICFILES_DIRS = (os.path.join(BASE_DIR, "static"),)
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
+# Compresión y cabeceras de caché para estáticos en producción (Whitenoise)
+if not DEBUG:
+    STORAGES = {
+        'default': {
+            'BACKEND': 'django.core.files.storage.FileSystemStorage',
+        },
+        'staticfiles': {
+            'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',
+        },
+    }
+    WHITENOISE_MAX_AGE = 31536000
+    WHITENOISE_COMPRESS = True
+
 AUTH_USER_MODEL = 'usuarios.Usuario'
 
 LOGIN_URL = '/usuarios/login/'
 LOGIN_REDIRECT_URL = '/'      # Opcional: si quieres que login redirija al home automáticamente
 LOGOUT_REDIRECT_URL = '/usuarios/login/'
 
-SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = 'DENY'
+SECURE_REFERRER_POLICY = 'same-origin'
+SECURE_CROSS_ORIGIN_OPENER_POLICY = 'same-origin'
+
+# Cookies: HttpOnly para la sesión; caducan al cerrar el navegador.
+# CSRF_COOKIE_HTTPONLY se deja en False a propósito: el JS del front lee la
+# cookie csrftoken (getCookie('csrftoken')) en las peticiones fetch.
+SESSION_COOKIE_HTTPONLY = True
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+
+# --- Producción: transporte seguro (HTTPS) ---
+if not DEBUG:
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_SSL_REDIRECT = True
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip()
+    for origin in os.getenv('CSRF_TRUSTED_ORIGINS', '').split(',')
+    if origin.strip()
+]
+
+# --- Límites de subida de datos ---
+DATA_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
+FILE_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
+ALLOWED_DOCUMENT_EXTENSIONS = {'.pdf', '.jpg', '.jpeg', '.png'}
+
+# --- Hashing de contraseñas (Argon2 preferido) ---
+PASSWORD_HASHERS = [
+    'django.contrib.auth.hashers.Argon2PasswordHasher',
+    'django.contrib.auth.hashers.PBKDF2PasswordHasher',
+    'django.contrib.auth.hashers.PBKDF2SHA1PasswordHasher',
+]
+
+# --- Logging de eventos de seguridad ---
+os.makedirs(BASE_DIR / 'logs', exist_ok=True)
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{asctime} {levelname} {name} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'level': 'INFO',
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple',
+        },
+        'security_file': {
+            'level': 'INFO',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': os.path.join(BASE_DIR, 'logs', 'security.log'),
+            'maxBytes': 5 * 1024 * 1024,
+            'backupCount': 5,
+            'formatter': 'verbose',
+        },
+    },
+    'loggers': {
+        'security': {
+            'handlers': ['security_file', 'console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+    },
+}
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

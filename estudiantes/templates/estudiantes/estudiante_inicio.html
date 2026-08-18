@@ -1,32 +1,347 @@
 {% extends 'home.html' %}
+{% load formatos %}
 
-{% block title %}
-  Mi Colegio - Inicio Estudiante
-{% endblock %}
+{% block title %}Mi Colegio - Portal Estudiante{% endblock %}
 
 {% block content %}
-<div class="p-6">
-  <div class="bg-white rounded-2xl shadow p-8">
-    <div class="flex items-center gap-4 mb-4">
-      <div class="w-14 h-14 rounded-full bg-indigo-100 flex items-center justify-center">
-        <i class="fas fa-user-graduate text-indigo-600 text-2xl"></i>
-      </div>
+<div class="max-w-6xl mx-auto space-y-8">
 
-      <div>
-        <h1 class="text-2xl font-bold text-slate-800">
-          Hola, {{ estudiante.nombre_completo }}
-        </h1>
+    <!-- ==================== CABECERA ==================== -->
+    <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-900 via-blue-800 to-indigo-800 shadow-xl">
+        <div class="absolute inset-0 opacity-20"
+             style="background-image: radial-gradient(circle at 20% 30%, white 1px, transparent 1px); background-size: 24px 24px;">
+        </div>
 
-        <p class="text-slate-500">
-          Matrícula {{ estudiante.matricula }}
-        </p>
-      </div>
+        <div class="relative p-6 flex flex-col md:flex-row md:items-center gap-6">
+            <div class="shrink-0">
+                {% avatar estudiante size='w-20 h-20' color='from-blue-500 to-indigo-600' texto='text-3xl' extra='ring-4 ring-white/30' %}
+            </div>
+
+            <div class="flex-1 min-w-0">
+                <p class="text-blue-200 text-sm font-medium uppercase tracking-wider">Portal Estudiante</p>
+                <h2 class="text-2xl font-bold text-white truncate">{{ estudiante.nombre_completo }}</h2>
+                <p class="text-blue-200 text-sm mt-1">
+                    Matrícula {{ estudiante.matricula }} · {{ estudiante.get_sexo_display }} · {{ estudiante.edad }} años
+                </p>
+
+                <div class="flex flex-wrap gap-2 mt-3">
+                    {% if estudiante.estado == "activo" %}
+                        <span class="bg-green-500/20 text-green-200 px-2 py-1 rounded text-xs font-medium">Activo</span>
+                    {% elif estudiante.estado == "retirado" %}
+                        <span class="bg-yellow-500/20 text-yellow-200 px-2 py-1 rounded text-xs font-medium">Retirado</span>
+                    {% else %}
+                        <span class="bg-blue-400/20 text-blue-100 px-2 py-1 rounded text-xs font-medium">Egresado</span>
+                    {% endif %}
+
+                    {% if inscripcion_actual %}
+                        <span class="bg-white/10 text-blue-100 px-2 py-1 rounded text-xs font-medium">
+                            {{ inscripcion_actual.inscripcion.grado.nombre }} · {{ inscripcion_actual.inscripcion.seccion.nombre }}
+                        </span>
+                        <span class="bg-white/10 text-blue-100 px-2 py-1 rounded text-xs font-medium">
+                            {{ inscripcion_actual.anio.nombre }}
+                        </span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="flex flex-wrap gap-2 md:justify-end">
+                <a href="{% url 'estudiante_solicitudes' %}"
+                   class="bg-white text-blue-800 px-4 py-2 rounded-lg font-medium hover:bg-blue-50 shadow">
+                    <i class="fas fa-scroll mr-1"></i> Solicitar certificado
+                </a>
+
+                <a href="{% url 'estudiante_historial_clinico' %}"
+                   class="bg-white/10 text-white border border-white/30 px-4 py-2 rounded-lg font-medium hover:bg-white/20">
+                    <i class="fas fa-heartbeat mr-1"></i> Historial clínico
+                </a>
+            </div>
+        </div>
     </div>
 
-    <p class="text-slate-600">
-      Bienvenido a tu portal. Aquí podrás consultar tus calificaciones,
-      asistencia y boletines.
-    </p>
-  </div>
+    <!-- ==================== RESUMEN ==================== -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+            <p class="text-xs text-gray-500 font-medium mb-1">Grado actual</p>
+            {% if inscripcion_actual %}
+                <p class="font-semibold text-gray-800">{{ inscripcion_actual.inscripcion.grado.nombre }}</p>
+                <p class="text-xs text-gray-500">Sección {{ inscripcion_actual.inscripcion.seccion.nombre }}</p>
+            {% else %}
+                <p class="text-sm text-gray-400">Sin matrícula activa</p>
+            {% endif %}
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+            <p class="text-xs text-gray-500 font-medium mb-1">Promedio general</p>
+            {% if inscripcion_actual and inscripcion_actual.promedio_general is not None %}
+                <p class="text-2xl font-bold text-emerald-600">{{ inscripcion_actual.promedio_general }}</p>
+                <p class="text-xs text-gray-500">{{ inscripcion_actual.anio.nombre }}</p>
+            {% else %}
+                <p class="text-sm text-gray-400">Sin calificaciones</p>
+            {% endif %}
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+            <p class="text-xs text-gray-500 font-medium mb-1">Asistencia</p>
+            {% if inscripcion_actual and inscripcion_actual.asistencia.porcentaje is not None %}
+                <p class="text-2xl font-bold text-blue-700">{{ inscripcion_actual.asistencia.porcentaje }}%</p>
+                <p class="text-xs text-gray-500">{{ inscripcion_actual.asistencia.presente }} presentes · {{ inscripcion_actual.asistencia.ausente }} ausencias</p>
+            {% else %}
+                <p class="text-sm text-gray-400">Sin registro</p>
+            {% endif %}
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+            <p class="text-xs text-gray-500 font-medium mb-1">Años cursados</p>
+            <p class="text-2xl font-bold text-gray-800">{{ total_anios }}</p>
+        </div>
+    </div>
+
+    <!-- ==================== MIS DATOS ==================== -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-100">
+            <h3 class="font-semibold text-gray-800 flex items-center gap-2">
+                <i class="fas fa-id-card text-indigo-500"></i> Mis datos personales
+            </h3>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 p-6">
+            <!-- Información General -->
+            <div class="border rounded-xl p-5">
+                <h4 class="font-semibold text-gray-800 mb-4">Información general</h4>
+
+                <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
+                    <div>
+                        <dt class="text-gray-500 text-xs">Matrícula</dt>
+                        <dd class="font-medium">{{ estudiante.matricula }}</dd>
+                    </div>
+
+                    <div>
+                        <dt class="text-gray-500 text-xs">Sexo</dt>
+                        <dd class="font-medium">{{ estudiante.get_sexo_display }}</dd>
+                    </div>
+
+                    <div>
+                        <dt class="text-gray-500 text-xs">Fecha de nacimiento</dt>
+                        <dd class="font-medium">{{ estudiante.fecha_nacimiento|default:"No registrada" }}</dd>
+                    </div>
+
+                    <div>
+                        <dt class="text-gray-500 text-xs">Edad</dt>
+                        <dd class="font-medium">{{ estudiante.edad }} años</dd>
+                    </div>
+
+                    <div>
+                        <dt class="text-gray-500 text-xs">Lugar de nacimiento</dt>
+                        <dd class="font-medium">{{ estudiante.lugar_nacimiento|default:"No registrado" }}</dd>
+                    </div>
+
+                    <div>
+                        <dt class="text-gray-500 text-xs">Nacionalidad</dt>
+                        <dd class="font-medium">{{ estudiante.nacionalidad|default:"No registrada" }}</dd>
+                    </div>
+
+                    <div>
+                        <dt class="text-gray-500 text-xs">Teléfono</dt>
+                        <dd class="font-medium">{{ estudiante.telefono|default:"No registrado" }}</dd>
+                    </div>
+
+                    <div class="sm:col-span-2">
+                        <dt class="text-gray-500 text-xs">Dirección</dt>
+                        <dd class="font-medium">{{ estudiante.direccion|default:"No registrada" }}</dd>
+                    </div>
+                </dl>
+            </div>
+
+            <!-- Tutor -->
+            <div class="border rounded-xl p-5">
+                <h4 class="font-semibold text-gray-800 mb-4">Información del tutor</h4>
+
+                <dl class="grid grid-cols-1 gap-y-3 text-sm">
+                    <div>
+                        <dt class="text-gray-500 text-xs">Nombre</dt>
+                        <dd class="font-medium">{{ estudiante.nombre_tutor|default:"No registrado" }}</dd>
+                    </div>
+
+                    <div>
+                        <dt class="text-gray-500 text-xs">Cédula</dt>
+                        <dd class="font-medium">{{ estudiante.cedula_tutor|default:"No registrada" }}</dd>
+                    </div>
+
+                    <div>
+                        <dt class="text-gray-500 text-xs">Teléfono</dt>
+                        <dd class="font-medium">{{ estudiante.telefono_tutor|default:"No registrado" }}</dd>
+                    </div>
+
+                    <div>
+                        <dt class="text-gray-500 text-xs">Parentesco</dt>
+                        <dd class="font-medium">{{ estudiante.parentesco_tutor|default:"No registrado" }}</dd>
+                    </div>
+                </dl>
+
+                {% if estudiante.tutores.all %}
+                <h5 class="font-semibold text-gray-800 mb-2 mt-6">Tutores vinculados</h5>
+                <div class="space-y-3">
+                    {% for tutor in estudiante.tutores.all %}
+                    <div class="flex items-center gap-3">
+                        {% avatar tutor size='w-10 h-10' texto='text-sm' %}
+                        <div class="flex-1 min-w-0">
+                            <p class="font-medium text-gray-800 text-sm truncate">{{ tutor.nombre_completo }}</p>
+                            <p class="text-xs text-gray-400">{{ tutor.get_parentesco_display }} · {{ tutor.telefono }}</p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== ASIGNATURAS Y CALIFICACIONES ==================== -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-100">
+            <h3 class="font-semibold text-gray-800 flex items-center gap-2">
+                <i class="fas fa-book-open text-indigo-500"></i> Mis asignaturas y calificaciones
+            </h3>
+        </div>
+
+        <div class="p-6">
+            {% if kardex.anios %}
+
+                <!-- Trayectoria -->
+                <div class="overflow-x-auto mb-6">
+                    <table class="min-w-full divide-y divide-gray-200 text-sm">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-3 text-left font-semibold">Año escolar</th>
+                                <th class="px-4 py-3 text-left font-semibold">Grado</th>
+                                <th class="px-4 py-3 text-left font-semibold">Sección</th>
+                                <th class="px-4 py-3 text-center font-semibold">Asistencia</th>
+                                <th class="px-4 py-3 text-center font-semibold">Promedio</th>
+                                <th class="px-4 py-3 text-center font-semibold">Situación final</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            {% for y in kardex.anios %}
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-4 py-3">{{ y.anio.nombre }}</td>
+                                <td class="px-4 py-3">{{ y.inscripcion.grado.nombre }}</td>
+                                <td class="px-4 py-3">{{ y.inscripcion.seccion.nombre }}</td>
+                                <td class="px-4 py-3 text-center">
+                                    {% if y.asistencia.porcentaje is not None %}{{ y.asistencia.porcentaje }}%{% else %}-{% endif %}
+                                </td>
+                                <td class="px-4 py-3 text-center font-semibold">
+                                    {{ y.promedio_general|default:"-" }}
+                                </td>
+                                <td class="px-4 py-3 text-center">
+                                    {{ y.inscripcion.get_estado_final_display }}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Detalle por año -->
+                {% for y in kardex.anios %}
+                <details class="mb-4 border rounded" {% if forloop.last %}open{% endif %}>
+                    <summary class="cursor-pointer px-4 py-3 bg-gray-50 font-semibold text-sm">
+                        {{ y.anio.nombre }} — {{ y.inscripcion.grado.nombre }} {{ y.inscripcion.seccion.nombre }}
+                    </summary>
+
+                    <div class="p-4">
+                        {% if y.asignaturas %}
+                        <div class="overflow-x-auto mb-4">
+                            <table class="min-w-full divide-y divide-gray-200 text-sm">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-3 py-2 text-left font-semibold">Área</th>
+                                        <th class="px-3 py-2 text-left font-semibold">Asignatura</th>
+                                        {% for p in y.periodos %}
+                                            <th class="px-3 py-2 text-center font-semibold">{{ p }}</th>
+                                        {% endfor %}
+                                        <th class="px-3 py-2 text-center font-semibold">PF</th>
+                                        {% if y.tiene_completivo %}
+                                            <th class="px-3 py-2 text-center font-semibold">Completivo</th>
+                                        {% endif %}
+                                        <th class="px-3 py-2 text-center font-semibold">Estado</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100">
+                                    {% for asig in y.asignaturas %}
+                                    <tr class="hover:bg-gray-50">
+                                        <td class="px-3 py-2">{{ asig.area }}</td>
+                                        <td class="px-3 py-2">{{ asig.asignatura }}</td>
+                                        {% for n in asig.notas_periodo %}
+                                            <td class="px-3 py-2 text-center">{{ n.promedio|default:"-" }}</td>
+                                        {% endfor %}
+                                        <td class="px-3 py-2 text-center font-semibold">{{ asig.pf|default:"-" }}</td>
+                                        {% if y.tiene_completivo %}
+                                            <td class="px-3 py-2 text-center">
+                                                {% if asig.nota_completivo is not None %}
+                                                    {{ asig.nota_completivo }}
+                                                    {% if asig.aprueba_completivo %}
+                                                        <span class="text-emerald-600 text-xs">✓</span>
+                                                    {% else %}
+                                                        <span class="text-red-600 text-xs">✗</span>
+                                                    {% endif %}
+                                                {% else %}
+                                                    -
+                                                {% endif %}
+                                            </td>
+                                        {% endif %}
+                                        <td class="px-3 py-2 text-center">
+                                            {% if asig.estado == "aprobada" %}
+                                                <span class="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded text-xs font-medium">Aprobada</span>
+                                            {% elif asig.estado == "reprobada" %}
+                                                <span class="bg-red-100 text-red-700 px-2 py-0.5 rounded text-xs font-medium">Reprobada</span>
+                                            {% else %}
+                                                <span class="bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-xs font-medium">Sin notas</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <p class="text-sm text-gray-500">Sin asignaturas registradas para este año.</p>
+                        {% endif %}
+
+                        {% if y.asistencia.total %}
+                        <p class="text-xs text-gray-500">
+                            Asistencia: {{ y.asistencia.presente }} presentes · {{ y.asistencia.tardanza }} tardanzas ·
+                            {{ y.asistencia.justificado }} justificadas · {{ y.asistencia.ausente }} ausencias
+                            ({{ y.asistencia.porcentaje }}% de asistencia).
+                        </p>
+                        {% endif %}
+
+                        {% if y.observaciones %}
+                        <div class="mt-4">
+                            <h5 class="font-semibold text-sm text-gray-800 mb-2">Observaciones</h5>
+                            <ul class="space-y-2 text-sm">
+                                {% for o in y.observaciones %}
+                                <li class="flex items-start justify-between gap-4 bg-gray-50 rounded p-3">
+                                    <div>
+                                        <span class="font-semibold">{{ o.get_tipo_display }}:</span>
+                                        {{ o.descripcion }}
+                                    </div>
+                                    <span class="text-xs text-gray-500 whitespace-nowrap">{{ o.fecha|date:"d/m/Y" }}</span>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        {% endif %}
+                    </div>
+                </details>
+                {% endfor %}
+
+            {% else %}
+                <p class="text-sm text-gray-500">
+                    Aún no tienes asignaturas ni calificaciones registradas.
+                </p>
+            {% endif %}
+        </div>
+    </div>
+
 </div>
 {% endblock %}

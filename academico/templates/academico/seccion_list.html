@@ -1,76 +1,249 @@
 {% extends "home.html" %}
 
+{% block title %}Secciones{% endblock %}
+
 {% block content %}
+
 <div class="max-w-7xl mx-auto">
 
-    <!-- Header -->
-    <div class="flex items-center justify-between mb-6">
+    <!-- Encabezado -->
+    <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6">
+
         <div>
-            <h2 class="text-2xl font-semibold">Secciones</h2>
-            <p class="text-sm text-gray-500">
-                Gestión de secciones por grado y nivel
+            <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                <i class="fas fa-door-open text-blue-600"></i>
+                Secciones
+            </h2>
+            <p class="text-sm text-gray-500 mt-1">
+                Secciones únicas del centro (A, B, C… N)
             </p>
         </div>
 
         <a href="{% url 'seccion_create' %}"
-           class="bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700">
-            + Nueva Sección
+           class="inline-flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-lg shadow-sm hover:bg-blue-700 hover:shadow transition text-sm font-semibold">
+            <i class="fas fa-plus"></i>
+            Nueva Sección
         </a>
+
     </div>
 
+    <!-- Tarjetas de resumen -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+
+        <div class="bg-white shadow-sm rounded-xl p-5 border border-gray-200 flex items-center gap-4">
+            <div class="w-12 h-12 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center text-xl">
+                <i class="fas fa-door-open"></i>
+            </div>
+            <div>
+                <p class="text-xs uppercase tracking-wide text-gray-500 font-semibold">Total secciones</p>
+                <p class="text-2xl font-bold text-gray-800">{{ stats.total }}</p>
+            </div>
+        </div>
+
+        <div class="bg-white shadow-sm rounded-xl p-5 border border-gray-200 flex items-center gap-4">
+            <div class="w-12 h-12 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center text-xl">
+                <i class="fas fa-school"></i>
+            </div>
+            <div>
+                <p class="text-xs uppercase tracking-wide text-gray-500 font-semibold">Grados</p>
+                <p class="text-2xl font-bold text-emerald-600">{{ stats.grados }}</p>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Filtros -->
+    <div class="bg-white shadow-sm rounded-xl border border-gray-200 p-4 mb-6">
+
+        <form method="get" id="filtro-form" class="flex flex-col md:flex-row gap-3">
+
+            <div class="flex-1 relative">
+                <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                <input
+                    id="busqueda-input"
+                    type="text"
+                    name="q"
+                    value="{{ q }}"
+                    placeholder="Buscar por sección o grado..."
+                    class="w-full border border-gray-300 rounded-lg pl-10 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+            </div>
+
+            <button type="submit"
+                    class="inline-flex items-center justify-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-lg hover:bg-blue-700 text-sm font-semibold">
+                <i class="fas fa-filter"></i>
+                Filtrar
+            </button>
+
+            {% if q %}
+            <a href="{% url 'seccion_list' %}"
+               class="inline-flex items-center justify-center gap-2 bg-gray-200 text-gray-700 px-5 py-2.5 rounded-lg hover:bg-gray-300 text-sm font-medium">
+                <i class="fas fa-times"></i>
+                Limpiar
+            </a>
+            {% endif %}
+
+        </form>
+
+        {% if q %}
+        <div class="flex flex-wrap items-center gap-2 mt-4 pt-4 border-t border-gray-100">
+            <span class="text-xs font-semibold text-gray-500 uppercase tracking-wide mr-1">Filtros activos:</span>
+            <span class="inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 border border-blue-200 px-3 py-1.5 rounded-full text-xs font-medium">
+                <i class="fas fa-search text-[10px]"></i>
+                "{{ q }}"
+                <button type="button" onclick="removeFilter('q')" class="hover:text-red-500 transition">
+                    <i class="fas fa-xmark"></i>
+                </button>
+            </span>
+            <a href="{% url 'seccion_list' %}"
+               class="inline-flex items-center gap-1.5 text-xs font-medium text-red-600 hover:text-red-700 hover:underline ml-2 transition">
+                <i class="fas fa-trash-can"></i>
+                Limpiar todo
+            </a>
+        </div>
+        {% endif %}
+
+    </div>
+
+    <script>
+      function removeFilter(param) {
+        const url = new URL(window.location.href)
+        url.searchParams.delete(param)
+        url.searchParams.delete('page')
+        window.location.href = url.toString()
+      }
+
+      document.addEventListener('DOMContentLoaded', function () {
+        const form = document.getElementById('filtro-form')
+        const input = document.getElementById('busqueda-input')
+        if (input) {
+          let timer
+          input.addEventListener('input', function () {
+            clearTimeout(timer)
+            timer = setTimeout(function () {
+              form.submit()
+            }, 450)
+          })
+        }
+      })
+    </script>
+
     <!-- Tabla -->
-    <div class="bg-white shadow rounded overflow-hidden">
-        <table class="w-full text-sm">
-            <thead class="bg-gray-50 text-left">
-                <tr>
-                    <th class="px-4 py-3">Sección</th>
-                    <th class="px-4 py-3">Grado</th>
-                    <th class="px-4 py-3">Nivel</th>
-                    <th class="px-4 py-3 w-40">Acciones</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for seccion in secciones %}
-                <tr class="border-t hover:bg-gray-50">
-                    <td class="px-4 py-2 font-medium">
-                        {{ seccion.nombre }}
-                    </td>
-                    <td class="px-4 py-2">
-                        {{ seccion.grado.nombre }}
-                    </td>
-                    <td class="px-4 py-2 text-gray-600">
-                        {{ seccion.grado.nivel.nombre }}
-                    </td>
-                    <td class="px-4 py-2 flex gap-2">
-                        <a href="{% url 'seccion_update' seccion.id %}"
-                           class="px-3 py-1 rounded bg-yellow-500 text-white text-xs hover:bg-yellow-600">
-                            Editar
-                        </a>
-                        <button
-                            onclick="confirmDelete('{{ seccion.id }}')"
-                            class="px-3 py-1 rounded bg-red-600 text-white text-xs hover:bg-red-700">
-                            Eliminar
-                        </button>
-                    </td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="4"
-                        class="px-4 py-6 text-center text-gray-500">
-                        No hay secciones registradas
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <div class="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
+
+        <div class="flex items-center justify-between px-5 py-4 border-b border-gray-200 bg-gray-50">
+            <h3 class="font-semibold text-gray-800 flex items-center gap-2">
+                <i class="fas fa-list text-gray-400"></i>
+                Listado de secciones
+            </h3>
+            <span class="text-xs font-medium bg-blue-100 text-blue-700 px-2.5 py-1 rounded-full">
+                Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+            </span>
+        </div>
+
+        <div class="overflow-x-auto">
+
+            <table class="min-w-full divide-y divide-gray-200 text-sm">
+
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+                            Sección
+                        </th>
+                        <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+                            Grados que la usan
+                        </th>
+                        <th class="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">
+                            Acciones
+                        </th>
+                    </tr>
+                </thead>
+
+                <tbody class="divide-y divide-gray-100">
+
+                    {% for seccion in secciones %}
+
+                    <tr class="hover:bg-blue-50/50 transition-colors">
+
+                        <td class="px-5 py-3">
+                            <div class="flex items-center gap-3">
+                                <div class="w-9 h-9 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 text-white flex items-center justify-center text-xs font-bold uppercase shrink-0">
+                                    {{ seccion.nombre|slice:":1" }}
+                                </div>
+                                <p class="font-medium text-gray-800">{{ seccion.nombre }}</p>
+                            </div>
+                        </td>
+
+                        <td class="px-5 py-3">
+                            {% if seccion.grados.all %}
+                                <div class="flex flex-wrap gap-1.5">
+                                    {% for grado in seccion.grados.all %}
+                                    <span class="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-md text-xs font-semibold">
+                                        {{ grado.nombre }}
+                                    </span>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <span class="text-xs text-gray-400">Sin grados asignados</span>
+                            {% endif %}
+                        </td>
+
+                        <td class="px-5 py-3">
+                            <div class="flex items-center justify-end gap-2">
+
+                                <a href="{% url 'seccion_update' seccion.id %}"
+                                   class="inline-flex items-center gap-1.5 bg-gray-200 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-gray-300 transition">
+                                    <i class="fas fa-pen"></i>
+                                    Editar
+                                </a>
+
+                                <button
+                                    onclick="confirmDelete('{{ seccion.id }}', '{% url 'seccion_delete' seccion.id %}')"
+                                    class="inline-flex items-center gap-1.5 bg-red-100 text-red-700 px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-red-200 transition">
+                                    <i class="fas fa-trash"></i>
+                                    Eliminar
+                                </button>
+
+                            </div>
+                        </td>
+
+                    </tr>
+
+                    {% empty %}
+
+                    <tr>
+                        <td colspan="4" class="px-5 py-12 text-center">
+                            <i class="fas fa-door-open text-3xl text-gray-300 mb-3 block"></i>
+                            <p class="text-gray-500 font-medium">No hay secciones registradas.</p>
+                            <p class="text-xs text-gray-400 mt-1">Prueba con otro término de búsqueda.</p>
+                        </td>
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-5 py-3 border-t border-gray-200 bg-gray-50 text-sm text-gray-600">
+            <span>
+                Mostrando
+                <strong>{{ page_obj.start_index }}</strong>–
+                <strong>{{ page_obj.end_index }}</strong> de
+                <strong>{{ page_obj.paginator.count }}</strong> secciones
+            </span>
+        </div>
+
+        {% include "academico/_paginador.html" %}
+
     </div>
 
 </div>
 
-<!-- SweetAlert -->
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-function confirmDelete(id) {
+function confirmDelete(id, url) {
     Swal.fire({
         title: '¿Eliminar sección?',
         text: 'Esta acción no se puede deshacer',
@@ -82,9 +255,10 @@ function confirmDelete(id) {
         cancelButtonText: 'Cancelar'
     }).then((result) => {
         if (result.isConfirmed) {
-            window.location.href = `/secciones/${id}/eliminar/`;
+            window.location.href = url;
         }
     })
 }
 </script>
+
 {% endblock %}

@@ -4,14 +4,31 @@ from django.urls import reverse
 
 from .models import ConfiguracionCentro
 from core.utils.centro import obtener_centro_del_usuario
-
-ROLES_ADMIN = ('director', 'admin', 'superadmin')
+from core.cache_utils import obtener_o_generar, ttl
 
 ROLES_ASISTENCIA = ('docente', 'secretaria', 'director', 'admin', 'superadmin')
 
-ROLES_CAJA = ('director', 'admin', 'superadmin', 'cajero')
+ROLES_CAJA = ('director', 'admin', 'superadmin', 'cajero', 'secretaria')
 
 ROLES_GESTION_CAJAS = ('director', 'admin', 'superadmin')
+
+ROLES_CALIFICACIONES = ('docente', 'secretaria', 'director')
+
+ROLES_NOMINA = ('director', 'admin', 'superadmin', 'secretaria')
+
+ROLES_COMUNICACIONES = ('director', 'admin', 'superadmin', 'secretaria')
+
+
+def obtener_configuracion_centro(centro_id):
+    """Configuración del centro cacheada (se invalida al guardar el modelo)."""
+    if not centro_id:
+        return None
+    return obtener_o_generar(
+        f'config:{centro_id}',
+        lambda: ConfiguracionCentro.objects.filter(centro_id=centro_id).first(),
+        version=1,
+        timeout=ttl('CACHE_TTL_MEDIO'),
+    )
 
 
 def modulos_sidebar(configuracion, request):
@@ -20,7 +37,6 @@ def modulos_sidebar(configuracion, request):
         return []
 
     rol = request.user.rol
-    es_admin = rol in ROLES_ADMIN or request.user.is_superuser
 
     modulos = []
 
@@ -124,16 +140,59 @@ def modulos_sidebar(configuracion, request):
             'links': links,
         })
 
-    if configuracion.modulo_nomina and es_admin:
+    if configuracion.permitir_facturacion and (
+        rol in ROLES_CAJA or request.user.is_superuser
+    ):
+        modulos.append({
+            'nombre': 'Facturación',
+            'id': 'menu-facturacion',
+            'icono': 'fa-file-invoice-dollar',
+            'links': [
+                {
+                    'etiqueta': 'Inicio de facturación',
+                    'href': reverse('facturacion:facturacion_inicio'),
+                    'icono': 'fa-house',
+                },
+                {
+                    'etiqueta': 'Facturas emitidas',
+                    'href': reverse('facturacion:lista_facturas'),
+                    'icono': 'fa-file-invoice',
+                },
+                {
+                    'etiqueta': 'Tipos de comprobante',
+                    'href': reverse('facturacion:lista_comprobantes'),
+                    'icono': 'fa-tags',
+                },
+            ],
+        })
+
+    if configuracion.modulo_nomina and (
+        rol in ROLES_NOMINA or request.user.is_superuser
+    ):
         modulos.append({
             'nombre': 'Nómina',
             'id': 'menu-nomina',
             'icono': 'fa-file-invoice-dollar',
             'links': [
                 {
+                    'etiqueta': 'Panel de nómina',
+                    'href': reverse('nomina:dashboard'),
+                    'icono': 'fa-chart-pie',
+                },
+                {
                     'etiqueta': 'Configuración',
                     'href': reverse('nomina:configuracion_nomina_list'),
                     'icono': 'fa-users-cog',
+                },
+                {
+                    'etiqueta': 'Períodos de pago',
+                    'href': reverse('nomina:periodo_nomina_list'),
+                    'icono': 'fa-calendar-alt',
+                },
+                {
+                    'etiqueta': 'Historial Nómina',
+                    'href': reverse('nomina:historial_nomina'),
+                    'icono': 'fa-clock-rotate-left',
                 },
                 {
                     'etiqueta': 'Cargos',
@@ -151,14 +210,63 @@ def modulos_sidebar(configuracion, request):
                     'icono': 'fa-heart-pulse',
                 },
                 {
-                    'etiqueta': 'Períodos de pago',
-                    'href': reverse('nomina:periodo_nomina_list'),
-                    'icono': 'fa-calendar-alt',
+                    'etiqueta': 'Tipos de ingreso',
+                    'href': reverse('nomina:tipo_ingreso_list'),
+                    'icono': 'fa-coins',
                 },
                 {
-                    'etiqueta': 'Historial Nómina',
-                    'href': reverse('nomina:historial_nomina'),
-                    'icono': 'fa-clock-rotate-left',
+                    'etiqueta': 'Tipos de descuento',
+                    'href': reverse('nomina:tipo_descuento_list'),
+                    'icono': 'fa-hand-holding-dollar',
+                },
+            ],
+        })
+
+    if request.user.rol in ROLES_CALIFICACIONES or request.user.is_superuser:
+        links = []
+
+        if request.user.rol == 'docente':
+            links.append({
+                'etiqueta': 'Mis asignaciones',
+                'href': reverse('dashboard_docente'),
+                'icono': 'fa-chalkboard-user',
+            })
+        else:
+            links.append({
+                'etiqueta': 'Seguimiento académico',
+                'href': reverse('administracion:seguimiento_estudiantes'),
+                'icono': 'fa-chart-line',
+            })
+            links.append({
+                'etiqueta': 'Boletines oficiales',
+                'href': reverse('administracion:lista_boletines'),
+                'icono': 'fa-file-lines',
+            })
+
+        modulos.append({
+            'nombre': 'Calificaciones',
+            'id': 'menu-calificaciones',
+            'icono': 'fa-file-pen',
+            'links': links,
+        })
+
+    if configuracion.modulo_mensajeria and (
+        rol in ROLES_COMUNICACIONES or request.user.is_superuser
+    ):
+        modulos.append({
+            'nombre': 'Comunicaciones',
+            'id': 'menu-comunicaciones',
+            'icono': 'fa-paper-plane',
+            'links': [
+                {
+                    'etiqueta': 'Centro de correo',
+                    'href': reverse('comunicaciones:campania_list'),
+                    'icono': 'fa-envelope-open-text',
+                },
+                {
+                    'etiqueta': 'Nueva campaña',
+                    'href': reverse('comunicaciones:campania_create'),
+                    'icono': 'fa-plus',
                 },
             ],
         })
@@ -173,29 +281,32 @@ def configuracion_centro(request):
     configuracion = None
 
     if centro_id:
-
-        try:
-
-            configuracion = ConfiguracionCentro.objects.get(
-                centro_id=centro_id
-            )
-
-        except ConfiguracionCentro.DoesNotExist:
-            pass
+        configuracion = obtener_configuracion_centro(centro_id)
 
     if configuracion is None and request.user.is_authenticated:
 
         centro = obtener_centro_del_usuario(request)
 
         if centro:
+            configuracion = obtener_configuracion_centro(centro.id)
 
-            configuracion = getattr(
-                centro,
-                'configuracioncentro',
-                None,
-            )
+            if configuracion is not None:
+                request.session['centro_id'] = centro.id
+
+    modulos = []
+    if request.user.is_authenticated:
+        clave_sidebar = (
+            f'sidebar:{centro_id or 0}:{request.user.pk}:'
+            f'{request.user.rol or "sin_rol"}'
+        )
+        modulos = obtener_o_generar(
+            clave_sidebar,
+            lambda: modulos_sidebar(configuracion, request),
+            version=1,
+            timeout=ttl('CACHE_TTL_CORTO'),
+        )
 
     return {
         'configuracion': configuracion,
-        'modulos_sidebar': modulos_sidebar(configuracion, request),
+        'modulos_sidebar': modulos,
     }

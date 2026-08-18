@@ -1,155 +1,125 @@
 from django.shortcuts import render
+from django.utils import timezone
 
-# Create your views here.
-from django.contrib import admin
-from django.utils.html import format_html
+from django.contrib.auth.decorators import login_required
+from django.core.paginator import Paginator
+from django.db.models import Q
+
+from core.decorators import centro_required, role_required
+
 from .models import Bitacora
 
 
-@admin.register(Bitacora)
-class BitacoraAdmin(admin.ModelAdmin):
+def _usuarios_del_centro(centro):
+    """IDs de usuarios asociados al centro (todas las relaciones)."""
+    from core.models import UsuarioCentro
+    from administracion.models import Administrativo
+    from docentes.models import Docente
+    from estudiantes.models import Estudiante
+    from tutores.models import Tutor
 
-    list_display = (
-        'fecha',
-        'usuario',
-        'accion_color',
-        'riesgo_color',
-        'modulo',
-        'modelo',
-        'objeto_id',
-        'ip',
-        'tipo_dispositivo',
+    ids = set()
+
+    ids.update(
+        UsuarioCentro.objects
+        .filter(centro=centro, activo=True)
+        .values_list('usuario_id', flat=True)
     )
 
-    list_filter = (
-        'accion',
-        'riesgo',
-        'modulo',
-        'modelo',
-        'tipo_dispositivo',
-        'fecha',
-    )
-
-    search_fields = (
-        'usuario__username',
-        'descripcion',
-        'modelo',
-        'objeto_id',
-        'ip',
-        'ruta',
-    )
-
-    readonly_fields = (
-        'usuario',
-        'accion',
-        'modulo',
-        'descripcion',
-        'modelo',
-        'objeto_id',
-        'ip',
-        'ruta',
-        'metodo',
-        'navegador',
-        'tipo_dispositivo',
-        'riesgo',
-        'datos_anteriores',
-        'datos_nuevos',
-        'fecha',
-    )
-
-    ordering = ('-fecha',)
-
-    list_per_page = 50
-
-    fieldsets = (
-
-        ('Información General', {
-            'fields': (
-                'usuario',
-                'accion',
-                'riesgo',
-                'modulo',
-                'descripcion',
-            )
-        }),
-
-        ('Objeto Afectado', {
-            'fields': (
-                'modelo',
-                'objeto_id',
-            )
-        }),
-
-        ('Conexión', {
-            'fields': (
-                'ip',
-                'ruta',
-                'metodo',
-                'tipo_dispositivo',
-                'navegador',
-            )
-        }),
-
-        ('Snapshots', {
-            'fields': (
-                'datos_anteriores',
-                'datos_nuevos',
-            )
-        }),
-
-        ('Fecha', {
-            'fields': (
-                'fecha',
-            )
-        }),
-    )
-
-    # Bloquear agregar manual
-    def has_add_permission(self, request):
-        return False
-
-    # Bloquear eliminar
-    def has_delete_permission(self, request, obj=None):
-        return False
-
-    # Acción con color
-    def accion_color(self, obj):
-
-        colores = {
-            'CREAR': 'green',
-            'EDITAR': 'orange',
-            'ELIMINAR': 'red',
-            'LOGIN': 'blue',
-            'LOGOUT': 'gray',
-            'LOGIN_FAILED': '#8B0000',
-        }
-
-        color = colores.get(obj.accion, 'black')
-
-        return format_html(
-            '<strong style="color:{};">{}</strong>',
-            color,
-            obj.accion
+    for modelo in (Administrativo, Docente, Estudiante, Tutor):
+        ids.update(
+            modelo.objects
+            .filter(centro=centro)
+            .exclude(usuario=None)
+            .values_list('usuario_id', flat=True)
         )
 
-    accion_color.short_description = "Acción"
+    return ids
 
-    # Riesgo con color
-    def riesgo_color(self, obj):
 
-        colores = {
-            'BAJO': 'green',
-            'MEDIO': 'orange',
-            'ALTO': 'red',
-            'CRITICO': '#8B0000',
-        }
+@login_required
+@role_required('director', 'secretaria', 'admin', 'superadmin')
+@centro_required
+def bitacora_list(request):
+    """Bitácora de auditoría del centro (director / admin / superadmin)."""
 
-        color = colores.get(obj.riesgo, 'black')
+    centro = request.centro
 
-        return format_html(
-            '<strong style="color:{};">{}</strong>',
-            color,
-            obj.riesgo
+    q = request.GET.get('q', '').strip()
+    accion = request.GET.get('accion', '').strip()
+    riesgo = request.GET.get('riesgo', '').strip()
+    modulo = request.GET.get('modulo', '').strip()
+    desde = request.GET.get('desde', '').strip()
+    hasta = request.GET.get('hasta', '').strip()
+
+    ids = _usuarios_del_centro(centro)
+    ids.add(request.user.id)
+
+    base = Bitacora.objects.filter(
+        Q(usuario_id__in=ids) | Q(usuario__isnull=True)
+    ).select_related('usuario')
+
+    modulos = list(
+        base.values_list('modulo', flat=True)
+        .distinct()
+        .order_by('modulo')
+    )
+
+    queryset = base
+
+    if q:
+        queryset = queryset.filter(
+            Q(usuario__username__icontains=q) |
+            Q(usuario__first_name__icontains=q) |
+            Q(usuario__last_name__icontains=q) |
+            Q(descripcion__icontains=q) |
+            Q(modelo__icontains=q) |
+            Q(objeto_id__icontains=q) |
+            Q(ip__icontains=q)
         )
 
-    riesgo_color.short_description = "Riesgo"
+    if accion:
+        queryset = queryset.filter(accion=accion)
+
+    if riesgo:
+        queryset = queryset.filter(riesgo=riesgo)
+
+    if modulo:
+        queryset = queryset.filter(modulo__iexact=modulo)
+
+    if desde:
+        queryset = queryset.filter(fecha__date__gte=desde)
+
+    if hasta:
+        queryset = queryset.filter(fecha__date__lte=hasta)
+
+    total = queryset.count()
+    eventos_hoy = queryset.filter(
+        fecha__date=timezone.localdate()
+    ).count()
+    riesgos_alto = queryset.filter(
+        riesgo__in=['ALTO', 'CRITICO']
+    ).count()
+
+    queryset = queryset.order_by('-fecha', '-id')
+
+    paginator = Paginator(queryset, 50)
+    page_obj = paginator.get_page(request.GET.get('page'))
+
+    return render(request, 'auditoria/bitacora.html', {
+        'centro': centro,
+        'registros': page_obj.object_list,
+        'page_obj': page_obj,
+        'q': q,
+        'accion': accion,
+        'riesgo': riesgo,
+        'modulo': modulo,
+        'desde': desde,
+        'hasta': hasta,
+        'acciones': Bitacora.ACCIONES,
+        'riesgos': Bitacora.NIVELES_RIESGO,
+        'modulos': modulos,
+        'total': total,
+        'eventos_hoy': eventos_hoy,
+        'riesgos_alto': riesgos_alto,
+    })

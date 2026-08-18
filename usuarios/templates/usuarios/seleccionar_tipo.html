@@ -7,7 +7,7 @@
 
 {% block content %}
 <link rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+      href="{% static 'vendor/fontawesome/css/all.min.css' %}">
 
 <div class="tipo-container">
 
@@ -63,6 +63,20 @@
         <div>
             <h3>Administrativo</h3>
             <p>Registrar personal administrativo</p>
+        </div>
+
+    </a>
+
+    <a href="{% url 'usuarios:crear_miembro' %}?tipo=tutor"
+       class="tipo-btn tutor">
+
+        <div class="tipo-icon">
+            <i class="fa-solid fa-users"></i>
+        </div>
+
+        <div>
+            <h3>Tutor</h3>
+            <p>Registrar padres, madres o tutores</p>
         </div>
 
     </a>

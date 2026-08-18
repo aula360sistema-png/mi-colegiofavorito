@@ -17,6 +17,13 @@ class Administrativo(models.Model):
     )
 
     # Datos personales
+    foto = models.ImageField(
+        'Foto',
+        upload_to='administrativos/fotos/',
+        blank=True,
+        null=True
+    )
+
     primer_nombre = models.CharField(max_length=100)
     segundo_nombre = models.CharField(max_length=100, blank=True, null=True)
     primer_apellido = models.CharField(max_length=100)

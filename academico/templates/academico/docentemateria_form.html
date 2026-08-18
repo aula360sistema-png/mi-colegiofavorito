@@ -1,56 +1,371 @@
 {% extends "home.html" %}
+{% load static %}
 
-{% block title %}Asignación Docente{% endblock %}
+{% block title %}
+{% if form.instance.pk %}Editar Asignación{% else %}Nueva Asignación{% endif %} Docente
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'vendor/tomselect/css/tom-select.min.css' %}" />
+<style>
+  .ts-wrapper .ts-control,
+  .ts-wrapper.single .ts-control {
+    border: 1px solid #d1d5db;
+    border-radius: 0.5rem;
+    min-height: 42px;
+    padding: 0.375rem 0.75rem;
+    background-color: #ffffff;
+    box-shadow: none;
+    font-size: 0.875rem;
+    color: #111827;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+  .ts-wrapper.focus .ts-control {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+  }
+  .ts-wrapper .ts-control:hover {
+    border-color: #9ca3af;
+  }
+  .ts-wrapper .ts-control .item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+  }
+  .ts-wrapper .ts-dropdown {
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
+    overflow: hidden;
+    font-size: 0.875rem;
+  }
+  .ts-wrapper .ts-dropdown .ts-dropdown-content .option {
+    padding: 0.5rem 0.75rem;
+  }
+  .ts-wrapper .ts-dropdown .ts-dropdown-content .option.active {
+    background-color: #eff6ff;
+    color: #1d4ed8;
+  }
+  .ts-wrapper .ts-dropdown .ts-dropdown-content .option.selected {
+    background-color: #bfdbfe;
+    color: #1e40af;
+  }
+  .ts-wrapper .ts-control .dropdown-menu {
+    display: none;
+  }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="max-w-3xl mx-auto bg-white shadow rounded-lg p-6">
 
-    <h2 class="text-2xl font-semibold mb-6">
-        {{ accion|default:"Asignación Docente" }}
-    </h2>
+<div class="max-w-6xl mx-auto">
 
-    <form method="post" class="space-y-4">
-        {% csrf_token %}
+    <!-- Encabezado -->
+    <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-8">
 
-        {% for field in form %}
+        <div class="flex items-center gap-4">
+            <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white flex items-center justify-center text-2xl shadow-lg shadow-blue-200 shrink-0">
+                <i class="fas fa-chalkboard-user"></i>
+            </div>
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">
-                    {{ field.label }}
-                </label>
-                {{ field }}
-                {% if field.errors %}
-                    <p class="text-sm text-red-600 mt-1">
-                        {{ field.errors|striptags }}
-                    </p>
-                {% endif %}
+                <h2 class="text-2xl font-bold text-gray-800">
+                    {% if form.instance.pk %}
+                    Editar Asignación Docente
+                    {% else %}
+                    Nueva Asignación Docente
+                    {% endif %}
+                </h2>
+                <p class="text-sm text-gray-500 mt-1">
+                    Asigna una materia a un docente por grado, sección y año escolar
+                </p>
             </div>
-        {% endfor %}
-
-        {% if form.non_field_errors %}
-            <div class="text-red-600 text-sm">
-                {{ form.non_field_errors }}
-            </div>
-        {% endif %}
-
-        <div class="flex justify-between items-center pt-4">
-            <a href="{% url 'docentemateria_list' %}"
-               class="text-gray-600 hover:underline">
-                ⬅ Volver
-            </a>
-
-            <button type="submit"
-                    class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">
-                Guardar
-            </button>
         </div>
-    </form>
+
+        <a href="{% url 'docentemateria_list' %}"
+           class="inline-flex items-center justify-center gap-2 text-sm text-gray-600 hover:text-blue-600 transition font-medium border border-gray-300 rounded-lg px-4 py-2.5 hover:border-blue-300 hover:bg-blue-50">
+            <i class="fas fa-arrow-left"></i>
+            Volver al listado
+        </a>
+
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        <!-- FORMULARIO -->
+        <div class="lg:col-span-2">
+
+            <div class="bg-white shadow-sm rounded-2xl border border-gray-200">
+
+                <div class="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white flex items-center gap-3 rounded-t-2xl">
+                    <span class="w-9 h-9 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center">
+                        <i class="fas fa-pen-to-square"></i>
+                    </span>
+                    <div>
+                        <h3 class="font-semibold text-gray-800">Detalles de la asignación</h3>
+                        <p class="text-xs text-gray-400">Todos los campos son obligatorios</p>
+                    </div>
+                </div>
+
+                <form method="post" class="p-6 space-y-6">
+                    {% csrf_token %}
+
+                    {% if form.non_field_errors %}
+                    <div class="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-700 flex items-start gap-2">
+                        <i class="fas fa-circle-exclamation mt-0.5"></i>
+                        <div>
+                            {% for error in form.non_field_errors %}
+                            <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- SECCIÓN 1: DOCENTE -->
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-3 flex items-center gap-2">
+                            <span class="w-6 h-6 rounded-full bg-blue-600 text-white text-[10px] font-bold flex items-center justify-center">1</span>
+                            Docente
+                        </p>
+                        <label for="{{ form.docente.id_for_label }}"
+                               class="block text-sm font-medium text-gray-700 mb-1.5">
+                            <i class="fas fa-user-tie text-gray-400 mr-1"></i>
+                            {{ form.docente.label }}
+                        </label>
+                        {{ form.docente }}
+                        {% if form.docente.errors %}
+                        <p class="text-sm text-red-600 mt-1">{{ form.docente.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <!-- SECCIÓN 2: ASIGNATURA -->
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-3 flex items-center gap-2">
+                            <span class="w-6 h-6 rounded-full bg-blue-600 text-white text-[10px] font-bold flex items-center justify-center">2</span>
+                            Asignatura
+                        </p>
+                        <label for="{{ form.asignatura.id_for_label }}"
+                               class="block text-sm font-medium text-gray-700 mb-1.5">
+                            <i class="fas fa-book text-gray-400 mr-1"></i>
+                            {{ form.asignatura.label }}
+                        </label>
+                        {{ form.asignatura }}
+                        {% if form.asignatura.errors %}
+                        <p class="text-sm text-red-600 mt-1">{{ form.asignatura.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <!-- SECCIÓN 3: GRADO Y SECCIÓN -->
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-3 flex items-center gap-2">
+                            <span class="w-6 h-6 rounded-full bg-blue-600 text-white text-[10px] font-bold flex items-center justify-center">3</span>
+                            Grupo y sección
+                        </p>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+
+                            <div>
+                                <label for="{{ form.grado.id_for_label }}"
+                                       class="block text-sm font-medium text-gray-700 mb-1.5">
+                                    <i class="fas fa-school text-gray-400 mr-1"></i>
+                                    {{ form.grado.label }}
+                                </label>
+                                {{ form.grado }}
+                                <p class="text-xs text-gray-400 mt-1">
+                                    Al cambiar el grado se recargan las secciones.
+                                </p>
+                                {% if form.grado.errors %}
+                                <p class="text-sm text-red-600 mt-1">{{ form.grado.errors.0 }}</p>
+                                {% endif %}
+                            </div>
+
+                            <div>
+                                <label for="{{ form.seccion.id_for_label }}"
+                                       class="block text-sm font-medium text-gray-700 mb-1.5">
+                                    <i class="fas fa-door-open text-gray-400 mr-1"></i>
+                                    {{ form.seccion.label }}
+                                </label>
+                                {{ form.seccion }}
+                                {% if form.seccion.errors %}
+                                <p class="text-sm text-red-600 mt-1">{{ form.seccion.errors.0 }}</p>
+                                {% endif %}
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <!-- SECCIÓN 4: AÑO ESCOLAR -->
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-3 flex items-center gap-2">
+                            <span class="w-6 h-6 rounded-full bg-blue-600 text-white text-[10px] font-bold flex items-center justify-center">4</span>
+                            Año escolar
+                        </p>
+                        <label for="{{ form.anio_escolar.id_for_label }}"
+                               class="block text-sm font-medium text-gray-700 mb-1.5">
+                            <i class="fas fa-calendar-days text-gray-400 mr-1"></i>
+                            {{ form.anio_escolar.label }}
+                        </label>
+                        {{ form.anio_escolar }}
+                        {% if form.anio_escolar.errors %}
+                        <p class="text-sm text-red-600 mt-1">{{ form.anio_escolar.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <!-- ACCIONES -->
+                    <div class="flex items-center justify-end gap-3 pt-5 border-t border-gray-100">
+
+                        <a href="{% url 'docentemateria_list' %}"
+                           class="inline-flex items-center gap-2 bg-gray-100 text-gray-700 px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-200 transition">
+                            <i class="fas fa-xmark"></i>
+                            Cancelar
+                        </a>
+
+                        <button type="submit"
+                                class="inline-flex items-center gap-2 bg-blue-600 text-white px-7 py-2.5 rounded-lg text-sm font-semibold shadow-md shadow-blue-200 hover:bg-blue-700 hover:shadow-lg transition">
+                            <i class="fas fa-save"></i>
+                            Guardar asignación
+                        </button>
+
+                    </div>
+
+                </form>
+
+            </div>
+
+        </div>
+
+        <!-- PANEL LATERAL -->
+        <div class="lg:col-span-1 space-y-6">
+
+            <!-- Resumen en vivo -->
+            <div class="bg-white shadow-sm rounded-2xl border border-gray-200 overflow-hidden">
+
+                <div class="px-5 py-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-white flex items-center gap-3">
+                    <span class="w-9 h-9 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center">
+                        <i class="fas fa-clipboard-check"></i>
+                    </span>
+                    <div>
+                        <h3 class="font-semibold text-gray-800">Resumen</h3>
+                        <p class="text-xs text-gray-400">Vista previa de la asignación</p>
+                    </div>
+                </div>
+
+                <div class="p-5 space-y-4" id="resumen-panel">
+
+                    <div>
+                        <p class="text-[11px] uppercase tracking-wider text-gray-400 font-semibold mb-1">Docente</p>
+                        <p class="text-sm font-medium text-gray-800" id="resumen-docente">—</p>
+                    </div>
+
+                    <div class="border-t border-gray-100 pt-3">
+                        <p class="text-[11px] uppercase tracking-wider text-gray-400 font-semibold mb-1">Asignatura</p>
+                        <p class="text-sm font-medium text-gray-800" id="resumen-asignatura">—</p>
+                    </div>
+
+                    <div class="border-t border-gray-100 pt-3">
+                        <p class="text-[11px] uppercase tracking-wider text-gray-400 font-semibold mb-1">Grupo</p>
+                        <p class="text-sm font-medium text-gray-800" id="resumen-grupo">—</p>
+                    </div>
+
+                    <div class="border-t border-gray-100 pt-3">
+                        <p class="text-[11px] uppercase tracking-wider text-gray-400 font-semibold mb-1">Año escolar</p>
+                        <p class="text-sm font-medium text-gray-800" id="resumen-anio">—</p>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- Nota -->
+            <div class="bg-gradient-to-br from-indigo-600 to-blue-700 rounded-2xl p-5 text-white shadow-lg shadow-indigo-200">
+                <div class="flex items-center gap-3 mb-3">
+                    <span class="w-9 h-9 rounded-lg bg-white/20 flex items-center justify-center">
+                        <i class="fas fa-circle-info"></i>
+                    </span>
+                    <h3 class="font-semibold">¿Sabías que...?</h3>
+                </div>
+                <p class="text-sm text-indigo-100 leading-relaxed">
+                    Un mismo docente puede tener varias asignaciones.
+                    Cada combinación de <strong class="text-white">docente + materia + grupo + año</strong>
+                    debe ser única.
+                </p>
+            </div>
+
+        </div>
+
+    </div>
 
 </div>
 
+<script src="{% static 'vendor/tomselect/js/tom-select.complete.min.js' %}"></script>
+
 <script>
-document.getElementById("id_grado").addEventListener("change", function () {
-    this.form.submit();
-});
+(function () {
+
+    // ---- Selects con búsqueda (Docente, Asignatura, Grado, Sección, Año) ----
+    const selectIds = ['id_docente', 'id_asignatura', 'id_grado', 'id_seccion', 'id_anio_escolar'];
+
+    selectIds.forEach(function (id) {
+        const el = document.getElementById(id);
+        if (!el) return;
+
+        new TomSelect(el, {
+            create: false,
+            allowEmptyOption: false,
+            placeholder: 'Buscar y seleccionar...',
+            sortField: { field: 'text', direction: 'asc' },
+            render: {
+                option: function (data, escape) {
+                    return '<div class="flex items-center gap-2 py-0.5">' +
+                           '<i class="fas fa-check-circle text-gray-300"></i>' +
+                           '<span>' + escape(data.text) + '</span></div>';
+                },
+                item: function (data, escape) {
+                    return '<div class="flex items-center gap-2">' +
+                           '<i class="fas fa-check-circle text-blue-500"></i>' +
+                           '<span>' + escape(data.text) + '</span></div>';
+                }
+            }
+        });
+    });
+
+    // ---- Autoenvío al cambiar grado (recargar secciones) ----
+    const grado = document.getElementById('id_grado');
+    if (grado) {
+        grado.addEventListener('change', function () {
+            this.form.submit();
+        });
+    }
+
+    // ---- Resumen en vivo ----
+    function textOf(id) {
+        const el = document.getElementById(id);
+        return el && el.selectedOptions && el.selectedOptions.length
+            ? el.selectedOptions[0].text
+            : '—';
+    }
+
+    function actualizarResumen() {
+        document.getElementById('resumen-docente').textContent = textOf('id_docente');
+        document.getElementById('resumen-asignatura').textContent = textOf('id_asignatura');
+
+        const grado = textOf('id_grado');
+        const seccion = textOf('id_seccion');
+        document.getElementById('resumen-grupo').textContent =
+            (grado !== '—' ? grado : '') + (seccion !== '—' ? '-' + seccion : '') || '—';
+
+        document.getElementById('resumen-anio').textContent = textOf('id_anio_escolar');
+    }
+
+    selectIds.forEach(function (id) {
+        const el = document.getElementById(id);
+        if (el) {
+            el.addEventListener('change', actualizarResumen);
+        }
+    });
+
+    actualizarResumen();
+
+})();
 </script>
 
 {% endblock %}

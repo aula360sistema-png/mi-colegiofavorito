@@ -392,6 +392,15 @@ class PeriodoNomina(models.Model):
 
         return f"{self.descripcion}"
 
+    def total_ingresos(self):
+        return sum(n.total_ingresos for n in self.nominas.all())
+
+    def total_descuentos(self):
+        return sum(n.total_descuentos for n in self.nominas.all())
+
+    def total_neto(self):
+        return sum(n.neto_pagar for n in self.nominas.all())
+
 
 # =====================================================
 # NOMINA GENERADA
@@ -409,7 +418,8 @@ class Nomina(models.Model):
 
     periodo = models.ForeignKey(
         PeriodoNomina,
-        on_delete=models.CASCADE
+        on_delete=models.CASCADE,
+        related_name='nominas'
     )
 
     usuario = models.ForeignKey(
@@ -481,6 +491,27 @@ class Nomina(models.Model):
     def __str__(self):
 
         return f"{self.usuario} - {self.periodo}"
+
+    def monto_descuento_por(self, nombre):
+        """Suma de descuentos cuyo tipo coincide (usa el prefetch)."""
+        nombre = nombre.lower()
+        return sum(
+            d.monto
+            for d in self.descuentos.all()
+            if d.tipo and d.tipo.nombre.lower() == nombre
+        )
+
+    @property
+    def monto_afp(self):
+        return self.monto_descuento_por('AFP')
+
+    @property
+    def monto_ars(self):
+        return self.monto_descuento_por('ARS')
+
+    @property
+    def monto_isr(self):
+        return self.monto_descuento_por('ISR')
 
 
 # =====================================================

@@ -2,10 +2,14 @@
 
 {% block content %}
 
-<div class="form-card">
+<div class="form-card form-card-wide">
 
     <div class="form-header">
-        <h1>{{ accion }} Configuración Nómina</h1>
+        <h1>{{ accion }} Configuración de Nómina</h1>
+        <p class="form-subtitle">
+            Los montos del salario base son mensuales. El sistema los prorratea
+            según el tipo de pago del centro.
+        </p>
     </div>
 
     <form method="post" class="custom-form">
@@ -24,6 +28,10 @@
 
                 {{ field }}
 
+                {% if field.help_text %}
+                    <small class="help-text">{{ field.help_text }}</small>
+                {% endif %}
+
                 {% for error in field.errors %}
                     <p class="error-text">{{ error }}</p>
                 {% endfor %}
@@ -40,9 +48,15 @@
                 Guardar
             </button>
 
-            <a href="{% url 'nomina:configuracion_nomina_list' %}" class="btn-secondary">
-                Volver
-            </a>
+            {% if configuracion %}
+                <a href="{% url 'nomina:empleado_detalle' configuracion.id %}" class="btn-secondary">
+                    Volver
+                </a>
+            {% else %}
+                <a href="{% url 'nomina:configuracion_nomina_list' %}" class="btn-secondary">
+                    Volver
+                </a>
+            {% endif %}
 
         </div>
 

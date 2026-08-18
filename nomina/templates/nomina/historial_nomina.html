@@ -1,5 +1,7 @@
 {% extends 'home.html' %}
 
+{% load nomina_extras %}
+
 {% block content %}
 
 <div class="page-header">
@@ -17,7 +19,6 @@
     </div>
 
 </div>
-
 
 <div class="history-container">
 
@@ -43,7 +44,6 @@
             <i class="fas fa-chevron-down"></i>
 
         </button>
-
 
         <!-- CONTENIDO AÑO -->
         <div
@@ -74,7 +74,6 @@
 
                 </button>
 
-
                 <!-- CONTENIDO MES -->
                 <div
                     class="month-content"
@@ -83,9 +82,9 @@
 
                     {% for periodo in periodos %}
 
-                    <div
+                    <a
+                        href="{% url 'nomina:periodo_detalle' periodo.id %}"
                         class="payroll-item"
-                        onclick="verDetalle({{ periodo.id }})"
                     >
 
                         <div>
@@ -96,14 +95,21 @@
 
                             <p>
                                 Fecha pago:
-                                {{ periodo.fecha_pago }}
+                                {{ periodo.fecha_pago|date:"d/m/Y" }}
+                                · {{ periodo.cantidad_empleados }} empleado(s)
                             </p>
 
                         </div>
 
-                        <i class="fas fa-eye"></i>
+                        <div class="payroll-item-total">
 
-                    </div>
+                            <span>RD$ {{ periodo.total_neto|dop }}</span>
+
+                            <i class="fas fa-eye"></i>
+
+                        </div>
+
+                    </a>
 
                     {% endfor %}
 
@@ -115,6 +121,18 @@
 
         </div>
 
+    </div>
+
+    {% empty %}
+
+    <div class="panel-card">
+        <div class="empty-state">
+            <i class="fas fa-folder-open"></i>
+            <p>Aún no hay nóminas generadas</p>
+            <a href="{% url 'nomina:periodo_nomina_list' %}" class="btn-primary btn-sm">
+                Generar la primera nómina
+            </a>
+        </div>
     </div>
 
     {% endfor %}
@@ -134,121 +152,10 @@ function toggleAccordion(id){
     const currentDisplay = window.getComputedStyle(element).display;
 
     if(currentDisplay === 'none'){
-
         element.style.display = 'block';
-
     }else{
-
         element.style.display = 'none';
     }
-}
-
-
-function verDetalle(periodoId){
-
-    fetch(`/nomina/detalle/${periodoId}/`)
-
-    .then(response => response.json())
-
-    .then(data => {
-
-        if(data.success){
-
-            let html = `
-
-                <div class="modal-payroll">
-
-                    <h3 class="modal-payroll-title">
-                        ${data.periodo}
-                    </h3>
-
-                    <table>
-
-                        <thead>
-
-                            <tr>
-
-                                <th>Empleado</th>
-                                <th>Salario</th>
-                                <th>Ingresos</th>
-                                <th>Descuentos</th>
-                                <th>Neto</th>
-
-                            </tr>
-
-                        </thead>
-
-                        <tbody>
-            `;
-
-            data.empleados.forEach(emp => {
-
-                html += `
-
-                    <tr>
-
-                        <td>${emp.empleado}</td>
-
-                        <td>RD$ ${emp.salario}</td>
-
-                        <td>RD$ ${emp.ingresos}</td>
-
-                        <td>RD$ ${emp.descuentos}</td>
-
-                        <td>
-                            <strong>
-                                RD$ ${emp.neto}
-                            </strong>
-                        </td>
-
-                    </tr>
-                `;
-            });
-
-            html += `
-
-                        </tbody>
-
-                    </table>
-
-                    <div class="modal-payroll-total">
-
-                        Total General:
-                        RD$ ${data.total_general}
-
-                    </div>
-
-                </div>
-            `;
-
-            Swal.fire({
-                title: 'Detalle Nómina',
-                html: html,
-                width: '1200px',
-                confirmButtonText: 'Cerrar'
-            });
-
-        }else{
-
-            Swal.fire(
-                'Error',
-                data.message,
-                'error'
-            );
-        }
-
-    })
-
-    .catch(error => {
-
-        Swal.fire(
-            'Error',
-            'Error del servidor',
-            'error'
-        );
-
-        console.error(error);
-    });
 }
 
 </script>

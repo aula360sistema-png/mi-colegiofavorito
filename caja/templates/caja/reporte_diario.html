@@ -1,4 +1,5 @@
 {% extends "home.html" %}
+{% load formatos %}
 
 {% block title %}Reporte Diario{% endblock %}
 
@@ -36,17 +37,17 @@
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-5">
         <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
             <p class="text-xs font-semibold text-gray-400 uppercase">Entradas</p>
-            <p class="text-2xl font-bold text-emerald-600 mt-1">RD$ {{ entradas|floatformat:2 }}</p>
+            <p class="text-2xl font-bold text-emerald-600 mt-1">RD$ {{ entradas|dop }}</p>
             <p class="text-xs text-gray-400 mt-1">{{ cantidad_pagos }} pago(s)</p>
         </div>
         <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
             <p class="text-xs font-semibold text-gray-400 uppercase">Salidas</p>
-            <p class="text-2xl font-bold text-rose-600 mt-1">RD$ {{ salidas|floatformat:2 }}</p>
+            <p class="text-2xl font-bold text-rose-600 mt-1">RD$ {{ salidas|dop }}</p>
             <p class="text-xs text-gray-400 mt-1">{{ cantidad_egresos }} salida(s)</p>
         </div>
         <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
             <p class="text-xs font-semibold text-gray-400 uppercase">Neto del día</p>
-            <p class="text-2xl font-bold {% if neto >= 0 %}text-indigo-600{% else %}text-rose-600{% endif %} mt-1">RD$ {{ neto|floatformat:2 }}</p>
+            <p class="text-2xl font-bold {% if neto >= 0 %}text-indigo-600{% else %}text-rose-600{% endif %} mt-1">RD$ {{ neto|dop }}</p>
         </div>
         <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
             <p class="text-xs font-semibold text-gray-400 uppercase">Sesiones del día</p>
@@ -74,7 +75,7 @@
                     <tr class="border-t">
                         <td class="py-2.5">{{ c.concepto__nombre }}</td>
                         <td class="py-2.5 text-right">{{ c.cantidad }}</td>
-                        <td class="py-2.5 text-right font-semibold text-emerald-600">RD$ {{ c.total|floatformat:2 }}</td>
+                        <td class="py-2.5 text-right font-semibold text-emerald-600">RD$ {{ c.total|dop }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -90,7 +91,7 @@
             <div class="flex flex-wrap gap-2">
                 {% for m in por_metodo_pago %}
                 <span class="px-3 py-1.5 bg-sky-50 text-sky-700 rounded-full text-xs font-medium">
-                    {{ m.label }}: RD$ {{ m.total|floatformat:2 }} ({{ m.cantidad }})
+                    {{ m.label }}: RD$ {{ m.total|dop }} ({{ m.cantidad }})
                 </span>
                 {% endfor %}
             </div>
@@ -118,7 +119,7 @@
                     <tr class="border-t">
                         <td class="py-2.5">{{ m.label }}</td>
                         <td class="py-2.5 text-right">{{ m.cantidad }}</td>
-                        <td class="py-2.5 text-right font-semibold text-rose-600">RD$ {{ m.total|floatformat:2 }}</td>
+                        <td class="py-2.5 text-right font-semibold text-rose-600">RD$ {{ m.total|dop }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -164,11 +165,16 @@
             <div class="divide-y divide-gray-100">
                 {% for pago in pagos %}
                 <div class="flex items-center justify-between py-2.5">
-                    <div>
-                        <p class="text-sm font-medium text-gray-800">{{ pago.estudiante.nombre_completo }}</p>
-                        <p class="text-xs text-gray-400">Recibo {{ pago.recibo }} · {{ pago.concepto.nombre }}</p>
+                    <div class="flex items-center gap-2">
+                        <div>
+                            <div class="flex items-center gap-2">
+                                {% avatar pago.estudiante size='w-8 h-8' texto='text-xs' %}
+                                <p class="text-sm font-medium text-gray-800">{{ pago.estudiante.nombre_completo }}</p>
+                            </div>
+                            <p class="text-xs text-gray-400">Recibo {{ pago.recibo }} · {{ pago.concepto.nombre }}</p>
+                        </div>
                     </div>
-                    <p class="text-sm font-semibold text-emerald-600">RD$ {{ pago.monto|floatformat:2 }}</p>
+                    <p class="text-sm font-semibold text-emerald-600">RD$ {{ pago.monto|dop }}</p>
                 </div>
                 {% endfor %}
             </div>
@@ -189,7 +195,7 @@
                         <p class="text-sm font-medium text-gray-800">{{ egreso.concepto }}</p>
                         <p class="text-xs text-gray-400">Recibo E-{{ egreso.recibo }} · {{ egreso.beneficiario|default:"—" }}</p>
                     </div>
-                    <p class="text-sm font-semibold text-rose-600">RD$ {{ egreso.monto|floatformat:2 }}</p>
+                    <p class="text-sm font-semibold text-rose-600">RD$ {{ egreso.monto|dop }}</p>
                 </div>
                 {% endfor %}
             </div>

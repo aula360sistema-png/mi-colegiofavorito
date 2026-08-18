@@ -23,26 +23,26 @@
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div class="bg-gray-50 rounded-xl p-4">
                 <p class="text-xs text-gray-400 uppercase">Monto inicial</p>
-                <p class="text-lg font-bold text-gray-800 mt-1">RD$ {{ sesion.monto_inicial|floatformat:2 }}</p>
+                <p class="text-lg font-bold text-gray-800 mt-1">RD$ {{ sesion.monto_inicial|dop }}</p>
             </div>
             <div class="bg-emerald-50 rounded-xl p-4">
                 <p class="text-xs text-emerald-600 uppercase">Entradas</p>
-                <p class="text-lg font-bold text-emerald-700 mt-1">RD$ {{ sesion.total_entradas|floatformat:2 }}</p>
+                <p class="text-lg font-bold text-emerald-700 mt-1">RD$ {{ sesion.total_entradas|dop }}</p>
             </div>
             <div class="bg-rose-50 rounded-xl p-4">
                 <p class="text-xs text-rose-600 uppercase">Salidas</p>
-                <p class="text-lg font-bold text-rose-700 mt-1">RD$ {{ sesion.total_salidas|floatformat:2 }}</p>
+                <p class="text-lg font-bold text-rose-700 mt-1">RD$ {{ sesion.total_salidas|dop }}</p>
             </div>
             <div class="bg-indigo-50 rounded-xl p-4">
                 <p class="text-xs text-indigo-600 uppercase">Saldo esperado</p>
-                <p class="text-lg font-bold text-indigo-700 mt-1">RD$ {{ sesion.saldo_esperado|floatformat:2 }}</p>
+                <p class="text-lg font-bold text-indigo-700 mt-1">RD$ {{ sesion.saldo_esperado|dop }}</p>
             </div>
         </div>
 
         <div class="mt-4 bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800 flex items-center gap-2">
             <i class="fas fa-coins"></i>
             Efectivo esperado en caja:
-            <strong>RD$ {{ sesion.efectivo_esperado|floatformat:2 }}</strong>
+            <strong>RD$ {{ sesion.efectivo_esperado|dop }}</strong>
             <span class="text-amber-600">(inicial + entradas/salidas en efectivo)</span>
         </div>
     </div>

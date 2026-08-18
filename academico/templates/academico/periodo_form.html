@@ -1,45 +1,126 @@
 {% extends "home.html" %}
 
-{% block title %}Período Académico{% endblock %}
+{% block title %}{{ accion|default:"Período Académico" }}{% endblock %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto">
+
+<div class="max-w-3xl mx-auto">
 
     <!-- Encabezado -->
-    <div class="mb-6">
-        <h2 class="text-2xl font-semibold">
-            🗓️ {{ accion|default:"Período Académico" }}
-        </h2>
-        <p class="text-gray-500 text-sm">
-            Configure los períodos del año escolar
-        </p>
+    <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-8">
+
+        <div class="flex items-center gap-4">
+            <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-orange-500 to-amber-600 text-white flex items-center justify-center text-2xl shadow-lg shadow-orange-200 shrink-0">
+                <i class="fas fa-calendar-days"></i>
+            </div>
+            <div>
+                <h2 class="text-2xl font-bold text-gray-800">{{ accion|default:"Período Académico" }}</h2>
+                <p class="text-sm text-gray-500 mt-1">El período se aplica a todos los años escolares del centro</p>
+            </div>
+        </div>
+
+        <a href="{% url 'periodo_list' %}"
+           class="inline-flex items-center justify-center gap-2 text-sm text-gray-600 hover:text-blue-600 transition font-medium border border-gray-300 rounded-lg px-4 py-2.5 hover:border-blue-300 hover:bg-blue-50">
+            <i class="fas fa-arrow-left"></i>
+            Volver al listado
+        </a>
+
     </div>
 
-    <!-- Card -->
-    <div class="bg-white shadow rounded-lg p-6">
+    <!-- Formulario -->
+    <div class="bg-white shadow-sm rounded-2xl border border-gray-200">
 
-        <form method="post">
+        <div class="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white flex items-center gap-3 rounded-t-2xl">
+            <span class="w-9 h-9 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center">
+                <i class="fas fa-pen-to-square"></i>
+            </span>
+            <div>
+                <h3 class="font-semibold text-gray-800">Datos del período</h3>
+                <p class="text-xs text-gray-400">Los campos marcados con * son obligatorios</p>
+            </div>
+        </div>
+
+        <form method="post" class="p-6 space-y-6">
             {% csrf_token %}
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {{ form.as_p }}
+            {% if form.non_field_errors %}
+            <div class="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-700 flex items-start gap-2">
+                <i class="fas fa-circle-exclamation mt-0.5"></i>
+                <div>
+                    {% for error in form.non_field_errors %}
+                    <p>{{ error }}</p>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+
+                <div>
+                    <label for="{{ form.nombre.id_for_label }}"
+                           class="block text-sm font-medium text-gray-700 mb-1.5">
+                        <i class="fas fa-heading text-gray-400 mr-1"></i>
+                        {{ form.nombre.label }}
+                    </label>
+                    {{ form.nombre }}
+                    {% if form.nombre.errors %}
+                    <p class="text-sm text-red-600 mt-1">{{ form.nombre.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <label for="{{ form.orden.id_for_label }}"
+                           class="block text-sm font-medium text-gray-700 mb-1.5">
+                        <i class="fas fa-sort-numeric-up text-gray-400 mr-1"></i>
+                        {{ form.orden.label }}
+                    </label>
+                    {{ form.orden }}
+                    {% if form.orden.errors %}
+                    <p class="text-sm text-red-600 mt-1">{{ form.orden.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
             </div>
 
-            <!-- Acciones -->
-            <div class="flex justify-end gap-3 mt-6">
+            <!-- Opciones -->
+            <div>
+                <p class="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-3">
+                    Opciones del período
+                </p>
+
+                <div class="space-y-3">
+
+                    <label class="flex items-start gap-3 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 cursor-pointer hover:border-blue-300 transition">
+                        <span class="mt-0.5">{{ form.es_completivo }}</span>
+                        <span class="text-sm">
+                            <span class="font-medium text-gray-800 block">{{ form.es_completivo.label }}</span>
+                            <span class="text-xs text-gray-500">Período completivo (recuperación).</span>
+                        </span>
+                    </label>
+
+                </div>
+            </div>
+
+            <div class="flex items-center justify-end gap-3 pt-5 border-t border-gray-100">
+
                 <a href="{% url 'periodo_list' %}"
-                   class="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 text-gray-800">
-                    ⬅ Cancelar
+                   class="inline-flex items-center gap-2 bg-gray-100 text-gray-700 px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-200 transition">
+                    <i class="fas fa-xmark"></i>
+                    Cancelar
                 </a>
 
                 <button type="submit"
-                        class="px-5 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white font-semibold">
-                    💾 Guardar
+                        class="inline-flex items-center gap-2 bg-blue-600 text-white px-7 py-2.5 rounded-lg text-sm font-semibold shadow-md shadow-blue-200 hover:bg-blue-700 hover:shadow-lg transition">
+                    <i class="fas fa-save"></i>
+                    Guardar
                 </button>
+
             </div>
+
         </form>
 
     </div>
 
 </div>
+
 {% endblock %}

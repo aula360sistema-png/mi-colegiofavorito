@@ -43,7 +43,7 @@ class ConceptoPago(models.Model):
         ordering = ['nombre']
 
     def __str__(self):
-        return f"{self.nombre} - RD$ {self.monto}"
+        return f"{self.nombre} - RD$ {self.monto:,.2f}"
 
 
 class SesionCaja(models.Model):
@@ -175,6 +175,12 @@ class Pago(models.Model):
         choices=METODO_PAGO_CHOICES,
         default='efectivo'
     )
+    voucher = models.CharField(
+        max_length=50,
+        blank=True,
+        default='',
+        help_text="Código de voucher del datáfono/Verifone (pago con tarjeta)"
+    )
     fecha = models.DateField(default=timezone.localdate)
     recibo = models.PositiveIntegerField(null=True, blank=True, editable=False)
     creado_por = models.ForeignKey(
@@ -187,6 +193,11 @@ class Pago(models.Model):
 
     class Meta:
         ordering = ['-fecha', '-id']
+
+        indexes = [
+            models.Index(fields=['centro', 'fecha'], name='pago_centro_fecha'),
+            models.Index(fields=['estudiante'], name='pago_estudiante'),
+        ]
 
     def __str__(self):
         return f"Recibo {self.recibo or self.id} - {self.estudiante}"
@@ -228,8 +239,12 @@ class Egreso(models.Model):
     class Meta:
         ordering = ['-fecha', '-id']
 
+        indexes = [
+            models.Index(fields=['centro', 'fecha'], name='egreso_centro_fecha'),
+        ]
+
     def __str__(self):
-        return f"Egreso {self.recibo or self.id} - RD$ {self.monto}"
+        return f"Egreso {self.recibo or self.id} - RD$ {self.monto:,.2f}"
 
 
 class AsignacionConcepto(models.Model):

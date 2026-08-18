@@ -34,6 +34,10 @@ class AnioEscolar(models.Model):
     class Meta:
         unique_together = ('centro', 'nombre')
 
+        indexes = [
+            models.Index(fields=['centro', 'activo'], name='anio_centro_activo'),
+        ]
+
         constraints = [
             models.UniqueConstraint(
                 fields=['centro'],
@@ -147,9 +151,102 @@ class ConfiguracionCentro(models.Model):
 
     permitir_facturacion = models.BooleanField(default=False)
 
+    rnc = models.CharField(
+        max_length=11,
+        blank=True,
+        help_text="RNC del centro para las facturas fiscales"
+    )
+    facturacion_itbis = models.BooleanField(
+        default=False,
+        help_text="Activa el desglose de ITBIS (18%) en las facturas"
+    )
+
     usar_biometrico = models.BooleanField(default=False)
 
     permitir_pago_online = models.BooleanField(default=False)
+
+    modulo_certificados = models.BooleanField(
+        default=False,
+        help_text="Activa las solicitudes de certificados/constancias en línea"
+    )
+    precio_certificado = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=0,
+        help_text="Costo de cada certificado/constancia solicitado"
+    )
+
+    # ------------------------------------------------------------------
+    # Correo y WhatsApp (módulo de comunicaciones)
+    # ------------------------------------------------------------------
+    # Valores por centro. Si quedan vacíos se usa lo configurado en
+    # settings/.env (y si tampoco hay SMTP, se usa el backend de consola).
+    email_servidor = models.CharField(
+        'Servidor SMTP',
+        max_length=200,
+        blank=True,
+        default='',
+        help_text="Ej: smtp.gmail.com"
+    )
+    email_puerto = models.PositiveIntegerField(
+        'Puerto SMTP',
+        default=587,
+        help_text="587 (TLS) o 465 (SSL)"
+    )
+    email_usuario = models.CharField(
+        'Usuario de correo',
+        max_length=200,
+        blank=True,
+        default=''
+    )
+    email_clave = models.CharField(
+        'Contraseña / clave de aplicación (app password)',
+        max_length=300,
+        blank=True,
+        default='',
+        help_text=(
+            "Gmail/Outlook: usa una 'clave de aplicación' (app password) "
+            "generada en la cuenta, NO la contraseña normal. Ej: xxxx xxxx "
+            "xxxx xxxx"
+        ),
+    )
+    email_tls = models.BooleanField(
+        'Usar TLS',
+        default=True,
+        help_text="Conexión segura TLS (puerto 587). Quitar si usas SSL (465)."
+    )
+    email_ssl = models.BooleanField(
+        'Usar SSL',
+        default=False,
+        help_text="Conexión segura SSL (puerto 465)."
+    )
+    email_remitente = models.EmailField(
+        'Correo remitente (From)',
+        blank=True,
+        default='',
+        help_text="Dirección desde la que llegan los correos."
+    )
+
+    whatsapp_url = models.CharField(
+        'URL del gateway WhatsApp',
+        max_length=300,
+        blank=True,
+        default='',
+        help_text="Endpoint que recibe el POST JSON (Twilio, Meta Cloud API, etc.)."
+    )
+    whatsapp_token = models.CharField(
+        'Token del gateway WhatsApp',
+        max_length=300,
+        blank=True,
+        default=''
+    )
+    whatsapp_remitente = models.CharField(
+        'Remitente WhatsApp (from)',
+        max_length=100,
+        blank=True,
+        default='',
+        help_text="Opcional. Número o ID del remitente que envía los mensajes."
+    )
 
     def __str__(self):
         return f"Configuración - {self.centro.nombre}"

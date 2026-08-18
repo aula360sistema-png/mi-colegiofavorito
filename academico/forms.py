@@ -1,5 +1,3 @@
-from datetime import timedelta
-from time import timezone
 from django import forms
 
 from core.models import AnioEscolar
@@ -12,11 +10,14 @@ class CalificacionForm(forms.ModelForm):
         fields = ('competencia', 'nota')
 
     def __init__(self, *args, **kwargs):
-        asignatura = kwargs.pop('asignatura', None)
+        nivel = kwargs.pop('nivel', None)
         super().__init__(*args, **kwargs)
 
-        if asignatura:
-            self.fields['competencia'].queryset = Competencia.objects.all()
+        if nivel:
+            self.fields['competencia'].queryset = Competencia.objects.filter(
+                nivel=nivel,
+                activo=True
+            )
 
 
 
@@ -29,10 +30,10 @@ class NivelForm(forms.ModelForm):
         fields = ['nombre', 'tipo']
         widgets = {
             'nombre': forms.TextInput(attrs={
-                'class': 'w-full border rounded px-3 py-2 text-sm'
+                'class': 'w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
             }),
             'tipo': forms.Select(attrs={
-                'class': 'w-full border rounded px-3 py-2 text-sm'
+                'class': 'w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white',
             })
         }
 
@@ -46,19 +47,31 @@ from .models import Nivel, Grado,Seccion, AreaCurricular
 class GradoForm(forms.ModelForm):
     class Meta:
         model = Grado
-        fields = ['nivel', 'nombre', 'orden']
+        fields = ['nivel', 'nombre', 'orden', 'secciones']
         widgets = {
             'nivel': forms.Select(attrs={
-                'class': 'w-full border rounded px-3 py-2 text-sm'
+                'class': 'w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white searchable',
             }),
             'nombre': forms.TextInput(attrs={
-                'class': 'w-full border rounded px-3 py-2 text-sm'
+                'class': 'w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
             }),
             'orden': forms.NumberInput(attrs={
-                'class': 'w-full border rounded px-3 py-2 text-sm',
+                'class': 'w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
                 'min': 0
             }),
+            'secciones': forms.CheckboxSelectMultiple(attrs={
+                'class': 'h-5 w-5 rounded border-gray-300 accent-blue-600 focus:ring-blue-500',
+            }),
         }
+
+    def __init__(self, *args, **kwargs):
+        centro = kwargs.pop('centro', None)
+        super().__init__(*args, **kwargs)
+
+        if centro:
+            self.fields['secciones'].queryset = Seccion.objects.filter(
+                centro=centro
+            )
 
 
 
@@ -66,15 +79,36 @@ class GradoForm(forms.ModelForm):
 class SeccionForm(forms.ModelForm):
     class Meta:
         model = Seccion
-        fields = ['grado', 'nombre']
+        fields = ['nombre']
         widgets = {
-            'grado': forms.Select(attrs={
-                'class': 'w-full border rounded px-3 py-2 text-sm'
-            }),
             'nombre': forms.TextInput(attrs={
-                'class': 'w-full border rounded px-3 py-2 text-sm'
+                'class': 'w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
             }),
         }
+
+    def __init__(self, *args, **kwargs):
+        self.centro = kwargs.pop('centro', None)
+        super().__init__(*args, **kwargs)
+
+    def clean(self):
+        cleaned = super().clean()
+        nombre = cleaned.get('nombre')
+
+        if self.centro and nombre:
+            qs = Seccion.objects.filter(
+                centro=self.centro,
+                nombre__iexact=nombre
+            )
+
+            if self.instance.pk:
+                qs = qs.exclude(pk=self.instance.pk)
+
+            if qs.exists():
+                raise forms.ValidationError(
+                    f"La sección '{nombre}' ya existe para este centro."
+                )
+
+        return cleaned
 
 
 
@@ -84,7 +118,7 @@ class AreaCurricularForm(forms.ModelForm):
         fields = ['nombre']
         widgets = {
             'nombre': forms.TextInput(attrs={
-                'class': 'w-full border rounded px-3 py-2 focus:outline-none focus:ring focus:border-blue-300'
+                'class': 'w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
             })
         }
 
@@ -98,8 +132,12 @@ class AsignaturaForm(forms.ModelForm):
         model = Asignatura
         fields = ['area', 'nombre']
         widgets = {
-            'area': forms.Select(attrs={'class': 'w-full rounded border-gray-300'}),
-            'nombre': forms.TextInput(attrs={'class': 'w-full rounded border-gray-300'}),
+            'area': forms.Select(attrs={
+                'class': 'w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white searchable',
+            }),
+            'nombre': forms.TextInput(attrs={
+                'class': 'w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
+            }),
         }
 
     def __init__(self, *args, **kwargs):
@@ -124,6 +162,13 @@ class GradoAsignaturaForm(forms.ModelForm):
     class Meta:
         model = GradoAsignatura
         fields = ['grado', 'asignatura']
+        widgets = {
+            'grado': forms.Select(
+                attrs={
+                    'class': 'w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white searchable',
+                }
+            ),
+        }
 
     def __init__(self, *args, **kwargs):
         centro = kwargs.pop('centro', None)
@@ -180,55 +225,27 @@ class GradoAsignaturaForm(forms.ModelForm):
 class CompetenciaForm(forms.ModelForm):
     class Meta:
         model = Competencia
-        fields = ['nombre']
+        fields = ['nivel', 'nombre', 'activo']
         widgets = {
+            'nivel': forms.Select(attrs={
+                'class': 'w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
+            }),
             'nombre': forms.TextInput(attrs={
-                'class': 'w-full border rounded px-3 py-2'
-            })
+                'class': 'w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
+            }),
+            'activo': forms.CheckboxInput(attrs={
+                'class': 'w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500',
+            }),
         }
 
-
-from .models import AreaCompetencia
-
-from django import forms
-from academico.models import AreaCurricular, Competencia, AreaCompetencia
-
-class AreaCompetenciaForm(forms.Form):
-    area = forms.ModelChoiceField(
-        queryset=AreaCurricular.objects.none(),
-        widget=forms.Select(attrs={'class': 'w-full border rounded px-3 py-2'}),
-        label="Área"
-    )
-    
-    competencias = forms.ModelMultipleChoiceField(
-        queryset=Competencia.objects.all(),
-        widget=forms.CheckboxSelectMultiple,
-        initial=lambda: Competencia.objects.all(),  # marcado por defecto
-        label="Competencias"
-    )
-    
-    peso = forms.DecimalField(
-        max_digits=5,
-        decimal_places=2,
-        initial=100,  # valor inicial
-        widget=forms.NumberInput(attrs={'class': 'w-full border rounded px-3 py-2'}),
-        label="Peso (%)"
-    )
-    
     def __init__(self, *args, **kwargs):
         centro = kwargs.pop('centro', None)
         super().__init__(*args, **kwargs)
+
         if centro:
-            self.fields['area'].queryset = AreaCurricular.objects.filter(centro=centro)
- 
-from .models import Periodo
+            self.fields['nivel'].queryset = Nivel.objects.filter(centro=centro)
 
-from django import forms
-from .models import Periodo
 
-from django import forms
-from django.utils import timezone
-from datetime import timedelta
 from .models import Periodo
 
 
@@ -236,47 +253,26 @@ class PeriodoForm(forms.ModelForm):
     class Meta:
         model = Periodo
         fields = [
-            'anio_escolar',
             'nombre',
             'orden',
-            'activo',
-            'es_completivo',
-            'cerrado',
-            'fecha_cierre'
+            'es_completivo'
         ]
 
         widgets = {
-            'anio_escolar': forms.Select(
-                attrs={'class': 'w-full border rounded px-3 py-2'}
-            ),
             'nombre': forms.TextInput(
                 attrs={
-                    'class': 'w-full border rounded px-3 py-2',
+                    'class': 'w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
                     'placeholder': 'Ej: P1, P2, Final'
                 }
             ),
             'orden': forms.NumberInput(
                 attrs={
-                    'class': 'w-full border rounded px-3 py-2',
+                    'class': 'w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
                     'min': 1
                 }
             ),
-            'activo': forms.CheckboxInput(
-                attrs={'class': 'h-4 w-4'}
-            ),
             'es_completivo': forms.CheckboxInput(
-                attrs={'class': 'h-4 w-4'}
-            ),
-            'cerrado': forms.CheckboxInput(
-                attrs={'class': 'h-4 w-4'}
-            ),
-            'fecha_cierre': forms.DateInput(
-                attrs={
-                    'type': 'date',
-                    'class': 'w-full border rounded px-3 py-2',
-                    'min': timezone.now().date(),
-                    'max': (timezone.now() + timedelta(days=365)).date(),
-                }
+                attrs={'class': 'h-5 w-5 rounded border-gray-300 accent-blue-600 focus:ring-blue-500'}
             ),
         }
 
@@ -284,29 +280,15 @@ class PeriodoForm(forms.ModelForm):
         self.centro = kwargs.pop('centro', None)
         super().__init__(*args, **kwargs)
 
-        # fecha_cierre NO obligatoria por defecto
-        self.fields['fecha_cierre'].required = False
-
-        if self.centro:
-            self.fields['anio_escolar'].queryset = (
-                self.fields['anio_escolar']
-                .queryset
-                .filter(centro=self.centro)
-            )
-
     def clean(self):
         cleaned = super().clean()
 
         nombre = cleaned.get('nombre')
-        anio = cleaned.get('anio_escolar')
-        cerrado = cleaned.get('cerrado')
-        fecha_cierre = cleaned.get('fecha_cierre')
 
-        # 🔒 Validación de duplicados
-        if self.centro and nombre and anio:
+        # 🔒 Validación de duplicados (catálogo por centro)
+        if self.centro and nombre:
             qs = Periodo.objects.filter(
                 centro=self.centro,
-                anio_escolar=anio,
                 nombre__iexact=nombre
             )
 
@@ -315,15 +297,8 @@ class PeriodoForm(forms.ModelForm):
 
             if qs.exists():
                 raise forms.ValidationError(
-                    "Este período ya existe para este año escolar."
+                    "Este período ya existe para este centro."
                 )
-
-        # 🔒 Si está cerrado, fecha_cierre es obligatoria
-        if cerrado and not fecha_cierre:
-            self.add_error(
-                'fecha_cierre',
-                'Debe indicar la fecha de cierre del período.'
-            )
 
         return cleaned
 
@@ -346,12 +321,29 @@ class DocenteMateriaForm(forms.ModelForm):
             'seccion',
             'anio_escolar'
         ]
+        labels = {
+            'docente': 'Docente',
+            'asignatura': 'Asignatura',
+            'grado': 'Grado',
+            'seccion': 'Sección',
+            'anio_escolar': 'Año Escolar',
+        }
         widgets = {
-                'docente': forms.Select(attrs={'class': 'w-full border rounded px-3 py-2'}),
-                'asignatura': forms.Select(attrs={'class': 'w-full border rounded px-3 py-2'}),
-                'grado': forms.Select(attrs={'class': 'w-full border rounded px-3 py-2'}),
-                'seccion': forms.Select(attrs={'class': 'w-full border rounded px-3 py-2'}),
-                'anio_escolar': forms.Select(attrs={'class': 'w-full border rounded px-3 py-2'}),
+                'docente': forms.Select(attrs={
+                    'class': 'w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white',
+                }),
+                'asignatura': forms.Select(attrs={
+                    'class': 'w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white',
+                }),
+                'grado': forms.Select(attrs={
+                    'class': 'w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white',
+                }),
+                'seccion': forms.Select(attrs={
+                    'class': 'w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white',
+                }),
+                'anio_escolar': forms.Select(attrs={
+                    'class': 'w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white',
+                }),
             }
     def __init__(self, *args, **kwargs):
         self.centro = kwargs.pop('centro')
@@ -375,13 +367,15 @@ class DocenteMateriaForm(forms.ModelForm):
             try:
                 grado_id = int(self.data.get('grado'))
                 self.fields['seccion'].queryset = Seccion.objects.filter(
-                    grado_id=grado_id
+                    grados__id=grado_id,
+                    centro=self.centro
                 )
             except (TypeError, ValueError):
                 self.fields['seccion'].queryset = Seccion.objects.none()
         elif self.instance.pk:
             self.fields['seccion'].queryset = Seccion.objects.filter(
-                grado=self.instance.grado
+                grados=self.instance.grado,
+                centro=self.centro
             )
         else:
             self.fields['seccion'].queryset = Seccion.objects.none()
@@ -432,18 +426,168 @@ class AnioEscolarForm(forms.ModelForm):
         fields = ['nombre', 'fecha_inicio', 'fecha_fin', 'activo']
         widgets = {
             'nombre': forms.TextInput(attrs={
-                'class': 'form-control',
+                'class': 'w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
                 'placeholder': '2024-2025'
             }),
             'fecha_inicio': forms.DateInput(attrs={
                 'type': 'date',
-                'class': 'form-control'
+                'class': 'w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
             }),
             'fecha_fin': forms.DateInput(attrs={
                 'type': 'date',
-                'class': 'form-control'
+                'class': 'w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
             }),
             'activo': forms.CheckboxInput(attrs={
-                'class': 'form-checkbox'
+                'class': 'h-5 w-5 rounded border-gray-300 accent-blue-600 focus:ring-blue-500'
             }),
         }
+
+
+from .models import FranjaHoraria, HorarioClase
+
+
+class FranjaHorariaForm(forms.ModelForm):
+    class Meta:
+        model = FranjaHoraria
+        fields = ['nombre', 'hora_inicio', 'hora_fin', 'orden']
+        widgets = {
+            'nombre': forms.TextInput(attrs={
+                'class': 'w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
+                'placeholder': 'Ej: 1ra hora'
+            }),
+            'hora_inicio': forms.TimeInput(attrs={
+                'type': 'time',
+                'class': 'w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
+            }),
+            'hora_fin': forms.TimeInput(attrs={
+                'type': 'time',
+                'class': 'w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
+            }),
+            'orden': forms.NumberInput(attrs={
+                'class': 'w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
+                'min': 1
+            }),
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.centro = kwargs.pop('centro', None)
+        super().__init__(*args, **kwargs)
+
+    def clean(self):
+        cleaned = super().clean()
+        nombre = cleaned.get('nombre')
+
+        if self.centro and nombre:
+            qs = FranjaHoraria.objects.filter(
+                centro=self.centro,
+                nombre__iexact=nombre
+            )
+
+            if self.instance.pk:
+                qs = qs.exclude(pk=self.instance.pk)
+
+            if qs.exists():
+                raise forms.ValidationError(
+                    "Ya existe una franja con ese nombre para este centro."
+                )
+
+        hora_inicio = cleaned.get('hora_inicio')
+        hora_fin = cleaned.get('hora_fin')
+
+        if hora_inicio and hora_fin and hora_fin <= hora_inicio:
+            raise forms.ValidationError(
+                "La hora de fin debe ser posterior a la hora de inicio."
+            )
+
+        return cleaned
+
+
+class HorarioClaseForm(forms.ModelForm):
+    class Meta:
+        model = HorarioClase
+        fields = ['asignacion', 'dia_semana', 'franja']
+        labels = {
+            'asignacion': 'Materia (asignación docente)',
+            'dia_semana': 'Día',
+            'franja': 'Franja horaria',
+        }
+        widgets = {
+            'asignacion': forms.Select(attrs={
+                'class': 'w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white',
+            }),
+            'dia_semana': forms.Select(attrs={
+                'class': 'w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white',
+            }),
+            'franja': forms.Select(attrs={
+                'class': 'w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white',
+            }),
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.centro = kwargs.pop('centro')
+        super().__init__(*args, **kwargs)
+
+        self.fields['asignacion'].queryset = DocenteMateria.objects.filter(
+            docente__centro=self.centro,
+            anio_escolar__centro=self.centro
+        ).select_related('docente', 'asignatura', 'grado', 'seccion')
+
+        self.fields['franja'].queryset = FranjaHoraria.objects.filter(
+            centro=self.centro
+        )
+
+    def clean(self):
+        cleaned = super().clean()
+
+        asignacion = cleaned.get('asignacion')
+        dia_semana = cleaned.get('dia_semana')
+        franja = cleaned.get('franja')
+
+        if not all([asignacion, dia_semana, franja]):
+            return cleaned
+
+        # 🔑 Evitar duplicar la misma materia el mismo día y franja
+        qs = HorarioClase.objects.filter(
+            asignacion=asignacion,
+            dia_semana=dia_semana,
+            franja=franja
+        )
+        if self.instance.pk:
+            qs = qs.exclude(pk=self.instance.pk)
+
+        if qs.exists():
+            raise forms.ValidationError(
+                "Esta materia ya está programada en ese día y franja."
+            )
+
+        # 🔑 Evitar que el mismo docente tenga dos clases a la misma hora
+        choque_docente = HorarioClase.objects.filter(
+            dia_semana=dia_semana,
+            franja=franja,
+            asignacion__docente=asignacion.docente
+        )
+        if self.instance.pk:
+            choque_docente = choque_docente.exclude(pk=self.instance.pk)
+
+        if choque_docente.exists():
+            raise forms.ValidationError(
+                "El docente ya tiene otra clase en ese día y franja."
+            )
+
+        # 🔑 Evitar que la misma sección tenga dos materias a la misma hora
+        choque_seccion = HorarioClase.objects.filter(
+            dia_semana=dia_semana,
+            franja=franja,
+            asignacion__grado=asignacion.grado,
+            asignacion__seccion=asignacion.seccion,
+            asignacion__anio_escolar=asignacion.anio_escolar
+        )
+        if self.instance.pk:
+            choque_seccion = choque_seccion.exclude(pk=self.instance.pk)
+
+        if choque_seccion.exists():
+            raise forms.ValidationError(
+                "Esta sección ya tiene otra materia en ese día y franja."
+            )
+
+        return cleaned

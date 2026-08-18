@@ -13,6 +13,12 @@ urlpatterns = [
     ),
 
     path(
+        'estado-asistencia/',
+        views.estado_asistencia,
+        name='estado_asistencia'
+    ),
+
+    path(
         'resumen/',
         views.resumen_asistencia,
         name='resumen_asistencia'

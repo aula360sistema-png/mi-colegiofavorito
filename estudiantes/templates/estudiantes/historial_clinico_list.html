@@ -1,0 +1,191 @@
+{% extends "home.html" %}
+{% load formatos %}
+
+{% block title %}Historial clínico{% endblock %}
+
+{% block content %}
+
+<div class="max-w-7xl mx-auto">
+
+    <!-- Encabezado -->
+    <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6">
+        <div>
+            <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                <i class="fas fa-heartbeat text-red-500"></i>
+                Historial clínico
+            </h2>
+            <p class="text-sm text-gray-500 mt-1">
+                Datos de salud y contacto de emergencia de los estudiantes.
+            </p>
+        </div>
+    </div>
+
+    <!-- Resumen -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+        <div class="bg-white shadow-sm rounded-xl p-5 border border-gray-200 flex items-center gap-4">
+            <div class="w-12 h-12 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center text-xl">
+                <i class="fas fa-users"></i>
+            </div>
+            <div>
+                <p class="text-xs uppercase tracking-wide text-gray-500 font-semibold">Estudiantes</p>
+                <p class="text-2xl font-bold text-gray-800">{{ page_obj.paginator.count }}</p>
+            </div>
+        </div>
+
+        <div class="bg-white shadow-sm rounded-xl p-5 border border-gray-200 flex items-center gap-4">
+            <div class="w-12 h-12 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center text-xl">
+                <i class="fas fa-file-medical"></i>
+            </div>
+            <div>
+                <p class="text-xs uppercase tracking-wide text-gray-500 font-semibold">Con historial</p>
+                <p class="text-2xl font-bold text-emerald-600">{{ con_historial }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="bg-white shadow-sm rounded-xl border border-gray-200 p-4 mb-6">
+        <form method="get" class="flex flex-col md:flex-row gap-3">
+            <div class="flex-1 relative">
+                <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                <input
+                    type="text"
+                    name="q"
+                    value="{{ q }}"
+                    placeholder="Buscar por matrícula, nombre o apellido..."
+                    class="w-full border border-gray-300 rounded-lg pl-10 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+            </div>
+
+            <select name="grado"
+                    class="md:w-44 border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                <option value="">Todos los grados</option>
+                {% for g in grados %}
+                    <option value="{{ g.id }}" {% if grado_seleccionado == g.id|stringformat:"s" %}selected{% endif %}>
+                        {{ g.nombre }}
+                    </option>
+                {% endfor %}
+            </select>
+
+            <select name="seccion"
+                    class="md:w-44 border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                <option value="">Todas las secciones</option>
+                {% for s in secciones %}
+                    <option value="{{ s.id }}" {% if seccion_seleccionada == s.id|stringformat:"s" %}selected{% endif %}>
+                        {{ s.nombre }}
+                    </option>
+                {% endfor %}
+            </select>
+
+            <button type="submit"
+                    class="inline-flex items-center justify-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-lg hover:bg-blue-700 text-sm font-semibold">
+                <i class="fas fa-filter"></i>
+                Filtrar
+            </button>
+
+            <a href="{% url 'historial_clinico_list' %}"
+               class="inline-flex items-center justify-center gap-2 bg-gray-100 text-gray-700 px-5 py-2.5 rounded-lg hover:bg-gray-200 text-sm font-semibold">
+                Limpiar
+            </a>
+        </form>
+    </div>
+
+    <!-- Tabla -->
+    <div class="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                            Estudiante
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                            Matrícula
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                            Grupo sanguíneo
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                            Contacto de emergencia
+                        </th>
+                        <th class="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                            Acciones
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-100">
+                    {% for estudiante in estudiantes %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-800">
+                            {{ estudiante.nombre_completo }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ estudiante.matricula }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% with historial=estudiante.historial_clinico %}
+                                {% if historial %}
+                                    <span class="inline-block rounded-full bg-red-50 text-red-700 text-xs font-semibold px-3 py-1">
+                                        {{ historial.get_grupo_sanguineo_display }}
+                                    </span>
+                                {% else %}
+                                    <span class="text-sm text-gray-400">—</span>
+                                {% endif %}
+                            {% endwith %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                            {% with historial=estudiante.historial_clinico %}
+                                {% if historial and historial.contacto_emergencia_nombre %}
+                                    {{ historial.contacto_emergencia_nombre }}
+                                {% else %}
+                                    <span class="text-gray-400">Sin registrar</span>
+                                {% endif %}
+                            {% endwith %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right">
+                            <a href="{% url 'historial_clinico_detalle' estudiante.pk %}"
+                               class="inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 px-3 py-1.5 rounded-lg hover:bg-blue-100 text-xs font-semibold">
+                                <i class="fas fa-eye"></i>
+                                Ver
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="px-6 py-10 text-center text-gray-400 text-sm">
+                            No se encontraron estudiantes con los filtros aplicados.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {% if page_obj.paginator.num_pages > 1 %}
+    <div class="mt-6 flex justify-center">
+        <nav class="flex items-center gap-1">
+            {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}&q={{ q }}&grado={{ grado_seleccionado }}&seccion={{ seccion_seleccionada }}"
+                   class="px-3 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
+                    Anterior
+                </a>
+            {% endif %}
+
+            <span class="px-3 py-2 text-sm font-semibold text-gray-700">
+                Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+            </span>
+
+            {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}&q={{ q }}&grado={{ grado_seleccionado }}&seccion={{ seccion_seleccionada }}"
+                   class="px-3 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
+                    Siguiente
+                </a>
+            {% endif %}
+        </nav>
+    </div>
+    {% endif %}
+
+</div>
+
+{% endblock %}

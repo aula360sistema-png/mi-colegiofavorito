@@ -1,0 +1,381 @@
+{% extends "home.html" %}
+
+{% block title %}Bitácora de Auditoría{% endblock %}
+
+{% block content %}
+
+<div class="max-w-7xl mx-auto space-y-6">
+
+    <!-- Encabezado -->
+    <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
+        <div>
+            <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                <i class="fas fa-book text-blue-600"></i>
+                Bitácora de auditoría
+            </h2>
+            <p class="text-sm text-gray-500 mt-1">
+                <i class="fas fa-school mr-1"></i>
+                {{ centro.nombre }}
+            </p>
+        </div>
+
+        <a href="{% url 'administracion:dashboard_admin' %}"
+           class="inline-flex items-center gap-2 bg-white border border-gray-300 text-gray-600 px-4 py-2 rounded-lg hover:bg-gray-50 text-sm font-medium">
+            <i class="fas fa-arrow-left text-xs"></i>
+            Volver al dashboard
+        </a>
+    </div>
+
+    <!-- KPIs -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+
+        <div class="bg-white shadow-sm rounded-xl p-5 border border-gray-200 flex items-center gap-4">
+            <div class="w-12 h-12 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center text-xl">
+                <i class="fas fa-book"></i>
+            </div>
+            <div>
+                <p class="text-xs uppercase tracking-wide text-gray-500 font-semibold">Registros</p>
+                <p class="text-2xl font-bold text-gray-800">{{ total }}</p>
+            </div>
+        </div>
+
+        <div class="bg-white shadow-sm rounded-xl p-5 border border-gray-200 flex items-center gap-4">
+            <div class="w-12 h-12 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center text-xl">
+                <i class="fas fa-calendar-day"></i>
+            </div>
+            <div>
+                <p class="text-xs uppercase tracking-wide text-gray-500 font-semibold">Hoy</p>
+                <p class="text-2xl font-bold text-gray-800">{{ eventos_hoy }}</p>
+            </div>
+        </div>
+
+        <div class="bg-white shadow-sm rounded-xl p-5 border border-gray-200 flex items-center gap-4">
+            <div class="w-12 h-12 rounded-lg bg-red-100 text-red-600 flex items-center justify-center text-xl">
+                <i class="fas fa-triangle-exclamation"></i>
+            </div>
+            <div>
+                <p class="text-xs uppercase tracking-wide text-gray-500 font-semibold">Alto / Crítico</p>
+                <p class="text-2xl font-bold text-red-600">{{ riesgos_alto }}</p>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Filtros -->
+    <div class="bg-white shadow-sm rounded-xl border border-gray-200 p-4">
+
+        <form method="get" id="filtro-form" class="flex flex-col lg:flex-row gap-3 flex-wrap">
+
+            <div class="flex-1 min-w-52 relative">
+                <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                <input
+                    id="busqueda-input"
+                    type="text"
+                    name="q"
+                    value="{{ q }}"
+                    placeholder="Buscar por usuario, descripción, modelo, IP..."
+                    class="w-full border border-gray-300 rounded-lg pl-10 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+            </div>
+
+            <select name="accion" data-auto-submit
+                    class="lg:w-44 border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                <option value="">Todas las acciones</option>
+                {% for valor, etiqueta in acciones %}
+                <option value="{{ valor }}" {% if accion == valor %}selected{% endif %}>{{ etiqueta }}</option>
+                {% endfor %}
+            </select>
+
+            <select name="riesgo" data-auto-submit
+                    class="lg:w-40 border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                <option value="">Todo riesgo</option>
+                {% for valor, etiqueta in riesgos %}
+                <option value="{{ valor }}" {% if riesgo == valor %}selected{% endif %}>{{ etiqueta }}</option>
+                {% endfor %}
+            </select>
+
+            <select name="modulo" data-auto-submit
+                    class="lg:w-44 border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                <option value="">Todos los módulos</option>
+                {% for m in modulos %}
+                <option value="{{ m }}" {% if modulo == m %}selected{% endif %}>{{ m }}</option>
+                {% endfor %}
+            </select>
+
+            <input type="date" name="desde" value="{{ desde }}" title="Desde"
+                   class="border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+
+            <input type="date" name="hasta" value="{{ hasta }}" title="Hasta"
+                   class="border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+
+            <button type="submit"
+                    class="inline-flex items-center justify-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-lg hover:bg-blue-700 text-sm font-semibold">
+                <i class="fas fa-filter"></i>
+                Filtrar
+            </button>
+
+            {% if q or accion or riesgo or modulo or desde or hasta %}
+            <a href="{% url 'auditoria:bitacora' %}"
+               class="inline-flex items-center justify-center gap-2 bg-gray-200 text-gray-700 px-5 py-2.5 rounded-lg hover:bg-gray-300 text-sm font-medium">
+                <i class="fas fa-times"></i>
+                Limpiar
+            </a>
+            {% endif %}
+
+        </form>
+
+    </div>
+
+    <script>
+      function removeFilter(param) {
+        const url = new URL(window.location.href)
+        url.searchParams.delete(param)
+        url.searchParams.delete('page')
+        window.location.href = url.toString()
+      }
+
+      document.addEventListener('DOMContentLoaded', function () {
+        const form = document.getElementById('filtro-form')
+
+        document.querySelectorAll('select[data-auto-submit]').forEach(function (select) {
+          select.addEventListener('change', function () {
+            form.submit()
+          })
+        })
+
+        const input = document.getElementById('busqueda-input')
+        if (input) {
+          let timer
+          input.addEventListener('input', function () {
+            clearTimeout(timer)
+            timer = setTimeout(function () {
+              form.submit()
+            }, 450)
+          })
+        }
+      })
+    </script>
+
+    <!-- Tabla -->
+    <div class="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
+
+        <div class="flex items-center justify-between px-5 py-4 border-b border-gray-200 bg-gray-50">
+            <h3 class="font-semibold text-gray-800 flex items-center gap-2">
+                <i class="fas fa-list text-gray-400"></i>
+                Eventos registrados
+            </h3>
+            <span class="text-xs font-medium bg-blue-100 text-blue-700 px-2.5 py-1 rounded-full">
+                Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+            </span>
+        </div>
+
+        <div class="overflow-x-auto">
+
+            <table class="min-w-full divide-y divide-gray-200 text-sm">
+
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Fecha</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Usuario</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Acción</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Módulo</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Descripción</th>
+                        <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-500">Riesgo</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">IP</th>
+                        <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-500">Dispositivo</th>
+                    </tr>
+                </thead>
+
+                <tbody class="divide-y divide-gray-100">
+
+                    {% for r in registros %}
+
+                    <tr class="hover:bg-blue-50/50 transition-colors">
+
+                        <td class="px-4 py-3 whitespace-nowrap text-gray-600">
+                            {{ r.fecha|date:"d/m/Y H:i" }}
+                        </td>
+
+                        <td class="px-4 py-3 whitespace-nowrap">
+                            {% if r.usuario %}
+                            <p class="font-medium text-gray-800">
+                                {{ r.usuario.get_full_name|default:r.usuario.username }}
+                            </p>
+                            <p class="text-xs text-gray-400">@{{ r.usuario.username }}</p>
+                            {% else %}
+                            <p class="font-medium text-gray-800">Sistema</p>
+                            <p class="text-xs text-gray-400">Sin usuario identificado</p>
+                            {% endif %}
+                        </td>
+
+                        <td class="px-4 py-3 whitespace-nowrap">
+                            {% if r.accion == 'CREAR' %}
+                            <span class="inline-flex items-center gap-1 bg-green-100 text-green-700 px-2 py-0.5 rounded-md text-xs font-semibold">
+                                <i class="fas fa-plus text-[10px]"></i> CREAR
+                            </span>
+                            {% elif r.accion == 'EDITAR' %}
+                            <span class="inline-flex items-center gap-1 bg-amber-100 text-amber-700 px-2 py-0.5 rounded-md text-xs font-semibold">
+                                <i class="fas fa-pen text-[10px]"></i> EDITAR
+                            </span>
+                            {% elif r.accion == 'ELIMINAR' %}
+                            <span class="inline-flex items-center gap-1 bg-red-100 text-red-700 px-2 py-0.5 rounded-md text-xs font-semibold">
+                                <i class="fas fa-trash text-[10px]"></i> ELIMINAR
+                            </span>
+                            {% elif r.accion == 'LOGIN' %}
+                            <span class="inline-flex items-center gap-1 bg-blue-100 text-blue-700 px-2 py-0.5 rounded-md text-xs font-semibold">
+                                <i class="fas fa-right-to-bracket text-[10px]"></i> LOGIN
+                            </span>
+                            {% elif r.accion == 'LOGOUT' %}
+                            <span class="inline-flex items-center gap-1 bg-gray-100 text-gray-600 px-2 py-0.5 rounded-md text-xs font-semibold">
+                                <i class="fas fa-right-from-bracket text-[10px]"></i> LOGOUT
+                            </span>
+                            {% elif r.accion == 'LOGIN_FAILED' %}
+                            <span class="inline-flex items-center gap-1 bg-red-100 text-red-800 px-2 py-0.5 rounded-md text-xs font-semibold">
+                                <i class="fas fa-triangle-exclamation text-[10px]"></i> LOGIN FALLIDO
+                            </span>
+                            {% else %}
+                            <span class="inline-flex items-center gap-1 bg-gray-100 text-gray-600 px-2 py-0.5 rounded-md text-xs font-semibold">
+                                {{ r.accion }}
+                            </span>
+                            {% endif %}
+                        </td>
+
+                        <td class="px-4 py-3 whitespace-nowrap">
+                            <span class="text-xs font-medium text-gray-600 uppercase">{{ r.modulo }}</span>
+                        </td>
+
+                        <td class="px-4 py-3 text-gray-600 max-w-xs">
+                            <p class="truncate" title="{{ r.descripcion }}">{{ r.descripcion }}</p>
+                            {% if r.modelo %}
+                            <p class="text-xs text-gray-400 mt-0.5">
+                                {{ r.modelo }}{% if r.objeto_id %} #{{ r.objeto_id }}{% endif %}
+                            </p>
+                            {% endif %}
+                        </td>
+
+                        <td class="px-4 py-3 text-center">
+                            {% if r.riesgo == 'BAJO' %}
+                            <span class="inline-flex items-center gap-1 bg-green-100 text-green-700 px-2 py-0.5 rounded-full text-xs font-semibold">
+                                BAJO
+                            </span>
+                            {% elif r.riesgo == 'MEDIO' %}
+                            <span class="inline-flex items-center gap-1 bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full text-xs font-semibold">
+                                MEDIO
+                            </span>
+                            {% elif r.riesgo == 'ALTO' %}
+                            <span class="inline-flex items-center gap-1 bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full text-xs font-semibold">
+                                ALTO
+                            </span>
+                            {% else %}
+                            <span class="inline-flex items-center gap-1 bg-red-100 text-red-800 px-2 py-0.5 rounded-full text-xs font-semibold">
+                                CRÍTICO
+                            </span>
+                            {% endif %}
+                        </td>
+
+                        <td class="px-4 py-3 whitespace-nowrap">
+                            <span class="font-mono text-xs text-gray-500">{{ r.ip|default:"—" }}</span>
+                        </td>
+
+                        <td class="px-4 py-3 text-center">
+                            {% if r.tipo_dispositivo == 'MOVIL' %}
+                            <i class="fas fa-mobile-screen text-gray-400" title="Móvil"></i>
+                            {% elif r.tipo_dispositivo == 'TABLET' %}
+                            <i class="fas fa-tablet-screen-button text-gray-400" title="Tablet"></i>
+                            {% else %}
+                            <i class="fas fa-desktop text-gray-400" title="PC"></i>
+                            {% endif %}
+                        </td>
+
+                    </tr>
+
+                    {% empty %}
+
+                    <tr>
+                        <td colspan="8" class="px-5 py-12 text-center">
+                            <i class="fas fa-book-open text-3xl text-gray-300 mb-3 block"></i>
+                            <p class="text-gray-500 font-medium">No se encontraron eventos.</p>
+                            <p class="text-xs text-gray-400 mt-1">Prueba con otros filtros.</p>
+                        </td>
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-5 py-3 border-t border-gray-200 bg-gray-50 text-sm text-gray-600">
+            <span>
+                Mostrando
+                <strong>{{ page_obj.start_index }}</strong>–
+                <strong>{{ page_obj.end_index }}</strong> de
+                <strong>{{ page_obj.paginator.count }}</strong> eventos
+            </span>
+            <span class="text-xs text-gray-400 hidden md:block">
+                <i class="fas fa-school mr-1"></i>
+                {{ centro.nombre }}
+            </span>
+        </div>
+
+        {% if page_obj.paginator.num_pages > 1 %}
+        <div class="flex items-center justify-between px-5 py-3 border-t border-gray-100">
+            <div class="flex items-center gap-1">
+                {% if page_obj.has_previous %}
+                <a href="?{% if q %}q={{ q|urlencode }}&{% endif %}{% if accion %}accion={{ accion }}&{% endif %}{% if riesgo %}riesgo={{ riesgo }}&{% endif %}{% if modulo %}modulo={{ modulo }}&{% endif %}{% if desde %}desde={{ desde }}&{% endif %}{% if hasta %}hasta={{ hasta }}&{% endif %}page=1"
+                   class="w-9 h-9 flex items-center justify-center rounded-lg text-sm text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition" title="Primera página">
+                    <i class="fas fa-angles-left text-xs"></i>
+                </a>
+                <a href="?{% if q %}q={{ q|urlencode }}&{% endif %}{% if accion %}accion={{ accion }}&{% endif %}{% if riesgo %}riesgo={{ riesgo }}&{% endif %}{% if modulo %}modulo={{ modulo }}&{% endif %}{% if desde %}desde={{ desde }}&{% endif %}{% if hasta %}hasta={{ hasta }}&{% endif %}page={{ page_obj.previous_page_number }}"
+                   class="w-9 h-9 flex items-center justify-center rounded-lg text-sm text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition" title="Página anterior">
+                    <i class="fas fa-chevron-left text-xs"></i>
+                </a>
+                {% else %}
+                <span class="w-9 h-9 flex items-center justify-center rounded-lg text-sm text-gray-300">
+                    <i class="fas fa-chevron-left text-xs"></i>
+                </span>
+                {% endif %}
+
+                {% for num in page_obj.paginator.page_range %}
+                    {% if num >= page_obj.number|add:"-2" and num <= page_obj.number|add:"2" %}
+                        {% if num == page_obj.number %}
+                        <span class="w-9 h-9 flex items-center justify-center rounded-lg text-sm font-semibold bg-blue-600 text-white">
+                            {{ num }}
+                        </span>
+                        {% else %}
+                        <a href="?{% if q %}q={{ q|urlencode }}&{% endif %}{% if accion %}accion={{ accion }}&{% endif %}{% if riesgo %}riesgo={{ riesgo }}&{% endif %}{% if modulo %}modulo={{ modulo }}&{% endif %}{% if desde %}desde={{ desde }}&{% endif %}{% if hasta %}hasta={{ hasta }}&{% endif %}page={{ num }}"
+                           class="w-9 h-9 flex items-center justify-center rounded-lg text-sm text-gray-600 hover:bg-gray-100 hover:text-gray-800 transition">
+                            {{ num }}
+                        </a>
+                        {% endif %}
+                    {% endif %}
+                {% endfor %}
+
+                {% if page_obj.has_next %}
+                <a href="?{% if q %}q={{ q|urlencode }}&{% endif %}{% if accion %}accion={{ accion }}&{% endif %}{% if riesgo %}riesgo={{ riesgo }}&{% endif %}{% if modulo %}modulo={{ modulo }}&{% endif %}{% if desde %}desde={{ desde }}&{% endif %}{% if hasta %}hasta={{ hasta }}&{% endif %}page={{ page_obj.next_page_number }}"
+                   class="w-9 h-9 flex items-center justify-center rounded-lg text-sm text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition" title="Página siguiente">
+                    <i class="fas fa-chevron-right text-xs"></i>
+                </a>
+                <a href="?{% if q %}q={{ q|urlencode }}&{% endif %}{% if accion %}accion={{ accion }}&{% endif %}{% if riesgo %}riesgo={{ riesgo }}&{% endif %}{% if modulo %}modulo={{ modulo }}&{% endif %}{% if desde %}desde={{ desde }}&{% endif %}{% if hasta %}hasta={{ hasta }}&{% endif %}page={{ page_obj.paginator.num_pages }}"
+                   class="w-9 h-9 flex items-center justify-center rounded-lg text-sm text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition" title="Última página">
+                    <i class="fas fa-angles-right text-xs"></i>
+                </a>
+                {% else %}
+                <span class="w-9 h-9 flex items-center justify-center rounded-lg text-sm text-gray-300">
+                    <i class="fas fa-chevron-right text-xs"></i>
+                </span>
+                {% endif %}
+            </div>
+            <span class="text-xs text-gray-400">
+                Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+            </span>
+        </div>
+        {% endif %}
+
+    </div>
+
+</div>
+
+{% endblock %}

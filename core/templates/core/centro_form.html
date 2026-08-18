@@ -83,6 +83,44 @@
 
             </div>
 
+            <!-- Nivel -->
+            <div>
+
+                <label class="block text-sm font-medium mb-1">
+                    Nivel del centro
+                </label>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 border border-gray-200 rounded-lg p-4 bg-gray-50">
+
+                    {% for value, label in form.nivel.field.choices %}
+
+                    <label class="flex items-center gap-2 p-3 rounded-lg border border-gray-200 bg-white cursor-pointer hover:border-blue-400 transition {% if form.nivel.value == value %}border-blue-500 ring-2 ring-blue-100{% endif %}">
+
+                        <input type="radio"
+                               name="{{ form.nivel.html_name }}"
+                               value="{{ value }}"
+                               class="h-5 w-5 border-gray-300 accent-blue-600 focus:ring-blue-500"
+                               {% if form.nivel.value == value %}checked{% endif %}>
+
+                        <span class="text-sm font-medium text-gray-700">{{ label }}</span>
+
+                    </label>
+
+                    {% endfor %}
+
+                </div>
+
+                <p class="text-xs text-gray-500 mt-1.5">
+                    Se crearán automáticamente solo los grados oficiales del
+                    currículo MINERD correspondientes a este nivel.
+                </p>
+
+                {% if form.nivel.errors %}
+                <p class="text-sm text-red-600 mt-1">{{ form.nivel.errors.0 }}</p>
+                {% endif %}
+
+            </div>
+
             <!-- Activo -->
             <div class="flex items-center gap-2">
 

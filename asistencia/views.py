@@ -4,6 +4,7 @@ from datetime import date, datetime, timedelta
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.forms import formset_factory
+from django.http import JsonResponse
 from django.shortcuts import redirect, render
 
 from academico.models import DocenteMateria
@@ -16,7 +17,7 @@ from estudiantes.models import Inscripcion
 
 from .forms import AsistenciaForm, DiaNoDocenciaForm
 from .models import AsistenciaEstudiante, DiaNoDocencia
-from .services import es_dia_lectivo, resumen_por_inscripciones
+from .services import es_dia_lectivo, registros_del_dia, resumen_por_inscripciones
 
 ROLES_ACCESO = ('docente', 'admin', 'director', 'superadmin', 'secretaria')
 
@@ -135,6 +136,10 @@ def tomar_asistencia(request):
         or date.today().isoformat()
     )
     fecha = _parsear_fecha(fecha_raw) or date.today()
+
+    # El pase de lista siempre corresponde al día actual
+    if request.user.rol == 'docente':
+        fecha = date.today()
 
     inscripciones = []
     registros = {}
@@ -372,3 +377,45 @@ def dias_no_docencia(request):
             'anio': anio,
         }
     )
+
+
+# ==========================================
+# ESTADO DE ASISTENCIA (para recordatorio)
+# ==========================================
+
+@login_required
+def estado_asistencia(request):
+    """Indica si el docente aún no registró la asistencia de hoy.
+
+    Usado por la notificación periódica que recuerda hacer el pase de lista.
+    """
+    if request.user.rol != 'docente':
+        return JsonResponse({'pendiente': False})
+
+    centro = _obtener_centro(request)
+
+    if not centro:
+        return JsonResponse({'pendiente': False})
+
+    anio = _anio_activo(centro)
+
+    if not anio:
+        return JsonResponse({'pendiente': False})
+
+    hoy = date.today()
+
+    if not es_dia_lectivo(anio, hoy):
+        return JsonResponse({'pendiente': False})
+
+    registrados = registros_del_dia(anio, hoy)
+
+    for _gid, _grado, _sid, _seccion in _grados_secciones(request, centro, anio):
+        inscripciones = _inscripciones_de_seccion(anio, _gid, _sid)
+
+        if not inscripciones:
+            continue
+
+        if not any(ins.id in registrados for ins in inscripciones):
+            return JsonResponse({'pendiente': True})
+
+    return JsonResponse({'pendiente': False})

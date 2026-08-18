@@ -6,16 +6,18 @@ from django.db import models
 from django.http import JsonResponse
 from django.shortcuts import render
 from django.contrib import messages
+from django.core.paginator import Paginator
 # Create your views here.
 # docentes/views.py
 from django.shortcuts import render, get_object_or_404, redirect
 from django.urls import reverse_lazy
 
-from academico.models import AreaCompetencia, DocenteMateria, GradoAsignatura
+from academico.models import DocenteMateria, GradoAsignatura
 from administracion.models import Acta
 from core.decorators import ajax_required, centro_required, role_required
 from core.utils import centro
 from core.utils.anio import obtener_anio_activo
+from academico.services.periodos import sincronizar_periodos_anio
 from .models import AsignacionDocente, Docente
 from .forms import DocenteForm
 from django.contrib.auth.decorators import login_required
@@ -30,6 +32,7 @@ from django.db.models import Q
 logger = logging.getLogger(__name__)
 
 @login_required
+@role_required('director', 'secretaria', 'admin', 'superadmin')
 def docente_list(request):
     centro = get_centro_activo(request)
 
@@ -37,30 +40,43 @@ def docente_list(request):
         return redirect('core:seleccionar_centro')
 
     q = request.GET.get('q', '').strip()
+    estado = request.GET.get('estado', '').strip()
 
-    docentes = Docente.objects.filter(
-        centro=centro
-    )
+    from .services import docentes_del_centro
+
+    docentes = docentes_del_centro(centro)
+
+    stats = {
+        'total': len(docentes),
+        'activos': sum(1 for d in docentes if d.estado == 'activo'),
+        'inactivos': sum(1 for d in docentes if d.estado == 'inactivo'),
+    }
 
     if q:
-        docentes = docentes.filter(
-            Q(primer_nombre__icontains=q) |
-            Q(segundo_nombre__icontains=q) |
-            Q(primer_apellido__icontains=q) |
-            Q(segundo_apellido__icontains=q) |
-            Q(cedula__icontains=q)
-        )
+        ql = q.lower()
+        docentes = [
+            d for d in docentes
+            if ql in (d.primer_nombre or '').lower()
+            or ql in (d.segundo_nombre or '').lower()
+            or ql in (d.primer_apellido or '').lower()
+            or ql in (d.segundo_apellido or '').lower()
+            or ql in (d.cedula or '').lower()
+        ]
 
-    docentes = docentes.order_by(
-        'primer_apellido',
-        'primer_nombre'
-    )
+    if estado:
+        docentes = [d for d in docentes if d.estado == estado]
+
+    paginator = Paginator(docentes, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
 
     context = {
-        'docentes': docentes,
+        'page_obj': page_obj,
+        'docentes': page_obj.object_list,
         'centro': centro,
         'q': q,
-        'total_docentes': docentes.count()
+        'estado': estado,
+        'stats': stats,
     }
 
     return render(
@@ -80,6 +96,7 @@ from usuarios.models import Usuario
 from django.utils.crypto import get_random_string
 
 @login_required
+@role_required('director', 'secretaria', 'admin', 'superadmin')
 def docente_create(request):
     centro = get_centro_activo(request)
 
@@ -87,7 +104,7 @@ def docente_create(request):
         return redirect('core:seleccionar_centro')
 
     if request.method == 'POST':
-        form = DocenteForm(request.POST)
+        form = DocenteForm(request.POST, request.FILES)
 
         if form.is_valid():
 
@@ -103,6 +120,7 @@ def docente_create(request):
             )
 
             usuario.rol = 'docente'
+            usuario.debe_cambiar_password = True
             usuario.save()
 
             docente.usuario = usuario
@@ -110,10 +128,13 @@ def docente_create(request):
 
             return render(
                 request,
-                'docentes/credenciales.html',
+                'usuarios/credenciales.html',
                 {
                     'usuario': usuario.username,
-                    'password': password
+                    'password': password,
+                    'centro': centro.nombre,
+                    'tipo_nombre': 'Docente',
+                    'tipo_slug': 'docente',
                 }
             )
     else:
@@ -129,55 +150,7 @@ def docente_create(request):
 
 
 @login_required
-def docente_create(request):
-    centro = get_centro_activo(request)
-
-    if not centro:
-        return redirect('core:seleccionar_centro')
-
-    if request.method == 'POST':
-        form = DocenteForm(request.POST)
-
-        if form.is_valid():
-
-            docente = form.save(commit=False)
-            docente.centro = centro
-
-            password = get_random_string(8)
-
-            usuario = Usuario.objects.create_user(
-                username=docente.cedula,
-                email=docente.correo_personal or f"{docente.cedula}@colegio.com",
-                password=password
-            )
-
-            usuario.rol = 'docente'
-            usuario.save()
-
-            docente.usuario = usuario
-            docente.save()
-
-            return render(
-                request,
-                'docentes/credenciales.html',
-                {
-                    'usuario': usuario.username,
-                    'password': password
-                }
-            )
-    else:
-        form = DocenteForm()
-
-    return render(
-        request,
-        'docentes/docente_form.html',
-        {
-            'form': form
-        }
-    )
-
-
-@login_required
+@role_required('director', 'secretaria', 'admin', 'superadmin')
 def docente_update(request, pk):
     centro = get_centro_activo(request)
 
@@ -191,6 +164,7 @@ def docente_update(request, pk):
 
         form = DocenteForm(
             request.POST,
+            request.FILES,
             instance=docente
         )
 
@@ -212,6 +186,7 @@ def docente_update(request, pk):
 
 # Eliminar docente
 @login_required
+@role_required('director', 'secretaria', 'admin', 'superadmin')
 def docente_delete(request, pk):
     centro = get_centro_activo(request)
 
@@ -238,6 +213,7 @@ from datetime import date
 from datetime import date
 
 @login_required
+@role_required('director', 'secretaria', 'admin', 'superadmin')
 def docente_detail(request, pk):
     centro = get_centro_activo(request)
 
@@ -268,18 +244,33 @@ def docente_detail(request, pk):
         docente.fecha_ingreso.year
     )
 
+    anios_datos = []
+    anios_agrupados = {}
+    for a in asignaciones:
+        anios_agrupados.setdefault(a.anio_escolar, []).append(a)
+
+    for anio, items in anios_agrupados.items():
+        paginator = Paginator(items, 5)
+        page_number = request.GET.get(f'pagina_{anio.id}')
+        page_obj = paginator.get_page(page_number)
+        anios_datos.append({
+            'anio': anio,
+            'page_obj': page_obj,
+        })
+
     return render(
         request,
         'docentes/docente_detail.html',
         {
             'docente': docente,
             'asignaciones': asignaciones,
+            'anios_datos': anios_datos,
             'anios_servicio': anios_servicio,
         }
     )
 
 from django.shortcuts import render, get_object_or_404
-from academico.models import AreaCompetencia, Calificacion, Competencia, DocenteMateria
+from academico.models import Calificacion, Competencia, DocenteMateria, PeriodoAnio
 from docentes.models import Docente
 
 from core.models import AnioEscolar
@@ -293,12 +284,9 @@ from academico.models import DocenteMateria, Periodo
 from core.models import AnioEscolar
 
 @login_required
-@login_required
 @role_required('docente')
 @centro_required
 def dashboard_docente(request):
-    
-
     docente = request.user.docente
     centro = request.centro
 
@@ -306,100 +294,28 @@ def dashboard_docente(request):
 
     if not anio_actual:
         messages.error(request, "No hay año escolar activo.")
+        datos = {
+            'periodos': [],
+            'total_asignaciones': 0,
+            'asignaciones_con_notas': 0,
+            'asignaciones_completas': 0,
+            'asignaciones': [],
+            'total_estudiantes': 0,
+        }
+    else:
+        from .services import datos_dashboard_docente
 
-    asignaciones_qs = DocenteMateria.objects.filter(
-        docente=docente,
-        anio_escolar=anio_actual
-    ).select_related(
-        'asignatura',
-        'grado',
-        'seccion'
-    )
-
-    periodos = Periodo.objects.filter(
-        centro=centro,
-        anio_escolar=anio_actual,
-        activo=True
-    ).order_by('orden')
-
-    total_asignaciones = asignaciones_qs.count()
-    asignaciones_con_notas = 0
-    asignaciones_completas = 0
-    total_estudiantes = 0
-    asignaciones = []
-
-   
-
-    for a in asignaciones_qs:
-
-        cantidad_estudiantes = Inscripcion.objects.filter(
-            grado=a.grado,
-            seccion=a.seccion,
-            anio_escolar=a.anio_escolar
-        ).count()
-
-        actas = Acta.objects.filter(
-            centro=centro,
-            anio_escolar=anio_actual,
-            grado=a.grado,
-            seccion=a.seccion
-        )
-
-        estado = "pendiente"
-
-        if actas.exists():
-
-            estado = "progreso"
-
-            completas = True
-
-            for acta in actas:
-
-                datos = acta.datos or {}
-
-                asignaturas = datos.get(
-                    "asignaturas",
-                    []
-                )
-
-                pfs = [
-                    x.get("pf")
-                    for x in asignaturas
-                    if x.get("pf") is not None
-                ]
-
-                if (
-                    not asignaturas or
-                    len(pfs) != len(asignaturas)
-                ):
-                    completas = False
-                    break
-
-            if completas:
-                estado = "completo"
-            if estado in["progreso", "completo"]:
-                asignaciones_con_notas += 1
-            if estado == "completo":
-                asignaciones_completas += 1
-
-        asignaciones.append({
-            "obj": a,
-            "estado": estado,
-            "cantidad_estudiantes": cantidad_estudiantes
-        })
-        total_estudiantes += cantidad_estudiantes
-    
+        datos = datos_dashboard_docente(docente, anio_actual)
 
     return render(request, 'docentes/dashboard.html', {
         'docente': docente,
         'anio': anio_actual,
-        'periodos': periodos,
-        'total_asignaciones': total_asignaciones,
-        'asignaciones_con_notas': asignaciones_con_notas,
-        'asignaciones_completas': asignaciones_completas,
-        'asignaciones': asignaciones,
-        'total_estudiantes': total_estudiantes,
-        
+        'periodos': datos['periodos'],
+        'total_asignaciones': datos['total_asignaciones'],
+        'asignaciones_con_notas': datos['asignaciones_con_notas'],
+        'asignaciones_completas': datos['asignaciones_completas'],
+        'asignaciones': datos['asignaciones'],
+        'total_estudiantes': datos['total_estudiantes'],
     })
 
 
@@ -411,6 +327,7 @@ def dashboard_docente(request):
 from estudiantes.models import Inscripcion
 
 @login_required
+@role_required('docente')
 def docente_estudiantes(request, asignacion_id):
 
     asignacion = get_object_or_404(
@@ -461,6 +378,7 @@ import json
 
 
 @login_required
+@role_required('docente')
 @ajax_required
 def guardar_notas_ajax(request, asignacion_id):
     if request.method != 'POST':
@@ -488,13 +406,7 @@ def guardar_notas_ajax(request, asignacion_id):
         Inscripcion,
         id=data['inscripcion']
     )
-    periodos = Periodo.objects.filter(
- #   centro=request.user.centro,
-    anio_escolar=asignacion.anio_escolar,
-    activo=True
-)
 
-  
 
 
     for item in data['notas']:
@@ -534,22 +446,31 @@ def calificar_tabla(request, asignacion_id):
         anio_escolar=asignacion.anio_escolar
     ).select_related('estudiante')
 
+    sincronizar_periodos_anio(asignacion.anio_escolar)
+
     periodos = Periodo.objects.filter(
-        centro=centro,
-        anio_escolar=asignacion.anio_escolar,
-        activo=True
+        estados__anio_escolar=asignacion.anio_escolar,
+        estados__activo=True
     ).order_by('orden')
-    todos_cerrados = (
-    periodos.exists() and
-    not periodos.filter(cerrado=False).exists()
-)
+    periodos_cerrados = set(
+        PeriodoAnio.objects.filter(
+            anio_escolar=asignacion.anio_escolar,
+            cerrado=True
+        ).values_list('periodo_id', flat=True)
+    )
+    todos_cerrados = bool(periodos) and all(
+        p.id in periodos_cerrados for p in periodos
+    )
 
 
 
 
-    area_competencias = AreaCompetencia.objects.filter(
-        area=asignacion.asignatura.area
-    ).select_related('competencia')
+    # Catálogo MINERD: todas las asignaturas del nivel usan las mismas
+    # competencias al calificar.
+    competencias = Competencia.objects.filter(
+        nivel=asignacion.grado.nivel,
+        activo=True
+    ).order_by('orden', 'id')
 
     # 🔥 NOTAS PRECARGADAS (ESTRUCTURA LIMPIA)
     notas = defaultdict(lambda: defaultdict(dict))
@@ -566,19 +487,19 @@ def calificar_tabla(request, asignacion_id):
     # GUARDAR
     if request.method == 'POST':
         for ins in inscripciones:
-            for ac in area_competencias:
+            for c in competencias:
                 for p in periodos:
-                    if p.cerrado:
+                    if p.id in periodos_cerrados:
                      continue  
 
-                    campo = f"nota_{ins.id}_{ac.competencia.id}_{p.id}"
+                    campo = f"nota_{ins.id}_{c.id}_{p.id}"
                     nota = request.POST.get(campo)
 
                     if nota not in (None, ''):
                         Calificacion.objects.update_or_create(
                             inscripcion=ins,
                             asignatura=asignacion.asignatura,
-                            competencia=ac.competencia,
+                            competencia=c,
                             periodo=p,
                             defaults={'nota': nota}
                         )
@@ -589,9 +510,9 @@ def calificar_tabla(request, asignacion_id):
     return render(request, 'docentes/calificar_tabla.html', {
         'asignacion': asignacion,
         'inscripciones': inscripciones,
-        'area_competencias': area_competencias,
+        'competencias': competencias,
         'periodos': periodos,
         'notas': notas, 
         'todos_cerrados' : todos_cerrados,
-        
+        'periodos_cerrados': periodos_cerrados,
     })

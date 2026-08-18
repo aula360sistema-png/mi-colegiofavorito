@@ -1,46 +1,277 @@
 {% extends "home.html" %}
+{% load formatos %}
 
-{% block title %}Crear Administrativo{% endblock %}
+{% block title %}
+{% if form.instance.pk %}
+Editar Administrativo
+{% else %}
+Nuevo Administrativo
+{% endif %}
+{% endblock %}
 
 {% block content %}
-<div class="container">
-    <h1>Crear Administrativo</h1>
-    <form method="post">
+
+<div class="max-w-6xl mx-auto">
+
+    <!-- Encabezado -->
+    <div class="flex items-center justify-between mb-6">
+
+        <div>
+            <a href="{% url 'usuarios:crear_miembro' %}"
+               class="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-blue-600 mb-2 transition">
+                <i class="fas fa-arrow-left"></i>
+                Volver a seleccionar tipo
+            </a>
+
+            <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                {% if form.instance.pk %}
+                <i class="fas fa-user-edit text-blue-600"></i>
+                Editar Administrativo
+                {% else %}
+                <i class="fas fa-user-plus text-blue-600"></i>
+                Nuevo Administrativo
+                {% endif %}
+            </h2>
+
+            <p class="text-sm text-gray-500 mt-1">
+                Complete los datos del personal administrativo. Los campos marcados con <span class="text-red-500">*</span> son obligatorios.
+            </p>
+        </div>
+
+    </div>
+
+    {% if form.non_field_errors %}
+    <div class="mb-6 bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3">
+        <i class="fas fa-exclamation-triangle text-red-600 mt-0.5"></i>
+        <div>
+            <h4 class="font-semibold text-red-700 mb-1">Corrija los errores indicados:</h4>
+            {% for error in form.non_field_errors %}
+            <p class="text-sm text-red-600">{{ error }}</p>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Tarjeta de identidad (modo edición) -->
+    {% if administrativo %}
+
+    <div class="bg-white shadow-sm rounded-xl border border-gray-200 p-5 mb-6 flex items-center gap-4">
+
+        {% avatar administrativo size='w-14 h-14' texto='text-lg' %}
+
+        <div class="flex-1 min-w-0">
+            <p class="text-lg font-semibold text-gray-800 truncate">{{ administrativo.nombre_completo }}</p>
+            <div class="flex flex-wrap items-center gap-2 mt-1 text-xs text-gray-500">
+                <span class="inline-flex items-center gap-1">
+                    <i class="fas fa-id-card text-gray-400"></i>
+                    {{ administrativo.cedula }}
+                </span>
+                <span class="inline-flex items-center gap-1">
+                    <i class="fas fa-user-tie text-gray-400"></i>
+                    {{ administrativo.get_cargo_display }}
+                </span>
+                <span class="inline-flex items-center gap-1">
+                    <i class="fas fa-venus-mars text-gray-400"></i>
+                    {{ administrativo.get_sexo_display }}
+                </span>
+            </div>
+        </div>
+
+        {% if administrativo.estado == "activo" %}
+        <span class="hidden sm:inline-flex items-center gap-1.5 bg-green-100 text-green-700 px-3 py-1.5 rounded-full text-xs font-semibold">
+            <i class="fas fa-circle text-[8px]"></i>
+            Activo
+        </span>
+        {% else %}
+        <span class="hidden sm:inline-flex items-center gap-1.5 bg-red-100 text-red-700 px-3 py-1.5 rounded-full text-xs font-semibold">
+            <i class="fas fa-circle text-[8px]"></i>
+            Inactivo
+        </span>
+        {% endif %}
+
+    </div>
+
+    {% endif %}
+
+    <form method="post" enctype="multipart/form-data" class="space-y-6">
+
         {% csrf_token %}
 
-        {% for field in form %}
-            <div>
-                <label>{{ field.label }}</label>
-                {{ field }}
-                {% if field.errors %}
-                    <ul class="errorlist">
-                        {% for error in field.errors %}
-                            <li style="color:red;">{{ error }}</li>
-                        {% endfor %}
-                    </ul>
-                {% endif %}
-            </div>
-        {% endfor %}
-
-        <div class="btn-container">
-            <button type="submit" class="btn-primary">Crear Administrativo</button>
-            <a href="{% url 'administracion:dashboard_admin' %}" class="btn-link">← Volver al Dashboard</a>
+        {% if form.errors and not form.non_field_errors %}
+        <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800 flex items-start gap-2">
+            <i class="fas fa-info-circle mt-0.5"></i>
+            Hay campos con errores. Revisa las secciones marcadas en rojo.
         </div>
+        {% endif %}
+
+        <!-- FOTO -->
+        <section class="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
+
+            <div class="flex items-center gap-3 px-6 py-4 border-b border-gray-200 bg-gray-50">
+                <div class="w-9 h-9 rounded-lg bg-sky-100 text-sky-600 flex items-center justify-center">
+                    <i class="fas fa-camera"></i>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-gray-800">Foto del Personal</h3>
+                    <p class="text-xs text-gray-500">Sube una foto de perfil (JPG o PNG)</p>
+                </div>
+            </div>
+
+            <div class="p-6">
+                <div class="flex items-center gap-5">
+                    <div class="shrink-0">
+                        {% avatar form.instance size='w-20 h-20' texto='text-2xl' %}
+                    </div>
+                    <div class="flex-1">
+                        <label for="{{ form.foto.id_for_label }}"
+                               class="block text-sm font-medium text-gray-600 mb-1.5">
+                            {{ form.foto.label }}{% if form.foto.field.required %} <span class="text-red-500">*</span>{% endif %}
+                        </label>
+                        {{ form.foto }}
+                        {% if form.foto.errors %}
+                        <p class="text-xs text-red-600 mt-1">{{ form.foto.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- DATOS PERSONALES -->
+        <section class="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
+
+            <div class="flex items-center gap-3 px-6 py-4 border-b border-gray-200 bg-gray-50">
+                <div class="w-9 h-9 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center">
+                    <i class="fas fa-user"></i>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-gray-800">Datos Personales</h3>
+                    <p class="text-xs text-gray-500">Información básica de identidad del personal</p>
+                </div>
+            </div>
+
+            <div class="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+
+                {% for field in form %}
+                    {% if field.name in "primer_nombre segundo_nombre primer_apellido segundo_apellido cedula sexo fecha_nacimiento nacionalidad" %}
+                    <div>
+                        <label for="{{ field.id_for_label }}"
+                               class="block text-sm font-medium text-gray-600 mb-1.5">
+                            {{ field.label }}{% if field.field.required %} <span class="text-red-500">*</span>{% endif %}
+                        </label>
+                        {{ field }}
+                        {% if field.errors %}
+                        <p class="text-xs text-red-600 mt-1">{{ field.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                {% endfor %}
+
+            </div>
+
+        </section>
+
+        <!-- CONTACTO -->
+        <section class="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
+
+            <div class="flex items-center gap-3 px-6 py-4 border-b border-gray-200 bg-gray-50">
+                <div class="w-9 h-9 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center">
+                    <i class="fas fa-phone"></i>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-gray-800">Información de Contacto</h3>
+                    <p class="text-xs text-gray-500">Teléfono, correo y dirección</p>
+                </div>
+            </div>
+
+            <div class="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+
+                {% for field in form %}
+                    {% if field.name in "telefono correo_personal direccion" %}
+                    <div{% if field.name == "direccion" %} class="md:col-span-2 lg:col-span-3"{% endif %}>
+                        <label for="{{ field.id_for_label }}"
+                               class="block text-sm font-medium text-gray-600 mb-1.5">
+                            {{ field.label }}{% if field.field.required %} <span class="text-red-500">*</span>{% endif %}
+                        </label>
+                        {{ field }}
+                        {% if field.help_text %}
+                        <p class="text-xs text-gray-400 mt-1">{{ field.help_text }}</p>
+                        {% endif %}
+                        {% if field.errors %}
+                        <p class="text-xs text-red-600 mt-1">{{ field.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                {% endfor %}
+
+            </div>
+
+        </section>
+
+        <!-- CARGO Y ESTADO -->
+        <section class="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
+
+            <div class="flex items-center gap-3 px-6 py-4 border-b border-gray-200 bg-gray-50">
+                <div class="w-9 h-9 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center">
+                    <i class="fas fa-user-tie"></i>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-gray-800">Cargo y Estado</h3>
+                    <p class="text-xs text-gray-500">Rol dentro del centro educativo</p>
+                </div>
+            </div>
+
+            <div class="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+
+                {% for field in form %}
+                    {% if field.name in "cargo estado" %}
+                    <div>
+                        <label for="{{ field.id_for_label }}"
+                               class="block text-sm font-medium text-gray-600 mb-1.5">
+                            {{ field.label }}{% if field.field.required %} <span class="text-red-500">*</span>{% endif %}
+                        </label>
+                        {{ field }}
+                        {% if field.errors %}
+                        <p class="text-xs text-red-600 mt-1">{{ field.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                {% endfor %}
+
+            </div>
+
+        </section>
+
+        <!-- Acciones -->
+        <div class="flex items-center justify-between gap-3 bg-white shadow-sm rounded-xl border border-gray-200 p-4">
+
+            <a href="{% url 'usuarios:crear_miembro' %}"
+               class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 transition">
+                <i class="fas fa-times"></i>
+                Cancelar
+            </a>
+
+            <div class="flex items-center gap-2">
+                {% if administrativo %}
+                <a href="{% url 'administracion:listado_personal' %}"
+                   class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium text-blue-600 hover:bg-blue-50 transition">
+                    <i class="fas fa-eye"></i>
+                    Ver personal
+                </a>
+                {% endif %}
+
+                <button
+                    type="submit"
+                    class="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-2.5 rounded-lg shadow-sm hover:bg-blue-700 hover:shadow transition text-sm font-semibold">
+                    <i class="fas fa-save"></i>
+                    {% if form.instance.pk %}Guardar cambios{% else %}Guardar Administrativo{% endif %}
+                </button>
+            </div>
+
+        </div>
+
     </form>
+
 </div>
 
-<style>
-.container { max-width: 800px; margin: 30px auto; font-family: 'Segoe UI', Tahoma, Verdana, sans-serif; }
-h1 { text-align: center; color: #4b6cb7; margin-bottom: 30px; }
-form { display: grid; grid-template-columns: 1fr 1fr; gap: 20px 15px; }
-form label { font-weight: 600; display: block; margin-bottom: 5px; color: #333; }
-form input, form select, form textarea { width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ccc; font-size: 14px; }
-form input:focus, form select:focus, form textarea:focus { border-color: #4b6cb7; outline: none; }
-textarea { grid-column: 1 / -1; }
-.btn-container { grid-column: 1 / -1; display: flex; justify-content: flex-start; gap: 15px; margin-top: 20px; }
-.btn-primary { background-color: #4b6cb7; color: #fff; padding: 12px 25px; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; }
-.btn-primary:hover { background-color: #3a54a1; }
-.btn-link { text-decoration: none; color: #4b6cb7; font-weight: 500; line-height: 38px; }
-.errorlist { margin: 5px 0 0 0; padding: 0; list-style: none; }
-</style>
 {% endblock %}

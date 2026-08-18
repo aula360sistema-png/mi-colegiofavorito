@@ -1,297 +1,400 @@
 {% extends "home.html" %}
+{% load formatos %}
 
-{% block title %}
-Detalle del Docente
-{% endblock %}
+{% block title %}Detalle del Docente{% endblock %}
 
 {% block content %}
 
-<div class="max-w-7xl mx-auto">
+<div class="max-w-6xl mx-auto">
 
-    <!-- Encabezado -->
-    <div class="flex justify-between items-center mb-6">
+    <!-- ==================== CABECERA DE PERFIL ==================== -->
+    <div class="bg-gradient-to-r from-blue-900 via-blue-800 to-indigo-800 rounded-2xl shadow-lg overflow-hidden mb-6">
 
-        <div>
-            <h2 class="text-3xl font-bold">
-                👨‍🏫 {{ docente.nombre_completo }}
-            </h2>
+        <div class="p-6 flex flex-col md:flex-row md:items-center gap-6">
 
-            <p class="text-gray-600">
-                Código MINERD:
-                {{ docente.codigo_docente_minerd }}
-            </p>
-        </div>
+            <!-- Avatar -->
+            <div class="shrink-0">
+                {% avatar docente size='w-20 h-20' texto='text-3xl' extra='ring-4 ring-white/30' %}
+            </div>
 
-        <div class="space-x-2">
+            <!-- Datos -->
+            <div class="flex-1 min-w-0">
 
-            <a href="{% url 'docente_update' docente.pk %}"
-               class="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600">
+                <h2 class="text-2xl font-semibold text-white truncate">
+                    {{ docente.nombre_completo }}
+                </h2>
 
-                ✏️ Editar
+                <p class="text-blue-200 text-sm mt-1">
+                    Código MINERD: {{ docente.codigo_docente_minerd }}
+                    · Cédula: {{ docente.cedula }}
+                </p>
 
-            </a>
+                <div class="flex flex-wrap gap-2 mt-3">
 
-            <a href="{% url 'docente_list' %}"
-               class="bg-gray-200 px-4 py-2 rounded hover:bg-gray-300">
+                    {% if docente.estado == "activo" %}
+                    <span class="bg-green-500/20 text-green-200 px-2 py-1 rounded text-xs font-medium">
+                        <i class="fas fa-circle text-[8px]"></i>
+                        Activo
+                    </span>
+                    {% else %}
+                    <span class="bg-red-500/20 text-red-200 px-2 py-1 rounded text-xs font-medium">
+                        <i class="fas fa-circle text-[8px]"></i>
+                        Inactivo
+                    </span>
+                    {% endif %}
 
-                ← Volver
+                    <span class="bg-white/10 text-blue-100 px-2 py-1 rounded text-xs font-medium">
+                        <i class="fas fa-graduation-cap"></i>
+                        {{ docente.area_especialidad }}
+                    </span>
 
-            </a>
+                    <span class="bg-white/10 text-blue-100 px-2 py-1 rounded text-xs font-medium">
+                        <i class="fas fa-clock"></i>
+                        {{ docente.get_tanda_display }}
+                    </span>
+
+                    <span class="bg-white/10 text-blue-100 px-2 py-1 rounded text-xs font-medium">
+                        <i class="fas fa-file-signature"></i>
+                        {{ docente.get_tipo_contrato_display }}
+                    </span>
+
+                </div>
+
+            </div>
+
+            <!-- Acciones -->
+            <div class="flex flex-wrap gap-2 md:justify-end">
+
+                <a href="{% url 'docente_update' docente.id %}"
+                   class="bg-white text-blue-800 px-4 py-2 rounded-lg font-medium hover:bg-blue-50 shadow">
+                    <i class="fas fa-pen"></i>
+                    Editar
+                </a>
+
+                <a href="{% url 'docente_list' %}"
+                   class="bg-white/10 text-white border border-white/30 px-4 py-2 rounded-lg font-medium hover:bg-white/20">
+                    <i class="fas fa-arrow-left"></i>
+                    Volver
+                </a>
+
+            </div>
 
         </div>
 
     </div>
 
-    <!-- Información general -->
+    <!-- ==================== TARJETAS DE RESUMEN ==================== -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+
+        <div class="bg-white rounded-xl shadow p-4">
+            <p class="text-xs text-gray-500 font-medium mb-1">
+                <i class="fas fa-file-signature text-gray-400"></i>
+                Tipo de contrato
+            </p>
+            <p class="text-lg font-semibold text-gray-800">{{ docente.get_tipo_contrato_display }}</p>
+        </div>
+
+        <div class="bg-white rounded-xl shadow p-4">
+            <p class="text-xs text-gray-500 font-medium mb-1">
+                <i class="fas fa-clock text-gray-400"></i>
+                Tanda
+            </p>
+            <p class="text-lg font-semibold text-gray-800">{{ docente.get_tanda_display }}</p>
+        </div>
+
+        <div class="bg-white rounded-xl shadow p-4">
+            <p class="text-xs text-gray-500 font-medium mb-1">
+                <i class="fas fa-calendar-check text-gray-400"></i>
+                Años de servicio
+            </p>
+            <p class="text-2xl font-bold text-blue-700">{{ anios_servicio }}</p>
+            <p class="text-xs text-gray-500">Desde {{ docente.fecha_ingreso|date:"d/m/Y" }}</p>
+        </div>
+
+        <div class="bg-white rounded-xl shadow p-4">
+            <p class="text-xs text-gray-500 font-medium mb-1">
+                <i class="fas fa-book-open text-gray-400"></i>
+                Asignaciones
+            </p>
+            <p class="text-2xl font-bold text-gray-800">{{ asignaciones|length }}</p>
+        </div>
+
+    </div>
+
+    <!-- ==================== INFORMACIÓN ==================== -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
 
         <!-- Datos personales -->
-        <div class="bg-white shadow rounded">
+        <div class="bg-white rounded-xl shadow p-6">
 
-            <div class="border-b px-4 py-3">
-                <h3 class="font-semibold text-lg">
-                    🧍 Datos Personales
-                </h3>
-            </div>
+            <h3 class="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                <span class="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center text-sm">
+                    <i class="fas fa-user"></i>
+                </span>
+                Datos Personales
+            </h3>
 
-            <div class="p-4 space-y-2">
+            <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
 
-                <p>
-                    <strong>Nombre:</strong>
-                    {{ docente.nombre_completo }}
-                </p>
+                <div>
+                    <dt class="text-gray-500 text-xs">Nombre completo</dt>
+                    <dd class="font-medium">{{ docente.nombre_completo }}</dd>
+                </div>
 
-                <p>
-                    <strong>Cédula:</strong>
-                    {{ docente.cedula }}
-                </p>
+                <div>
+                    <dt class="text-gray-500 text-xs">Cédula</dt>
+                    <dd class="font-medium">{{ docente.cedula }}</dd>
+                </div>
 
-                <p>
-                    <strong>Sexo:</strong>
-                    {{ docente.get_sexo_display }}
-                </p>
+                <div>
+                    <dt class="text-gray-500 text-xs">Sexo</dt>
+                    <dd class="font-medium">{{ docente.get_sexo_display }}</dd>
+                </div>
 
-                <p>
-                    <strong>Fecha nacimiento:</strong>
-                    {{ docente.fecha_nacimiento|date:"d/m/Y" }}
-                </p>
+                <div>
+                    <dt class="text-gray-500 text-xs">Fecha de nacimiento</dt>
+                    <dd class="font-medium">{{ docente.fecha_nacimiento|date:"d/m/Y" }}</dd>
+                </div>
 
-                <p>
-                    <strong>Nacionalidad:</strong>
-                    {{ docente.nacionalidad }}
-                </p>
+                <div>
+                    <dt class="text-gray-500 text-xs">Nacionalidad</dt>
+                    <dd class="font-medium">{{ docente.nacionalidad }}</dd>
+                </div>
 
-            </div>
+            </dl>
 
         </div>
 
         <!-- Contacto -->
-        <div class="bg-white shadow rounded">
+        <div class="bg-white rounded-xl shadow p-6">
 
-            <div class="border-b px-4 py-3">
-                <h3 class="font-semibold text-lg">
-                    📞 Contacto
-                </h3>
-            </div>
+            <h3 class="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                <span class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center text-sm">
+                    <i class="fas fa-phone"></i>
+                </span>
+                Contacto
+            </h3>
 
-            <div class="p-4 space-y-2">
+            <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
 
-                <p>
-                    <strong>Teléfono:</strong>
-                    {{ docente.telefono }}
-                </p>
+                <div>
+                    <dt class="text-gray-500 text-xs">Teléfono</dt>
+                    <dd class="font-medium">{{ docente.telefono }}</dd>
+                </div>
 
-                <p>
-                    <strong>Correo:</strong>
-                    {{ docente.correo_personal|default:"No registrado" }}
-                </p>
+                <div>
+                    <dt class="text-gray-500 text-xs">Correo</dt>
+                    <dd class="font-medium">{{ docente.correo_personal|default:"No registrado" }}</dd>
+                </div>
 
-                <p>
-                    <strong>Dirección:</strong>
-                    {{ docente.direccion }}
-                </p>
+                <div class="sm:col-span-2">
+                    <dt class="text-gray-500 text-xs">Dirección</dt>
+                    <dd class="font-medium">{{ docente.direccion }}</dd>
+                </div>
 
-            </div>
+            </dl>
 
         </div>
 
     </div>
 
-    <!-- Información laboral -->
-    <div class="bg-white shadow rounded mb-6">
+    <!-- ==================== CARGA ACADÉMICA ==================== -->
+    <div class="bg-white rounded-xl shadow overflow-hidden">
 
-        <div class="border-b px-4 py-3">
-            <h3 class="font-semibold text-lg">
-                🏫 Información Laboral
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gray-50">
+            <h3 class="font-semibold text-gray-800 flex items-center gap-2">
+                <span class="w-8 h-8 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center text-sm">
+                    <i class="fas fa-book-open"></i>
+                </span>
+                Carga Académica
             </h3>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 p-4">
-
-            <div>
-                <p class="text-gray-500 text-sm">
-                    Centro
-                </p>
-
-                <p>
-                    {{ docente.centro.nombre }}
-                </p>
-            </div>
-
-            <div>
-                <p class="text-gray-500 text-sm">
-                    Área Especialidad
-                </p>
-
-                <p>
-                    {{ docente.area_especialidad }}
-                </p>
-            </div>
-
-            <div>
-                <p class="text-gray-500 text-sm">
-                    Tipo Contrato
-                </p>
-
-                <p>
-                    {{ docente.get_tipo_contrato_display }}
-                </p>
-            </div>
-
-            <div>
-                <p class="text-gray-500 text-sm">
-                    Tanda
-                </p>
-
-                <p>
-                    {{ docente.get_tanda_display }}
-                </p>
-            </div>
-
-            <div>
-                <p class="text-gray-500 text-sm">
-                    Estado
-                </p>
-
-                <p>
-                    {{ docente.get_estado_display }}
-                </p>
-            </div>
-
-            <div>
-                <p class="text-gray-500 text-sm">
-                    Fecha ingreso
-                </p>
-
-                <p>
-                    {{ docente.fecha_ingreso|date:"d/m/Y" }}
-                </p>
-            </div>
-
-            <div>
-                <p class="text-gray-500 text-sm">
-                    Años de servicio
-                </p>
-
-                <p>
-                    {{ anios_servicio }}
-                </p>
-            </div>
-
-        </div>
-
-    </div>
-
-    <!-- Carga académica -->
-    <div class="bg-white shadow rounded">
-
-        <div class="border-b px-4 py-3 flex justify-between items-center">
-
-            <h3 class="font-semibold text-lg">
-                📚 Carga Académica
-            </h3>
-
-            <span class="text-sm text-gray-500">
+            <span class="text-xs font-medium bg-amber-100 text-amber-700 px-2.5 py-1 rounded-full">
                 {{ asignaciones|length }} asignaciones
             </span>
+        </div>
+
+        {% if anios_datos %}
+
+        <div class="divide-y divide-gray-100">
+
+            {% for grupo in anios_datos %}
+
+            <div class="acordeon-item">
+
+                <!-- Cabecera del año -->
+                <button
+                    type="button"
+                    onclick="toggleAcordeon(this)"
+                    class="acordeon-toggle w-full flex items-center justify-between px-6 py-4 text-left hover:bg-blue-50/50 transition {% if forloop.first %}bg-blue-50/30{% endif %}">
+
+                    <div class="flex items-center gap-3">
+                        <span class="w-9 h-9 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center text-sm">
+                            <i class="fas fa-calendar-days"></i>
+                        </span>
+                        <div>
+                            <p class="font-semibold text-gray-800 text-sm">
+                                {{ grupo.anio.nombre }}
+                            </p>
+                            <p class="text-xs text-gray-500">
+                                {{ grupo.page_obj.paginator.count }} asignaciones
+                            </p>
+                        </div>
+                    </div>
+
+                    <i class="acordeon-chevron fas fa-chevron-down text-gray-400 transition-transform {% if not forloop.first %}rotate-180{% endif %}"></i>
+
+                </button>
+
+                <!-- Contenido del año -->
+                <div class="acordeon-body {% if not forloop.first %}hidden{% endif %}">
+
+                    <div class="overflow-x-auto">
+
+                        <table class="min-w-full divide-y divide-gray-200 text-sm">
+
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+                                        Asignatura
+                                    </th>
+                                    <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+                                        Grado / Sección
+                                    </th>
+                                </tr>
+                            </thead>
+
+                            <tbody class="divide-y divide-gray-100">
+
+                                {% for a in grupo.page_obj %}
+
+                                <tr class="hover:bg-blue-50/50 transition-colors">
+
+                                    <td class="px-5 py-3">
+                                        <span class="inline-flex items-center gap-1.5 bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-md text-xs font-semibold">
+                                            <i class="fas fa-book text-[10px]"></i>
+                                            {{ a.asignatura.nombre }}
+                                        </span>
+                                    </td>
+
+                                    <td class="px-5 py-3">
+                                        <div class="flex items-center gap-1.5">
+                                            <span class="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-md text-xs font-semibold">
+                                                {{ a.grado.nombre }}
+                                            </span>
+                                            <span class="bg-gray-100 text-gray-600 px-2 py-0.5 rounded-md text-xs font-medium">
+                                                {{ a.seccion.nombre }}
+                                            </span>
+                                        </div>
+                                    </td>
+
+                                </tr>
+
+                                {% empty %}
+
+                                <tr>
+                                    <td colspan="2" class="px-5 py-8 text-center">
+                                        <p class="text-gray-500 font-medium">No hay asignaciones para este año.</p>
+                                    </td>
+                                </tr>
+
+                                {% endfor %}
+
+                            </tbody>
+
+                        </table>
+
+                    </div>
+
+                    <!-- Paginación del año -->
+                    {% if grupo.page_obj.paginator.num_pages > 1 %}
+                    <div class="flex items-center justify-between px-5 py-3 border-t border-gray-100">
+
+                        <div class="flex items-center gap-1">
+
+                            {% if grupo.page_obj.has_previous %}
+                            <a href="?pagina_{{ grupo.anio.id }}=1"
+                               class="w-8 h-8 flex items-center justify-center rounded-lg text-sm text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition" title="Primera página">
+                                <i class="fas fa-angles-left text-xs"></i>
+                            </a>
+                            <a href="?pagina_{{ grupo.anio.id }}={{ grupo.page_obj.previous_page_number }}"
+                               class="w-8 h-8 flex items-center justify-center rounded-lg text-sm text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition" title="Página anterior">
+                                <i class="fas fa-chevron-left text-xs"></i>
+                            </a>
+                            {% else %}
+                            <span class="w-8 h-8 flex items-center justify-center rounded-lg text-sm text-gray-300">
+                                <i class="fas fa-chevron-left text-xs"></i>
+                            </span>
+                            {% endif %}
+
+                            {% for num in grupo.page_obj.paginator.page_range %}
+                                {% if num >= grupo.page_obj.number|add:"-2" and num <= grupo.page_obj.number|add:"2" %}
+                                    {% if num == grupo.page_obj.number %}
+                                    <span class="w-8 h-8 flex items-center justify-center rounded-lg text-sm font-semibold bg-blue-600 text-white">
+                                        {{ num }}
+                                    </span>
+                                    {% else %}
+                                    <a href="?pagina_{{ grupo.anio.id }}={{ num }}"
+                                       class="w-8 h-8 flex items-center justify-center rounded-lg text-sm text-gray-600 hover:bg-gray-100 hover:text-gray-800 transition">
+                                        {{ num }}
+                                    </a>
+                                    {% endif %}
+                                {% endif %}
+                            {% endfor %}
+
+                            {% if grupo.page_obj.has_next %}
+                            <a href="?pagina_{{ grupo.anio.id }}={{ grupo.page_obj.next_page_number }}"
+                               class="w-8 h-8 flex items-center justify-center rounded-lg text-sm text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition" title="Página siguiente">
+                                <i class="fas fa-chevron-right text-xs"></i>
+                            </a>
+                            <a href="?pagina_{{ grupo.anio.id }}={{ grupo.page_obj.paginator.num_pages }}"
+                               class="w-8 h-8 flex items-center justify-center rounded-lg text-sm text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition" title="Última página">
+                                <i class="fas fa-angles-right text-xs"></i>
+                            </a>
+                            {% else %}
+                            <span class="w-8 h-8 flex items-center justify-center rounded-lg text-sm text-gray-300">
+                                <i class="fas fa-chevron-right text-xs"></i>
+                            </span>
+                            {% endif %}
+
+                        </div>
+
+                        <span class="text-xs text-gray-400">
+                            Página {{ grupo.page_obj.number }} de {{ grupo.page_obj.paginator.num_pages }}
+                        </span>
+
+                    </div>
+                    {% endif %}
+
+                </div>
+
+            </div>
+
+            {% endfor %}
 
         </div>
 
-        <div class="overflow-x-auto">
+        {% else %}
 
-            <table class="min-w-full">
-
-                <thead class="bg-gray-50">
-
-                    <tr>
-
-                        <th class="px-4 py-3 text-left">
-                            Asignatura
-                        </th>
-
-                        <th class="px-4 py-3 text-left">
-                            Grado
-                        </th>
-
-                        <th class="px-4 py-3 text-left">
-                            Sección
-                        </th>
-
-                        <th class="px-4 py-3 text-left">
-                            Año Escolar
-                        </th>
-
-                    </tr>
-
-                </thead>
-
-                <tbody class="divide-y">
-
-                    {% for a in asignaciones %}
-
-                    <tr class="hover:bg-gray-50">
-
-                        <td class="px-4 py-3">
-                            {{ a.asignatura.nombre }}
-                        </td>
-
-                        <td class="px-4 py-3">
-                            {{ a.grado.nombre }}
-                        </td>
-
-                        <td class="px-4 py-3">
-                            {{ a.seccion.nombre }}
-                        </td>
-
-                        <td class="px-4 py-3">
-                            {{ a.anio_escolar.nombre }}
-                        </td>
-
-                    </tr>
-
-                    {% empty %}
-
-                    <tr>
-
-                        <td colspan="4"
-                            class="px-4 py-6 text-center text-gray-500">
-
-                            No existen asignaciones para este docente.
-
-                        </td>
-
-                    </tr>
-
-                    {% endfor %}
-
-                </tbody>
-
-            </table>
-
+        <div class="px-6 py-12 text-center">
+            <i class="fas fa-book-open text-3xl text-gray-300 mb-3 block"></i>
+            <p class="text-gray-500 font-medium">No existen asignaciones para este docente.</p>
         </div>
+
+        {% endif %}
 
     </div>
 
 </div>
+
+<script>
+  function toggleAcordeon(btn) {
+    const item = btn.closest('.acordeon-item')
+    const body = item.querySelector('.acordeon-body')
+    const chevron = item.querySelector('.acordeon-chevron')
+
+    body.classList.toggle('hidden')
+    chevron.classList.toggle('rotate-180')
+  }
+</script>
 
 {% endblock %}

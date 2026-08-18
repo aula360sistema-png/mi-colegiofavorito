@@ -1,4 +1,4 @@
-from gettext import translation
+﻿from gettext import translation
 import logging
 
 logger = logging.getLogger(__name__)
@@ -7,6 +7,8 @@ logger = logging.getLogger(__name__)
 
 # Create your views here.
 from django.shortcuts import render, redirect
+from django.core.paginator import Paginator
+from django.db.models import Q
 
 from administracion.views import obtener_centro_del_usuario
 from core.decorators import centro_required, role_required
@@ -16,12 +18,16 @@ from core.models import AnioEscolar
 from academico.models import Grado, Seccion
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, get_object_or_404, redirect
+from django.urls import reverse
 from django.contrib import messages
 
 from estudiantes.models import HistorialAcademico, Inscripcion
-from .models import Calificacion, Periodo, Asignatura, Seccion, AreaCurricular
+from .models import Calificacion, Periodo, PeriodoAnio, Asignatura, Seccion, AreaCurricular
 from .forms import CalificacionForm, SeccionForm, CompetenciaForm, AreaCurricularForm, AsignaturaForm, GradoAsignaturaForm
 from core.models import CentroEducativo
+from core.utils.anio import obtener_anio_activo
+from academico.services.periodos import sincronizar_periodos_centro
+from academico.services import estructura
 
 
 from .models import Nivel
@@ -69,110 +75,8 @@ def asignar_docente(request):
 from .models import Calificacion, Periodo, Competencia, GradoAsignatura
 from estudiantes.models import Inscripcion
 
-
-
-
-@login_required
-def registrar_calificaciones(request, inscripcion_id, asignatura_id):
-    logger.debug('Entrando a registrar_calificaciones')
-
-    centro = get_centro_activo(request)
-    if not centro:
-        return redirect('core:seleccionar_centro')
-
-    inscripcion = get_object_or_404(
-        Inscripcion,
-        id=inscripcion_id,
-        centro=centro
-    )
-    logger.debug('Inscripción: %s', inscripcion)
-
-    asignatura = get_object_or_404(
-        Asignatura,
-        id=asignatura_id,
-        centro=centro
-    )
-    logger.debug('Asignatura: %s', asignatura)
-
-    periodos = Periodo.objects.filter(
-        centro=centro,
-        activo=True
-    ).order_by('orden')
-
-    if not periodos.exists():
-        messages.error(request, 'No hay períodos activos')
-        return redirect('estudiante_detail', pk=inscripcion.estudiante.id)
-
-    periodo = periodos.first()
-    logger.debug('Período activo: %s', periodo)
-
-    calificaciones = Calificacion.objects.filter(
-        inscripcion=inscripcion,
-        asignatura=asignatura,
-        periodo=periodo
-    )
-
-    if request.method == 'POST':
-        logger.debug('POST recibido: %s', request.POST)
-
-        form = CalificacionForm(
-            request.POST,
-            asignatura=asignatura
-        )
-
-        if form.is_valid():
-            competencia = form.cleaned_data['competencia']
-
-            existe = Calificacion.objects.filter(
-                inscripcion=inscripcion,
-                asignatura=asignatura,
-                competencia=competencia,
-                periodo=periodo
-            ).exists()
-
-            logger.debug('¿Existe ya la nota?: %s', existe)
-
-            if existe:
-                messages.warning(
-                    request,
-                    'Ya existe una calificación para esta competencia'
-                )
-            else:
-                calificacion = form.save(commit=False)
-                calificacion.inscripcion = inscripcion
-                calificacion.asignatura = asignatura
-                calificacion.periodo = periodo
-                calificacion.save()
-
-                logger.debug('Nota guardada: %s', calificacion.nota)
-
-                messages.success(request, 'Calificación registrada')
-                return redirect(
-                    'registrar_calificaciones',
-                    inscripcion_id=inscripcion.id,
-                    asignatura_id=asignatura.id
-                )
-        else:
-            logger.warning('Errores de formulario: %s', form.errors)
-
-    else:
-        form = CalificacionForm(asignatura=asignatura)
-
-    return render(
-        request,
-        'academico/registrar_calificaciones.html',
-        {
-            'inscripcion': inscripcion,
-            'asignatura': asignatura,
-            'periodo': periodo,
-            'form': form,
-            'calificaciones': calificaciones
-        }
-    )
-
-
-
 from core.models import CentroEducativo
+
 
 def get_centro_activo(request):
     user = request.user
@@ -180,14 +84,14 @@ def get_centro_activo(request):
     if not user.is_authenticated:
         return None
 
-    # SUPERADMIN usa sesión
+    # SUPERADMIN usa sesiÃ³n
     if user.rol == 'superadmin':
         centro_id = request.session.get('centro_id')
         if not centro_id:
             return None
         return CentroEducativo.objects.filter(id=centro_id).first()
 
-    # DIRECTOR / SECRETARIA → centro fijo
+    # DIRECTOR / SECRETARIA â†’ centro fijo
     if user.rol in ['director', 'secretaria']:
         if hasattr(user, 'administrativo'):
             return user.administrativo.centro
@@ -213,11 +117,21 @@ def nivel_list(request):
     if not centro:
         return redirect('core:seleccionar_centro')
 
-    niveles = Nivel.objects.filter(centro=centro)
+    niveles = estructura.niveles(centro)
+
+    stats = {
+        'total': len(niveles),
+        'grados': len(estructura.grados(centro)),
+        'secciones': len(estructura.secciones(centro)),
+    }
+
+    page_obj = Paginator(niveles, 10).get_page(request.GET.get('page'))
 
     return render(request, 'academico/nivel_list.html', {
-        'niveles': niveles,
-        'centro': centro
+        'niveles': page_obj.object_list,
+        'page_obj': page_obj,
+        'centro': centro,
+        'stats': stats,
     })
 
 
@@ -233,10 +147,17 @@ def nivel_create(request):
     if request.method == 'POST':
         form = NivelForm(request.POST)
         if form.is_valid():
-            nivel = form.save(commit=False)
-            nivel.centro = centro
-            nivel.save()
-            return redirect('nivel_list')
+            if Nivel.objects.filter(centro=centro).exists():
+                form.add_error(
+                    'tipo',
+                    'Este centro ya tiene un nivel asignado. Para cambiar el '
+                    'nivel del centro edite el centro educativo.'
+                )
+            else:
+                nivel = form.save(commit=False)
+                nivel.centro = centro
+                nivel.save()
+                return redirect('nivel_list')
     else:
         form = NivelForm()
 
@@ -258,8 +179,26 @@ def nivel_update(request, pk):
     if request.method == 'POST':
         form = NivelForm(request.POST, instance=nivel)
         if form.is_valid():
-            form.save()
-            return redirect('nivel_list')
+            tipo_anterior = nivel.tipo
+            if (
+                form.cleaned_data['tipo'] != tipo_anterior
+                and nivel.grado_set.exists()
+            ):
+                form.add_error(
+                    'tipo',
+                    'No puede cambiar el tipo de nivel porque ya tiene grados. '
+                    'Edite el centro educativo para cambiar el nivel.'
+                )
+            elif Nivel.objects.filter(
+                centro=centro, tipo=form.cleaned_data['tipo']
+            ).exclude(pk=nivel.pk).exists():
+                form.add_error(
+                    'tipo',
+                    'Este centro ya tiene un nivel de ese tipo.'
+                )
+            else:
+                form.save()
+                return redirect('nivel_list')
     else:
         form = NivelForm(instance=nivel)
 
@@ -288,6 +227,37 @@ def nivel_delete(request, pk):
 
 from .models import Nivel, Grado
 from .forms import GradoForm
+from academico.services.estructura_minerd import crear_estructura_minerd
+
+@login_required
+@centro_required
+@role_required('director', 'secretaria', 'admin', 'superadmin')
+def estructura_minerd(request):
+    """Reconstruye/completa los grados MINERD del nivel del centro activo."""
+    centro = get_centro_activo(request)
+    if not centro:
+        return redirect('core:seleccionar_centro')
+
+    tipos = list(
+        Nivel.objects.filter(centro=centro).values_list('tipo', flat=True)
+    )
+    if not tipos:
+        messages.warning(
+            request,
+            'Este centro no tiene un nivel asignado. Edite el centro '
+            'educativo para elegir su nivel.'
+        )
+        return redirect('nivel_list')
+
+    resultado = crear_estructura_minerd(centro, tipos)
+
+    messages.success(
+        request,
+        f"Estructura del nivel lista: {len(resultado['niveles'])} nivel(es) "
+        f"y {len(resultado['grados'])} grado(s) del currÃ­culo oficial."
+    )
+    return redirect('nivel_list')
+
 
 # academico/views.py
 from django.contrib.auth.decorators import login_required
@@ -396,11 +366,22 @@ def cerrar_todos_los_periodos(request):
         messages.error(request, "No hay un centro activo en sesión.")
         return redirect('core:seleccionar_centro')
 
-    # Cerrar todos los periodos del centro
-    periodos = Periodo.objects.filter(centro=centro, cerrado=False)
-  #  count = periodos.update(cerrado=True, fecha_cierre=now().date())
-  # eso que esta comentado, es para hacer el cierre automatico con la fecha
-    count = periodos.update(cerrado=True)
+    anio = obtener_anio_activo(centro)
+    if not anio:
+        messages.error(request, "No hay un año escolar activo.")
+        return redirect('periodo_list')
+
+    sincronizar_periodos_centro(centro)
+
+    # Cerrar todos los períodos del año activo
+    count = PeriodoAnio.objects.filter(
+        anio_escolar=anio,
+        cerrado=False
+    ).update(cerrado=True, fecha_cierre=now().date())
+
+    # .update() masivo no dispara post_save: invalidar la caché aquí.
+    from academico.services.estructura import invalidar_estructura
+    invalidar_estructura(centro.id)
 
     messages.success(request, f"✅ Se cerraron {count} periodo(s) correctamente.")
     return redirect('periodo_list') 
@@ -412,12 +393,31 @@ def cerrar_todos_los_periodos(request):
 def grado_list(request):
     centro = get_centro_activo(request)
 
-    grados = Grado.objects.filter(
-        nivel__centro=centro
-    ).select_related('nivel')
+    q = request.GET.get('q', '').strip()
+
+    grados = estructura.grados(centro)
+
+    if q:
+        ql = q.lower()
+        grados = [
+            g for g in grados
+            if ql in g.nombre.lower()
+            or ql in (g.nivel.nombre or '').lower()
+        ]
+
+    stats = {
+        'total': len(estructura.grados(centro)),
+        'niveles': len(estructura.niveles(centro)),
+        'secciones': len(estructura.secciones(centro)),
+    }
+
+    page_obj = Paginator(grados, 10).get_page(request.GET.get('page'))
 
     return render(request, 'academico/grado_list.html', {
-        'grados': grados
+        'grados': page_obj.object_list,
+        'page_obj': page_obj,
+        'q': q,
+        'stats': stats,
     })
 
 
@@ -429,18 +429,19 @@ def grado_create(request):
     centro = get_centro_activo(request)
 
     if request.method == 'POST':
-        form = GradoForm(request.POST)
+        form = GradoForm(request.POST, centro=centro)
         if form.is_valid():
             grado = form.save(commit=False)
 
-            # Validación extra de seguridad
+            # ValidaciÃ³n extra de seguridad
             if grado.nivel.centro != centro:
                 return redirect('grado_list')
 
             grado.save()
+            form.save_m2m()
             return redirect('grado_list')
     else:
-        form = GradoForm()
+        form = GradoForm(centro=centro)
         form.fields['nivel'].queryset = Nivel.objects.filter(centro=centro)
 
     return render(request, 'academico/grado_form.html', {
@@ -462,14 +463,15 @@ def grado_update(request, pk):
     )
 
     if request.method == 'POST':
-        form = GradoForm(request.POST, instance=grado)
+        form = GradoForm(request.POST, instance=grado, centro=centro)
         if form.is_valid():
             grado = form.save(commit=False)
             if grado.nivel.centro == centro:
                 grado.save()
+                form.save_m2m()
             return redirect('grado_list')
     else:
-        form = GradoForm(instance=grado)
+        form = GradoForm(instance=grado, centro=centro)
         form.fields['nivel'].queryset = Nivel.objects.filter(centro=centro)
 
     return render(request, 'academico/grado_form.html', {
@@ -491,7 +493,7 @@ def grado_delete(request, pk):
 
     return JsonResponse({
         'success': False,
-        'error': 'Método no permitido'
+        'error': 'MÃ©todo no permitido'
     })
 
 
@@ -504,12 +506,30 @@ def grado_delete(request, pk):
 def seccion_list(request):
     centro = get_centro_activo(request)
 
-    secciones = Seccion.objects.filter(
-        grado__nivel__centro=centro
-    ).select_related('grado', 'grado__nivel')
+    q = request.GET.get('q', '').strip()
+
+    secciones = estructura.secciones(centro)
+
+    if q:
+        ql = q.lower()
+        secciones = [
+            s for s in secciones
+            if ql in s.nombre.lower()
+            or any(ql in g.nombre.lower() for g in s.grados.all())
+        ]
+
+    stats = {
+        'total': len(estructura.secciones(centro)),
+        'grados': len(estructura.grados(centro)),
+    }
+
+    page_obj = Paginator(secciones, 10).get_page(request.GET.get('page'))
 
     return render(request, 'academico/seccion_list.html', {
-        'secciones': secciones
+        'secciones': page_obj.object_list,
+        'page_obj': page_obj,
+        'q': q,
+        'stats': stats,
     })
 
 
@@ -520,20 +540,14 @@ def seccion_create(request):
     centro = get_centro_activo(request)
 
     if request.method == 'POST':
-        form = SeccionForm(request.POST)
+        form = SeccionForm(request.POST, centro=centro)
         if form.is_valid():
             seccion = form.save(commit=False)
-
-            if seccion.grado.nivel.centro != centro:
-                return redirect('seccion_list')
-
+            seccion.centro = centro
             seccion.save()
             return redirect('seccion_list')
     else:
-        form = SeccionForm()
-        form.fields['grado'].queryset = Grado.objects.filter(
-            nivel__centro=centro
-        )
+        form = SeccionForm(centro=centro)
 
     return render(request, 'academico/seccion_form.html', {
         'form': form,
@@ -549,21 +563,16 @@ def seccion_update(request, pk):
     seccion = get_object_or_404(
         Seccion,
         pk=pk,
-        grado__nivel__centro=centro
+        centro=centro
     )
 
     if request.method == 'POST':
-        form = SeccionForm(request.POST, instance=seccion)
+        form = SeccionForm(request.POST, instance=seccion, centro=centro)
         if form.is_valid():
-            seccion = form.save(commit=False)
-            if seccion.grado.nivel.centro == centro:
-                seccion.save()
+            form.save()
             return redirect('seccion_list')
     else:
-        form = SeccionForm(instance=seccion)
-        form.fields['grado'].queryset = Grado.objects.filter(
-            nivel__centro=centro
-        )
+        form = SeccionForm(instance=seccion, centro=centro)
 
     return render(request, 'academico/seccion_form.html', {
         'form': form,
@@ -592,10 +601,26 @@ def seccion_delete(request, pk):
 def area_list(request):
     centro = get_centro_activo(request)
 
-    areas = AreaCurricular.objects.filter(centro=centro)
+    q = request.GET.get('q', '').strip()
+
+    areas = estructura.areas(centro)
+
+    if q:
+        ql = q.lower()
+        areas = [a for a in areas if ql in a.nombre.lower()]
+
+    stats = {
+        'total': len(estructura.areas(centro)),
+        'asignaturas': len(estructura.asignaturas(centro)),
+    }
+
+    page_obj = Paginator(areas, 10).get_page(request.GET.get('page'))
 
     return render(request, 'academico/area_list.html', {
-        'areas': areas
+        'areas': page_obj.object_list,
+        'page_obj': page_obj,
+        'q': q,
+        'stats': stats,
     })
 
 
@@ -662,12 +687,30 @@ def area_delete(request, pk):
 def asignatura_list(request):
     centro = get_centro_activo(request)
 
-    asignaturas = Asignatura.objects.filter(
-        centro=centro
-    ).select_related('area')
+    q = request.GET.get('q', '').strip()
+
+    asignaturas = estructura.asignaturas(centro)
+
+    if q:
+        ql = q.lower()
+        asignaturas = [
+            a for a in asignaturas
+            if ql in a.nombre.lower()
+            or ql in (a.area.nombre or '').lower()
+        ]
+
+    stats = {
+        'total': len(estructura.asignaturas(centro)),
+        'areas': len(estructura.areas(centro)),
+    }
+
+    page_obj = Paginator(asignaturas, 10).get_page(request.GET.get('page'))
 
     return render(request, 'academico/asignatura_list.html', {
-        'asignaturas': asignaturas
+        'asignaturas': page_obj.object_list,
+        'page_obj': page_obj,
+        'q': q,
+        'stats': stats,
     })
 
 
@@ -712,7 +755,7 @@ def asignatura_create(request):
 
         if form.is_valid():
             asignatura = form.save(commit=False)
-            asignatura.centro = centro   # 🔐 seguridad
+            asignatura.centro = centro   # ðŸ” seguridad
             asignatura.save()
 
             messages.success(
@@ -780,24 +823,35 @@ def asignatura_delete(request, pk):
 def grado_asignatura_list(request):
     centro = get_centro_activo(request)
 
-    relaciones = GradoAsignatura.objects.filter(
-        grado__nivel__centro=centro,
-        asignatura__centro=centro
-    ).select_related(
-        'grado',
-        'grado__nivel',
-        'asignatura'
-    ).order_by(
-        'grado__nivel__nombre',
-        'grado__nombre',
-        'asignatura__nombre'
-    )
+    q = request.GET.get('q', '').strip()
+
+    relaciones = estructura.grado_asignaturas(centro)
+
+    if q:
+        ql = q.lower()
+        relaciones = [
+            r for r in relaciones
+            if ql in r.grado.nombre.lower()
+            or ql in (r.grado.nivel.nombre or '').lower()
+            or ql in r.asignatura.nombre.lower()
+        ]
+
+    stats = {
+        'total': len(estructura.grado_asignaturas(centro)),
+        'grados': len(estructura.grados(centro)),
+        'asignaturas': len(estructura.asignaturas(centro)),
+    }
+
+    page_obj = Paginator(relaciones, 10).get_page(request.GET.get('page'))
 
     return render(
         request,
         'academico/grado_asignatura_list.html',
         {
-            'relaciones': relaciones
+            'relaciones': page_obj.object_list,
+            'page_obj': page_obj,
+            'q': q,
+            'stats': stats,
         }
     )
 
@@ -872,10 +926,21 @@ def grado_asignatura_delete(request, pk):
 @centro_required
 @role_required('director', 'secretaria', 'admin', 'superadmin')
 def competencia_list(request):
-    
-    competencias = Competencia.objects.all().order_by('nombre')
+    centro = get_centro_activo(request)
+
+    competencias = estructura.competencias(centro)
+
+    stats = {
+        'total': len(competencias),
+        'activas': sum(1 for c in competencias if c.activo),
+    }
+
+    page_obj = Paginator(competencias, 10).get_page(request.GET.get('page'))
+
     return render(request, 'academico/competencia_list.html', {
-        'competencias': competencias
+        'competencias': page_obj.object_list,
+        'page_obj': page_obj,
+        'stats': stats,
     })
 
 
@@ -883,10 +948,12 @@ def competencia_list(request):
 @centro_required
 @role_required('director', 'secretaria', 'admin', 'superadmin')
 def competencia_create(request):
-    form = CompetenciaForm(request.POST or None)
+    centro = get_centro_activo(request)
+    form = CompetenciaForm(request.POST or None, centro=centro)
 
     if form.is_valid():
         form.save()
+        messages.success(request, 'Competencia creada correctamente')
         return redirect('competencia_list')
 
     return render(request, 'academico/competencia_form.html', {
@@ -899,11 +966,13 @@ def competencia_create(request):
 @centro_required
 @role_required('director', 'secretaria', 'admin', 'superadmin')
 def competencia_update(request, pk):
-    competencia = get_object_or_404(Competencia, pk=pk)
-    form = CompetenciaForm(request.POST or None, instance=competencia)
+    centro = get_centro_activo(request)
+    competencia = get_object_or_404(Competencia, pk=pk, nivel__centro=centro)
+    form = CompetenciaForm(request.POST or None, instance=competencia, centro=centro)
 
     if form.is_valid():
         form.save()
+        messages.success(request, 'Competencia actualizada correctamente')
         return redirect('competencia_list')
 
     return render(request, 'academico/competencia_form.html', {
@@ -916,10 +985,12 @@ def competencia_update(request, pk):
 @centro_required
 @role_required('director', 'secretaria', 'admin', 'superadmin')
 def competencia_delete(request, pk):
-    competencia = get_object_or_404(Competencia, pk=pk)
+    centro = get_centro_activo(request)
+    competencia = get_object_or_404(Competencia, pk=pk, nivel__centro=centro)
 
     if request.method == 'POST':
         competencia.delete()
+        messages.success(request, 'Competencia eliminada correctamente')
         return redirect('competencia_list')
 
     return render(request, 'academico/competencia_confirm_delete.html', {
@@ -927,83 +998,10 @@ def competencia_delete(request, pk):
     })
 
 
-from .models import AreaCompetencia
-from .forms import AreaCompetenciaForm
-
-
-@login_required
-@centro_required
-@role_required('director', 'secretaria', 'admin', 'superadmin')
-def area_competencia_list(request):
-    relaciones = AreaCompetencia.objects.select_related(
-        'area', 'competencia'
-    )
-    return render(request, 'academico/area_competencia_list.html', {
-        'relaciones': relaciones
-    })
-
-
-
-@login_required
-@centro_required
-@role_required('director', 'secretaria', 'admin', 'superadmin')
-def area_competencia_create(request):
-    centro = get_centro_activo(request)
-    if not centro:
-        return redirect('core:seleccionar_centro')
-
-    # Todas las asignaturas del centro
-    asignaturas = Asignatura.objects.filter(centro=centro)
-    competencias = Competencia.objects.all()  # todas las competencias disponibles
-
-    if request.method == 'POST':
-        asignatura_id = request.POST.get('asignatura')
-        competencias_ids = request.POST.getlist('competencias')
-        pesos = request.POST.getlist('peso')
-
-        if asignatura_id and competencias_ids and pesos:
-            asignatura = get_object_or_404(Asignatura, id=asignatura_id)
-
-            for comp_id, peso in zip(competencias_ids, pesos):
-                comp = get_object_or_404(Competencia, id=comp_id)
-
-                # Solo crear si no existe la relación
-                AreaCompetencia.objects.get_or_create(
-                    area=asignatura.area,
-                    competencia=comp,
-                    defaults={'peso': peso}
-                )
-
-            messages.success(request, "Competencias asignadas correctamente.")
-            return redirect('area_competencia_list')
-
-    return render(request, 'academico/area_competencia_form.html', {
-        'asignaturas': asignaturas,
-        'competencias': competencias,
-    })
-
-
-
-
-@login_required
-@centro_required
-@role_required('director', 'secretaria', 'admin', 'superadmin')
-def area_competencia_delete(request, pk):
-    relacion = get_object_or_404(AreaCompetencia, pk=pk)
-
-    if request.method == 'POST':
-        relacion.delete()
-        return redirect('area_competencia_list')
-
-    return render(request, 'academico/area_competencia_confirm_delete.html', {
-        'relacion': relacion
-    })
-
-
 from django.shortcuts import render, redirect, get_object_or_404
-from .models import Periodo
+from django.db.models.deletion import ProtectedError
+from .models import Periodo, PeriodoAnio
 from .forms import PeriodoForm
-
 
 
 @login_required
@@ -1012,12 +1010,55 @@ from .forms import PeriodoForm
 def periodo_list(request):
     centro = get_centro_activo(request)
 
-    periodos = Periodo.objects.filter(
-        centro=centro
-    ).select_related('anio_escolar')
+    periodos = estructura.periodos(centro)
+
+    anio = obtener_anio_activo(centro)
+    estados = {}
+    if anio:
+        sincronizar_periodos_centro(centro)
+        estados = {
+            e.periodo_id: e
+            for e in estructura.estados_periodo_anio(anio)
+        }
+
+    lista = [
+        {'periodo': p, 'estado': estados.get(p.id)}
+        for p in periodos
+    ]
+
+    abiertos = sum(1 for e in estados.values() if not e.cerrado)
+    cerrados = sum(1 for e in estados.values() if e.cerrado)
+
+    stats = {
+        'total': len(lista),
+        'abiertos': abiertos,
+        'cerrados': cerrados,
+        'anio': anio,
+        'todos_cerrados': bool(estados) and abiertos == 0,
+    }
+
+    # Relación Período ↔ AñoEscolar (matriz para la pestaña "Relación")
+    catalogo = list(periodos)
+    anios_relacion = estructura.anios_escolares(centro)
+    matriz = {}
+    if anios_relacion:
+        sincronizar_periodos_centro(centro)
+        for e in estructura.matriz_periodos(centro):
+            matriz[(e.periodo_id, e.anio_escolar_id)] = e
+
+    filas = [
+        {
+            'anio': a,
+            'estados': [matriz.get((p.id, a.id)) for p in catalogo],
+        }
+        for a in anios_relacion
+    ]
 
     return render(request, 'academico/periodo_list.html', {
-        'periodos': periodos
+        'periodos': lista,
+        'stats': stats,
+        'catalogo': catalogo,
+        'filas': filas,
     })
 
 
@@ -1032,6 +1073,7 @@ def periodo_create(request):
             periodo = form.save(commit=False)
             periodo.centro = centro
             periodo.save()
+            sincronizar_periodos_centro(centro)
             return redirect('periodo_list')
     else:
         form = PeriodoForm(centro=centro)
@@ -1073,8 +1115,38 @@ def periodo_delete(request, pk):
     centro = get_centro_activo(request)
     periodo = get_object_or_404(Periodo, pk=pk, centro=centro)
 
-    periodo.delete()
-    return JsonResponse({'success': True})
+    try:
+        periodo.delete()
+        return JsonResponse({'success': True})
+    except ProtectedError:
+        return JsonResponse({
+            'success': False,
+            'error': 'No se puede eliminar: el período tiene calificaciones registradas.'
+        })
+
+
+@login_required
+@require_POST
+@centro_required
+@role_required('director', 'secretaria', 'admin', 'superadmin')
+def alternar_periodo_anio(request, pk):
+    """Abre o cierra un período del catálogo para el año escolar activo."""
+    centro = get_centro_activo(request)
+    periodo = get_object_or_404(Periodo, pk=pk, centro=centro)
+
+    anio = obtener_anio_activo(centro)
+    if not anio:
+        return JsonResponse({'success': False, 'error': 'No hay año escolar activo.'})
+
+    estado, _ = PeriodoAnio.objects.get_or_create(
+        periodo=periodo,
+        anio_escolar=anio,
+    )
+    estado.cerrado = not estado.cerrado
+    estado.fecha_cierre = now().date() if estado.cerrado else None
+    estado.save()
+
+    return JsonResponse({'success': True, 'cerrado': estado.cerrado})
 
 
 from django.shortcuts import render, redirect, get_object_or_404
@@ -1089,19 +1161,36 @@ from .forms import DocenteMateriaForm
 def docentemateria_list(request):
     centro = get_centro_activo(request)
 
-    asignaciones = DocenteMateria.objects.filter(
-        docente__centro=centro
-    ).select_related(
-        'docente',
-        'asignatura',
-        'grado',
-        'seccion',
-        'anio_escolar'
-    )
+    q = request.GET.get('q', '').strip()
+
+    asignaciones = estructura.docentes_materia(centro)
+
+    if q:
+        ql = q.lower()
+        asignaciones = [
+            a for a in asignaciones
+            if ql in (a.docente.primer_nombre or '').lower()
+            or ql in (a.docente.segundo_nombre or '').lower()
+            or ql in (a.docente.primer_apellido or '').lower()
+            or ql in (a.docente.segundo_apellido or '').lower()
+            or ql in a.asignatura.nombre.lower()
+            or ql in a.grado.nombre.lower()
+            or ql in (a.anio_escolar.nombre or '').lower()
+        ]
+
+    stats = {
+        'total': len(estructura.docentes_materia(centro)),
+        'docentes': len(Docente.objects.filter(centro=centro)),
+        'grados': len(estructura.grados(centro)),
+    }
+
+    page_obj = Paginator(asignaciones, 10).get_page(request.GET.get('page'))
 
     return render(request, 'academico/docentemateria_list.html', {
-   
-        'asignaciones': asignaciones
+        'asignaciones': page_obj.object_list,
+        'page_obj': page_obj,
+        'q': q,
+        'stats': stats,
     })
 
 
@@ -1172,7 +1261,7 @@ def docentemateria_delete(request, pk):
         asignacion.delete()
         return JsonResponse({'ok': True})
 
-    return JsonResponse({'error': 'Método no permitido'}, status=405)
+    return JsonResponse({'error': 'MÃ©todo no permitido'}, status=405)
 
 
 
@@ -1193,8 +1282,19 @@ def anio_escolar_list(request):
         centro=centro
     ).order_by('-fecha_inicio')
 
+    stats = {
+        'total': anios.count(),
+        'activos': anios.filter(activo=True).count(),
+        'cerrados': anios.filter(cerrado=True).count(),
+        'abiertos': anios.filter(cerrado=False).count(),
+    }
+
+    page_obj = Paginator(anios, 10).get_page(request.GET.get('page'))
+
     return render(request, 'academico/anio_escolar_list.html', {
-        'anios': anios
+        'anios': page_obj.object_list,
+        'page_obj': page_obj,
+        'stats': stats,
     })
 
 
@@ -1210,7 +1310,7 @@ def anio_escolar_create(request):
             anio = form.save(commit=False)
             anio.centro = centro
 
-            # Solo un año activo por centro
+            # Solo un aÃ±o activo por centro
             if anio.activo:
                 AnioEscolar.objects.filter(
                     centro=centro,
@@ -1275,16 +1375,16 @@ def cerrar_anio_escolar(request, pk):
     )
 
     # ====================================
-    # VALIDAR PERÍODOS ABIERTOS
+    # VALIDAR PERÃODOS ABIERTOS
     # ====================================
-    if Periodo.objects.filter(
+    if PeriodoAnio.objects.filter(
         anio_escolar=anio,
         cerrado=False
     ).exists():
 
         messages.error(
             request,
-            "No se puede cerrar el año escolar. Existen períodos abiertos."
+            "No se puede cerrar el aÃ±o escolar. Existen perÃ­odos abiertos."
         )
 
         return redirect('anio_escolar_list')
@@ -1314,13 +1414,13 @@ def cerrar_anio_escolar(request, pk):
 
         messages.error(
             request,
-            f"No se puede cerrar el año escolar. Existen {pendientes.count()} estudiantes pendientes."
+            f"No se puede cerrar el aÃ±o escolar. Existen {pendientes.count()} estudiantes pendientes."
         )
 
         return redirect('anio_escolar_list')
 
     # ====================================
-    # CERRAR AÑO ESCOLAR
+    # CERRAR AÃ‘O ESCOLAR
     # ====================================
     try:
 
@@ -1346,14 +1446,319 @@ def cerrar_anio_escolar(request, pk):
 
         messages.success(
             request,
-            f"Año escolar {anio.nombre} cerrado correctamente."
+            f"AÃ±o escolar {anio.nombre} cerrado correctamente."
         )
 
     except Exception as e:
 
         messages.error(
             request,
-            f"Error al cerrar el año escolar: {e}"
+            f"Error al cerrar el aÃ±o escolar: {e}"
         )
 
     return redirect('anio_escolar_list')
+
+
+@login_required
+@centro_required
+@role_required('director', 'secretaria', 'admin', 'superadmin')
+def curriculo(request):
+    centro = get_centro_activo(request)
+
+    areas = estructura.areas(centro)
+    asignaturas = estructura.asignaturas(centro)
+    relaciones = estructura.grado_asignaturas(centro)
+    competencias = estructura.competencias(centro)
+    asignaciones = estructura.docentes_materia(centro)
+
+    page_areas = Paginator(areas, 10).get_page(request.GET.get('page_areas'))
+    page_asignaturas = Paginator(asignaturas, 10).get_page(
+        request.GET.get('page_asignaturas')
+    )
+    page_relaciones = Paginator(relaciones, 10).get_page(
+        request.GET.get('page_relaciones')
+    )
+    page_competencias = Paginator(competencias, 10).get_page(
+        request.GET.get('page_competencias')
+    )
+    page_asignaciones = Paginator(asignaciones, 10).get_page(
+        request.GET.get('page_asignaciones')
+    )
+
+    stats = {
+        'areas': page_areas.paginator.count,
+        'asignaturas': page_asignaturas.paginator.count,
+        'relaciones': page_relaciones.paginator.count,
+        'competencias': page_competencias.paginator.count,
+        'docentematerias': page_asignaciones.paginator.count,
+    }
+
+    return render(request, 'academico/curriculo.html', {
+        'areas': page_areas,
+        'asignaturas': page_asignaturas,
+        'relaciones': page_relaciones,
+        'competencias': page_competencias,
+        'asignaciones': page_asignaciones,
+        'stats': stats,
+    })
+
+
+# ============================================================
+# HORARIO DE CLASES
+# ============================================================
+
+from .models import FranjaHoraria, HorarioClase
+from .forms import FranjaHorariaForm, HorarioClaseForm
+
+
+@login_required
+@centro_required
+@role_required('director', 'secretaria', 'admin', 'superadmin')
+def franja_list(request):
+    centro = get_centro_activo(request)
+
+    franjas = estructura.franjas(centro)
+
+    page_obj = Paginator(franjas, 10).get_page(request.GET.get('page'))
+
+    return render(request, 'academico/franja_list.html', {
+        'franjas': page_obj.object_list,
+        'page_obj': page_obj,
+    })
+
+
+@login_required
+@centro_required
+@role_required('director', 'secretaria', 'admin', 'superadmin')
+def franja_create(request):
+    centro = get_centro_activo(request)
+
+    if request.method == 'POST':
+        form = FranjaHorariaForm(request.POST, centro=centro)
+        if form.is_valid():
+            franja = form.save(commit=False)
+            franja.centro = centro
+            franja.save()
+            messages.success(request, "Franja horaria creada correctamente.")
+            return redirect('franja_list')
+    else:
+        form = FranjaHorariaForm(centro=centro)
+
+    return render(request, 'academico/franja_form.html', {
+        'form': form,
+        'accion': 'Nueva Franja Horaria'
+    })
+
+
+@login_required
+@centro_required
+@role_required('director', 'secretaria', 'admin', 'superadmin')
+def franja_update(request, pk):
+    centro = get_centro_activo(request)
+    franja = get_object_or_404(FranjaHoraria, pk=pk, centro=centro)
+
+    if request.method == 'POST':
+        form = FranjaHorariaForm(request.POST, instance=franja, centro=centro)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Franja horaria actualizada correctamente.")
+            return redirect('franja_list')
+    else:
+        form = FranjaHorariaForm(instance=franja, centro=centro)
+
+    return render(request, 'academico/franja_form.html', {
+        'form': form,
+        'accion': 'Editar Franja Horaria'
+    })
+
+
+@login_required
+@require_POST
+@centro_required
+@role_required('director', 'secretaria', 'admin', 'superadmin')
+def franja_delete(request, pk):
+    centro = get_centro_activo(request)
+    franja = get_object_or_404(FranjaHoraria, pk=pk, centro=centro)
+
+    try:
+        franja.delete()
+        return JsonResponse({'success': True})
+    except ProtectedError:
+        return JsonResponse({
+            'success': False,
+            'error': 'No se puede eliminar: la franja tiene clases programadas.'
+        })
+
+
+@login_required
+@centro_required
+@role_required('director', 'secretaria', 'admin', 'superadmin')
+def horario_list(request):
+    centro = get_centro_activo(request)
+
+    grados = sorted(
+        estructura.grados(centro),
+        key=lambda g: (g.nivel.tipo, g.orden, g.nombre),
+    )
+
+    secciones = estructura.secciones(centro)
+
+    anio = obtener_anio_activo(centro)
+    anios = estructura.anios_escolares(centro)
+
+    grado_id = request.GET.get('grado')
+    seccion_id = request.GET.get('seccion')
+    anio_id = request.GET.get('anio')
+
+    grado = None
+    seccion = None
+    anio_seleccionado = None
+
+    if grado_id:
+        grado = get_object_or_404(Grado, pk=grado_id, nivel__centro=centro)
+    if seccion_id:
+        seccion = get_object_or_404(Seccion, pk=seccion_id, centro=centro)
+    if anio_id:
+        anio_seleccionado = get_object_or_404(AnioEscolar, pk=anio_id, centro=centro)
+    else:
+        anio_seleccionado = anio
+
+    franjas = estructura.franjas(centro)
+
+    matriz = {}
+    asignaciones_seccion = []
+
+    if grado and seccion and anio_seleccionado:
+        asignaciones_seccion = [
+            a for a in estructura.docentes_materia(centro)
+            if a.grado_id == grado.id
+            and a.seccion_id == seccion.id
+            and a.anio_escolar_id == anio_seleccionado.id
+        ]
+
+        clases = estructura.horario_clases_por_filtro(
+            centro, grado, seccion, anio_seleccionado
+        )
+
+        for c in clases:
+            matriz[(c.dia_semana, c.franja_id)] = c
+
+    stats = {
+        'grados': len(grados),
+        'secciones': len(secciones),
+        'franjas': len(franjas),
+        'clases': len(estructura.horario_clases(centro)),
+    }
+
+    return render(request, 'academico/horario_list.html', {
+        'grados': grados,
+        'secciones': secciones,
+        'anios': anios,
+        'grado': grado,
+        'seccion': seccion,
+        'anio_seleccionado': anio_seleccionado,
+        'franjas': franjas,
+        'matriz': matriz,
+        'asignaciones_seccion': asignaciones_seccion,
+        'stats': stats,
+        'DIAS_SEMANA': HorarioClase.DIAS_SEMANA,
+    })
+
+
+@login_required
+@centro_required
+@role_required('director', 'secretaria', 'admin', 'superadmin')
+def horario_clase_create(request):
+    centro = get_centro_activo(request)
+
+    grado_id = request.GET.get('grado')
+    seccion_id = request.GET.get('seccion')
+
+    if request.method == 'POST':
+        form = HorarioClaseForm(request.POST, centro=centro)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Clase agregada al horario correctamente.")
+
+            url = reverse('horario_list')
+            params = []
+            if grado_id:
+                params.append(f'grado={grado_id}')
+            if seccion_id:
+                params.append(f'seccion={seccion_id}')
+            if params:
+                url += '?' + '&'.join(params)
+            return redirect(url)
+    else:
+        initial = {}
+        if grado_id and seccion_id:
+            asignacion = DocenteMateria.objects.filter(
+                grado_id=grado_id,
+                seccion_id=seccion_id,
+                anio_escolar__activo=True,
+                anio_escolar__centro=centro,
+                docente__centro=centro
+            ).first()
+            if asignacion:
+                initial['asignacion'] = asignacion.pk
+
+        dia = request.GET.get('dia')
+        if dia:
+            try:
+                initial['dia_semana'] = int(dia)
+            except (ValueError, TypeError):
+                pass
+
+        form = HorarioClaseForm(centro=centro, initial=initial)
+
+    return render(request, 'academico/horario_clase_form.html', {
+        'form': form,
+        'accion': 'Agregar Clase al Horario'
+    })
+
+
+@login_required
+@centro_required
+@role_required('director', 'secretaria', 'admin', 'superadmin')
+def horario_clase_update(request, pk):
+    centro = get_centro_activo(request)
+
+    clase = get_object_or_404(
+        HorarioClase,
+        pk=pk,
+        asignacion__docente__centro=centro
+    )
+
+    if request.method == 'POST':
+        form = HorarioClaseForm(request.POST, instance=clase, centro=centro)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Clase actualizada correctamente.")
+
+            url = reverse('horario_list')
+            url += f'?grado={clase.asignacion.grado_id}&seccion={clase.asignacion.seccion_id}'
+            return redirect(url)
+    else:
+        form = HorarioClaseForm(instance=clase, centro=centro)
+
+    return render(request, 'academico/horario_clase_form.html', {
+        'form': form,
+        'accion': 'Editar Clase del Horario'
+    })
+
+
+@login_required
+@require_POST
+@centro_required
+@role_required('director', 'secretaria', 'admin', 'superadmin')
+def horario_clase_delete(request, pk):
+    centro = get_centro_activo(request)
+
+    clase = get_object_or_404(
+        HorarioClase,
+        pk=pk,
+        asignacion__docente__centro=centro
+    )
+
+    clase.delete()
+    return JsonResponse({'success': True})

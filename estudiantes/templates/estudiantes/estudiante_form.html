@@ -1,4 +1,5 @@
 {% extends "home.html" %}
+{% load formatos %}
 
 {% block title %}
 {% if form.instance.pk %}
@@ -12,239 +13,336 @@ Nuevo Estudiante
 
 <div class="max-w-6xl mx-auto">
 
-    <div class="mb-6">
+    <!-- Encabezado -->
+    <div class="flex items-center justify-between mb-6">
 
-        <h2 class="text-2xl font-semibold text-gray-800">
+        <div>
+            <a href="{% url 'estudiante_list' %}"
+               class="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-blue-600 mb-2 transition">
+                <i class="fas fa-arrow-left"></i>
+                Volver al listado
+            </a>
 
-            {% if form.instance.pk %}
-                ✏️ Editar Estudiante
-            {% else %}
-                👤 Nuevo Estudiante
-            {% endif %}
+            <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                {% if form.instance.pk %}
+                <i class="fas fa-user-edit text-blue-600"></i>
+                Editar Estudiante
+                {% else %}
+                <i class="fas fa-user-plus text-blue-600"></i>
+                Nuevo Estudiante
+                {% endif %}
+            </h2>
 
-        </h2>
-
-        <p class="text-gray-600">
-            Complete los datos del estudiante.
-        </p>
+            <p class="text-sm text-gray-500 mt-1">
+                Complete los datos del estudiante. Los campos marcados con <span class="text-red-500">*</span> son obligatorios.
+            </p>
+        </div>
 
     </div>
 
-    <div class="bg-white shadow rounded-lg p-6">
+    {% if form.non_field_errors %}
+    <div class="mb-6 bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3">
+        <i class="fas fa-exclamation-triangle text-red-600 mt-0.5"></i>
+        <div>
+            <h4 class="font-semibold text-red-700 mb-1">Corrija los errores indicados:</h4>
+            {% for error in form.non_field_errors %}
+            <p class="text-sm text-red-600">{{ error }}</p>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
 
-        {% if form.errors %}
-        <div class="mb-6 bg-red-50 border border-red-200 rounded p-4">
+    <!-- Tarjeta de identidad (modo edición) -->
+    {% if estudiante %}
 
-            <h4 class="font-semibold text-red-700 mb-2">
-                Corrija los errores indicados:
-            </h4>
+    <div class="bg-white shadow-sm rounded-xl border border-gray-200 p-5 mb-6 flex items-center gap-4">
 
-            {{ form.errors }}
+        {% avatar estudiante size='w-14 h-14' texto='text-lg' %}
 
+        <div class="flex-1 min-w-0">
+            <p class="text-lg font-semibold text-gray-800 truncate">{{ estudiante.nombre_completo }}</p>
+            <div class="flex flex-wrap items-center gap-2 mt-1 text-xs text-gray-500">
+                <span class="inline-flex items-center gap-1">
+                    <i class="fas fa-id-badge text-gray-400"></i>
+                    {{ estudiante.matricula }}
+                </span>
+                <span class="inline-flex items-center gap-1">
+                    <i class="fas fa-calendar text-gray-400"></i>
+                    {{ estudiante.edad }} años
+                </span>
+                <span class="inline-flex items-center gap-1">
+                    <i class="fas fa-venus-mars text-gray-400"></i>
+                    {{ estudiante.get_sexo_display }}
+                </span>
+            </div>
+        </div>
+
+        <span class="hidden sm:inline-flex items-center gap-1.5 bg-blue-100 text-blue-700 px-3 py-1.5 rounded-full text-xs font-semibold">
+            <i class="fas fa-user-check"></i>
+            Cuenta: {{ estudiante.usuario.username }}
+        </span>
+
+    </div>
+
+    {% endif %}
+
+    <form method="post" enctype="multipart/form-data" class="space-y-6">
+
+        {% csrf_token %}
+
+        {% if form.errors and not form.non_field_errors %}
+        <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800 flex items-start gap-2">
+            <i class="fas fa-info-circle mt-0.5"></i>
+            Hay campos con errores. Revisa las secciones marcadas en rojo.
         </div>
         {% endif %}
 
-        <form method="post" class="space-y-10">
+        {% if estudiante %}
 
-            {% csrf_token %}
+        <!-- CUENTA -->
+        <section class="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
 
-            {% if estudiante %}
+            <div class="flex items-center gap-3 px-6 py-4 border-b border-gray-200 bg-gray-50">
+                <div class="w-9 h-9 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center">
+                    <i class="fas fa-key"></i>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-gray-800">Cuenta del Estudiante</h3>
+                    <p class="text-xs text-gray-500">Información de acceso y matrícula (no editable)</p>
+                </div>
+            </div>
 
-            <section>
+            <div class="p-6 grid grid-cols-1 md:grid-cols-3 gap-4">
 
-                <h3 class="text-lg font-semibold mb-4 text-gray-700">
-                    🔐 Cuenta del Estudiante
-                </h3>
-
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-
-                    <div>
-
-                        <label class="block mb-1 font-medium">
-                            Usuario
-                        </label>
-
-                        <input
-                            type="text"
-                            disabled
-                            value="{{ estudiante.usuario.username }}"
-                            class="w-full bg-gray-100 border rounded px-3 py-2">
-
+                <div>
+                    <label class="block text-sm font-medium text-gray-600 mb-1.5">Usuario</label>
+                    <div class="flex items-center gap-2 bg-gray-100 border border-gray-200 rounded-lg px-3 py-2 text-gray-500">
+                        <i class="fas fa-user text-gray-400 text-sm"></i>
+                        {{ estudiante.usuario.username }}
                     </div>
-
-                    <div>
-
-                        <label class="block mb-1 font-medium">
-                            Matrícula
-                        </label>
-
-                        <input
-                            type="text"
-                            disabled
-                            value="{{ estudiante.matricula }}"
-                            class="w-full bg-gray-100 border rounded px-3 py-2">
-
-                    </div>
-
-                    <div>
-
-                        <label class="block mb-1 font-medium">
-                            Edad
-                        </label>
-
-                        <input
-                            type="text"
-                            disabled
-                            value="{{ estudiante.edad }} años"
-                            class="w-full bg-gray-100 border rounded px-3 py-2">
-
-                    </div>
-
                 </div>
 
-            </section>
-
-            {% endif %}
-
-            <!-- DATOS PERSONALES -->
-
-            <section>
-
-                <h3 class="text-lg font-semibold mb-4 text-gray-700">
-                    🧍 Datos Personales
-                </h3>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-
-                    <div>
-                        {{ form.primer_nombre.label_tag }}
-                        {{ form.primer_nombre }}
+                <div>
+                    <label class="block text-sm font-medium text-gray-600 mb-1.5">Matrícula</label>
+                    <div class="flex items-center gap-2 bg-gray-100 border border-gray-200 rounded-lg px-3 py-2 text-gray-500 font-mono">
+                        <i class="fas fa-id-badge text-gray-400 text-sm"></i>
+                        {{ estudiante.matricula }}
                     </div>
-
-                    <div>
-                        {{ form.segundo_nombre.label_tag }}
-                        {{ form.segundo_nombre }}
-                    </div>
-
-                    <div>
-                        {{ form.primer_apellido.label_tag }}
-                        {{ form.primer_apellido }}
-                    </div>
-
-                    <div>
-                        {{ form.segundo_apellido.label_tag }}
-                        {{ form.segundo_apellido }}
-                    </div>
-
-                    <div>
-                        {{ form.sexo.label_tag }}
-                        {{ form.sexo }}
-                    </div>
-
-                    <div>
-                        {{ form.fecha_nacimiento.label_tag }}
-                        {{ form.fecha_nacimiento }}
-                    </div>
-
-                    <div>
-                        {{ form.nacionalidad.label_tag }}
-                        {{ form.nacionalidad }}
-                    </div>
-
-                    <div>
-                        {{ form.lugar_nacimiento.label_tag }}
-                        {{ form.lugar_nacimiento }}
-                    </div>
-
                 </div>
 
-            </section>
-
-            <!-- INFORMACIÓN GENERAL -->
-
-            <section>
-
-                <h3 class="text-lg font-semibold mb-4 text-gray-700">
-                    📄 Información General
-                </h3>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-
-                    {% if not estudiante %}
-                    <div>
-                        {{ form.matricula.label_tag }}
-                        {{ form.matricula }}
+                <div>
+                    <label class="block text-sm font-medium text-gray-600 mb-1.5">Edad</label>
+                    <div class="flex items-center gap-2 bg-gray-100 border border-gray-200 rounded-lg px-3 py-2 text-gray-500">
+                        <i class="fas fa-cake-candles text-gray-400 text-sm"></i>
+                        {{ estudiante.edad }} años
                     </div>
-                    {% endif %}
-
-                    <div>
-                        {{ form.telefono.label_tag }}
-                        {{ form.telefono }}
-                    </div>
-
-                    <div class="md:col-span-2 lg:col-span-3">
-                        {{ form.direccion.label_tag }}
-                        {{ form.direccion }}
-                    </div>
-
                 </div>
-
-            </section>
-
-            <!-- TUTOR -->
-
-            <section>
-
-                <h3 class="text-lg font-semibold mb-4 text-gray-700">
-                    👨‍👩‍👦 Datos del Tutor
-                </h3>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-
-                    <div>
-                        {{ form.nombre_tutor.label_tag }}
-                        {{ form.nombre_tutor }}
-                    </div>
-
-                    <div>
-                        {{ form.cedula_tutor.label_tag }}
-                        {{ form.cedula_tutor }}
-                    </div>
-
-                    <div>
-                        {{ form.telefono_tutor.label_tag }}
-                        {{ form.telefono_tutor }}
-                    </div>
-
-                    <div>
-                        {{ form.parentesco_tutor.label_tag }}
-                        {{ form.parentesco_tutor }}
-                    </div>
-
-                </div>
-
-            </section>
-
-            <div class="flex justify-end gap-3 border-t pt-6">
-
-                <a href="{% url 'estudiante_list' %}"
-                   class="px-4 py-2 border rounded hover:bg-gray-50">
-                    Cancelar
-                </a>
-
-                <button
-                    type="submit"
-                    class="bg-blue-600 text-white px-8 py-2 rounded hover:bg-blue-700">
-
-                    💾 Guardar Estudiante
-
-                </button>
 
             </div>
 
-        </form>
+        </section>
 
-    </div>
+        {% endif %}
+
+        <!-- FOTO -->
+        <section class="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
+
+            <div class="flex items-center gap-3 px-6 py-4 border-b border-gray-200 bg-gray-50">
+                <div class="w-9 h-9 rounded-lg bg-sky-100 text-sky-600 flex items-center justify-center">
+                    <i class="fas fa-camera"></i>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-gray-800">Foto del Estudiante</h3>
+                    <p class="text-xs text-gray-500">Sube una foto de perfil (JPG o PNG)</p>
+                </div>
+            </div>
+
+            <div class="p-6">
+                <div class="flex items-center gap-5">
+                    <div class="shrink-0">
+                        {% avatar form.instance size='w-20 h-20' texto='text-2xl' %}
+                    </div>
+                    <div class="flex-1">
+                        <label for="{{ form.foto.id_for_label }}"
+                               class="block text-sm font-medium text-gray-600 mb-1.5">
+                            {{ form.foto.label }}{% if form.foto.field.required %} <span class="text-red-500">*</span>{% endif %}
+                        </label>
+                        {{ form.foto }}
+                        {% if form.foto.errors %}
+                        <p class="text-xs text-red-600 mt-1">{{ form.foto.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- DATOS PERSONALES -->
+        <section class="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
+
+            <div class="flex items-center gap-3 px-6 py-4 border-b border-gray-200 bg-gray-50">
+                <div class="w-9 h-9 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center">
+                    <i class="fas fa-user"></i>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-gray-800">Datos Personales</h3>
+                    <p class="text-xs text-gray-500">Información básica de identidad del estudiante</p>
+                </div>
+            </div>
+
+            <div class="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+
+                {% for field in form %}
+                    {% if field.name in "primer_nombre segundo_nombre primer_apellido segundo_apellido sexo fecha_nacimiento nacionalidad lugar_nacimiento" %}
+                    <div>
+                        <label for="{{ field.id_for_label }}"
+                               class="block text-sm font-medium text-gray-600 mb-1.5">
+                            {{ field.label }}{% if field.field.required %} <span class="text-red-500">*</span>{% endif %}
+                        </label>
+                        {{ field }}
+                        {% if field.errors %}
+                        <p class="text-xs text-red-600 mt-1">{{ field.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                {% endfor %}
+
+            </div>
+
+        </section>
+
+        <!-- INFORMACIÓN GENERAL -->
+        <section class="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
+
+            <div class="flex items-center gap-3 px-6 py-4 border-b border-gray-200 bg-gray-50">
+                <div class="w-9 h-9 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center">
+                    <i class="fas fa-file-lines"></i>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-gray-800">Información General</h3>
+                    <p class="text-xs text-gray-500">Contacto, dirección y modalidad de salida</p>
+                </div>
+            </div>
+
+            <div class="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+
+                {% for field in form %}
+                    {% if field.name in "matricula telefono modalidad_salida direccion" %}
+                    <div{% if field.name == "direccion" %} class="md:col-span-2 lg:col-span-3"{% endif %}>
+                        <label for="{{ field.id_for_label }}"
+                               class="block text-sm font-medium text-gray-600 mb-1.5">
+                            {{ field.label }}{% if field.field.required %} <span class="text-red-500">*</span>{% endif %}
+                        </label>
+                        {{ field }}
+                        {% if field.help_text %}
+                        <p class="text-xs text-gray-400 mt-1">{{ field.help_text }}</p>
+                        {% endif %}
+                        {% if field.errors %}
+                        <p class="text-xs text-red-600 mt-1">{{ field.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                {% endfor %}
+
+            </div>
+
+        </section>
+
+        <!-- TUTOR -->
+        <section class="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
+
+            <div class="flex items-center gap-3 px-6 py-4 border-b border-gray-200 bg-gray-50">
+                <div class="w-9 h-9 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center">
+                    <i class="fas fa-people-roof"></i>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-gray-800">Datos del Tutor</h3>
+                    <p class="text-xs text-gray-500">Persona responsable o representante legal</p>
+                </div>
+            </div>
+
+            <div class="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+
+                {% for field in form %}
+                    {% if field.name in "nombre_tutor cedula_tutor telefono_tutor parentesco_tutor" %}
+                    <div>
+                        <label for="{{ field.id_for_label }}"
+                               class="block text-sm font-medium text-gray-600 mb-1.5">
+                            {{ field.label }}{% if field.field.required %} <span class="text-red-500">*</span>{% endif %}
+                        </label>
+                        {{ field }}
+                        {% if field.errors %}
+                        <p class="text-xs text-red-600 mt-1">{{ field.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                {% endfor %}
+
+            </div>
+
+        </section>
+
+        <!-- TUTORES VINCULADOS -->
+        <section class="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
+
+            <div class="flex items-center gap-3 px-6 py-4 border-b border-gray-200 bg-gray-50">
+                <div class="w-9 h-9 rounded-lg bg-violet-100 text-violet-600 flex items-center justify-center">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-gray-800">Tutores vinculados</h3>
+                    <p class="text-xs text-gray-500">
+                        Padres o representantes con acceso al portal. Crea tutores en el módulo
+                        <a href="{% url 'tutores:tutor_list' %}" class="text-blue-600 hover:underline">Tutores</a>.
+                    </p>
+                </div>
+            </div>
+
+            <div class="p-6">
+                <label for="{{ form.tutores.id_for_label }}"
+                       class="block text-sm font-medium text-gray-600 mb-1.5">
+                    Tutores{% if form.tutores.field.required %} <span class="text-red-500">*</span>{% endif %}
+                </label>
+                {{ form.tutores }}
+                {% if form.tutores.errors %}
+                <p class="text-xs text-red-600 mt-1">{{ form.tutores.errors.0 }}</p>
+                {% endif %}
+                <p class="text-xs text-gray-400 mt-2">
+                    Mantén presionada la tecla <strong>Ctrl</strong> (o <strong>Cmd</strong> en Mac) para seleccionar varios tutores.
+                </p>
+            </div>
+
+        </section>
+
+        <!-- Acciones -->
+        <div class="flex items-center justify-between gap-3 bg-white shadow-sm rounded-xl border border-gray-200 p-4">
+
+            <a href="{% url 'estudiante_list' %}"
+               class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 transition">
+                <i class="fas fa-times"></i>
+                Cancelar
+            </a>
+
+            <div class="flex items-center gap-2">
+                {% if estudiante %}
+                <a href="{% url 'estudiante_detail' estudiante.id %}"
+                   class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium text-blue-600 hover:bg-blue-50 transition">
+                    <i class="fas fa-eye"></i>
+                    Ver detalle
+                </a>
+                {% endif %}
+
+                <button
+                    type="submit"
+                    class="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-2.5 rounded-lg shadow-sm hover:bg-blue-700 hover:shadow transition text-sm font-semibold">
+                    <i class="fas fa-save"></i>
+                    {% if form.instance.pk %}Guardar cambios{% else %}Guardar Estudiante{% endif %}
+                </button>
+            </div>
+
+        </div>
+
+    </form>
 
 </div>
 

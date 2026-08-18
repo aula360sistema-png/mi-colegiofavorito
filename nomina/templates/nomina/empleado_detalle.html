@@ -1,0 +1,206 @@
+{% extends 'home.html' %}
+
+{% block title %}
+{{ configuracion.usuario.get_full_name }}
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">{{ configuracion.usuario.get_full_name }}</h1>
+        <p class="page-subtitle">
+            {{ configuracion.usuario.username }} · Configuración de nómina del empleado
+        </p>
+    </div>
+
+    <a href="{% url 'nomina:configuracion_nomina_list' %}" class="btn-secondary">
+        <i class="fas fa-arrow-left"></i> Empleados
+    </a>
+</div>
+
+<div class="stat-grid">
+
+    <div class="stat-card">
+        <div class="stat-icon stat-icon-indigo">
+            <i class="fas fa-briefcase"></i>
+        </div>
+        <div>
+            <p class="stat-label">Cargo</p>
+            <p class="stat-value">{{ configuracion.cargo|default:"—" }}</p>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-icon stat-icon-green">
+            <i class="fas fa-money-bill-wave"></i>
+        </div>
+        <div>
+            <p class="stat-label">Salario base mensual</p>
+            <p class="stat-value">RD$ {{ configuracion.salario_base|dop }}</p>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-icon stat-icon-blue">
+            <i class="fas fa-building-columns"></i>
+        </div>
+        <div>
+            <p class="stat-label">AFP</p>
+            <p class="stat-value">{{ configuracion.afp|default:"—" }}</p>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-icon stat-icon-purple">
+            <i class="fas fa-heart-pulse"></i>
+        </div>
+        <div>
+            <p class="stat-label">ARS</p>
+            <p class="stat-value">{{ configuracion.ars|default:"—" }}</p>
+        </div>
+    </div>
+
+</div>
+
+<div class="dashboard-grid">
+
+    <div class="panel-card">
+        <div class="panel-card-header">
+            <h2>Ingresos fijos mensuales</h2>
+        </div>
+
+        <div class="panel-card-body">
+            <table class="custom-table">
+                <thead>
+                    <tr>
+                        <th>Concepto</th>
+                        <th>Monto</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ingreso in ingresos %}
+                    <tr>
+                        <td>{{ ingreso.tipo.nombre }}</td>
+                        <td>RD$ {{ ingreso.monto|dop }}</td>
+                        <td>
+                            <form method="post"
+                                  action="{% url 'nomina:ingreso_empleado_delete' configuracion.id ingreso.id %}"
+                                  onsubmit="return confirm('¿Eliminar este ingreso?')">
+                                {% csrf_token %}
+                                <button type="submit" class="btn-action" title="Eliminar">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="3">
+                            <div class="empty-state">
+                                <i class="fas fa-coins"></i>
+                                <p>Sin ingresos adicionales</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <form method="post" action="{% url 'nomina:ingreso_empleado_create' configuracion.id %}" class="mt-4">
+                {% csrf_token %}
+                <div class="form-grid">
+                    {% for field in form_ingreso %}
+                    <div class="form-group">
+                        <label>{{ field.label }}</label>
+                        {{ field }}
+                        {% for error in field.errors %}
+                            <p class="error-text">{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn-primary btn-sm">
+                        <i class="fas fa-plus"></i> Agregar ingreso
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="panel-card">
+        <div class="panel-card-header">
+            <h2>Descuentos fijos mensuales</h2>
+        </div>
+
+        <div class="panel-card-body">
+            <table class="custom-table">
+                <thead>
+                    <tr>
+                        <th>Concepto</th>
+                        <th>Monto</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for descuento in descuentos %}
+                    <tr>
+                        <td>{{ descuento.tipo.nombre }}</td>
+                        <td>RD$ {{ descuento.monto|dop }}</td>
+                        <td>
+                            <form method="post"
+                                  action="{% url 'nomina:descuento_empleado_delete' configuracion.id descuento.id %}"
+                                  onsubmit="return confirm('¿Eliminar este descuento?')">
+                                {% csrf_token %}
+                                <button type="submit" class="btn-action" title="Eliminar">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="3">
+                            <div class="empty-state">
+                                <i class="fas fa-hand-holding-dollar"></i>
+                                <p>Sin descuentos fijos</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <form method="post" action="{% url 'nomina:descuento_empleado_create' configuracion.id %}" class="mt-4">
+                {% csrf_token %}
+                <div class="form-grid">
+                    {% for field in form_descuento %}
+                    <div class="form-group">
+                        <label>{{ field.label }}</label>
+                        {{ field }}
+                        {% for error in field.errors %}
+                            <p class="error-text">{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn-primary btn-sm">
+                        <i class="fas fa-plus"></i> Agregar descuento
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+</div>
+
+<div class="info-note">
+    <i class="fas fa-circle-info"></i>
+    Los montos registrados son <strong>mensuales</strong>. El sistema los divide
+    automáticamente según el tipo de pago del centro (mensual, quincenal o semanal).
+</div>
+
+{% endblock %}

@@ -3,66 +3,185 @@
 {% block title %}Niveles Académicos{% endblock %}
 
 {% block content %}
-<div class="max-w-5xl mx-auto">
 
-    <div class="flex justify-between items-center mb-6">
+<div class="max-w-6xl mx-auto">
+
+    <!-- Encabezado -->
+    <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6">
+
         <div>
-            <h2 class="text-2xl font-semibold">📚 Niveles Académicos</h2>
-            <p class="text-sm text-gray-500">
-                Centro: <strong>{{ centro.nombre }}</strong>
+            <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                <i class="fas fa-layer-group text-blue-600"></i>
+                Niveles Académicos
+            </h2>
+            <p class="text-sm text-gray-500 mt-1">
+                <i class="fas fa-school mr-1"></i>
+                {{ centro.nombre }}
             </p>
         </div>
 
-        <a href="{% url 'nivel_create' %}"
-           class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-            + Nuevo Nivel
-        </a>
+        <div class="flex flex-col sm:flex-row gap-3">
+
+            <a href="{% url 'estructura_minerd' %}"
+               class="inline-flex items-center justify-center gap-2 bg-emerald-600 text-white px-5 py-2.5 rounded-lg shadow-sm hover:bg-emerald-700 hover:shadow transition text-sm font-semibold">
+                <i class="fas fa-wand-magic-sparkles"></i>
+                Completar grados del nivel
+            </a>
+
+            <a href="{% url 'nivel_create' %}"
+               class="inline-flex items-center justify-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-lg shadow-sm hover:bg-blue-700 hover:shadow transition text-sm font-semibold">
+                <i class="fas fa-plus"></i>
+                Nuevo Nivel
+            </a>
+
+        </div>
+
     </div>
 
-    <div class="bg-white shadow rounded">
-        <table class="w-full text-sm">
-            <thead class="bg-gray-50">
-                <tr>
-                    <th class="px-4 py-2 text-left">Nombre</th>
-                    <th class="px-4 py-2 text-left">Plantilla</th>
-                    <th class="px-4 py-2 text-right">Acciones</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for nivel in niveles %}
-                <tr class="border-t">
-                    <td class="px-4 py-2">{{ nivel.nombre }}</td>
-                    <td class="px-4 py-2">{{ nivel.get_tipo_display }}</td>
-                    <td class="px-4 py-2 text-right space-x-2">
-                        <a type="button"  href="{% url 'nivel_update' nivel.id %}"
-                           class="text-yellow-600 hover:underline">
-                            Editar
-                        </a>
-           <button
-    onclick="eliminarNivel('{{ nivel.id }}', '{{ nivel.nombre }}', '{% url 'nivel_delete' nivel.id %}')"
-    class="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 text-sm">
-    Eliminar
-</button>
+    <!-- Tarjetas de resumen -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
 
+        <div class="bg-white shadow-sm rounded-xl p-5 border border-gray-200 flex items-center gap-4">
+            <div class="w-12 h-12 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center text-xl">
+                <i class="fas fa-layer-group"></i>
+            </div>
+            <div>
+                <p class="text-xs uppercase tracking-wide text-gray-500 font-semibold">Total niveles</p>
+                <p class="text-2xl font-bold text-gray-800">{{ stats.total }}</p>
+            </div>
+        </div>
 
-                    </td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="3"
-                        class="px-4 py-6 text-center text-gray-500">
-                        No hay niveles registrados
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <div class="bg-white shadow-sm rounded-xl p-5 border border-gray-200 flex items-center gap-4">
+            <div class="w-12 h-12 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center text-xl">
+                <i class="fas fa-school"></i>
+            </div>
+            <div>
+                <p class="text-xs uppercase tracking-wide text-gray-500 font-semibold">Grados</p>
+                <p class="text-2xl font-bold text-emerald-600">{{ stats.grados }}</p>
+            </div>
+        </div>
+
+        <div class="bg-white shadow-sm rounded-xl p-5 border border-gray-200 flex items-center gap-4">
+            <div class="w-12 h-12 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center text-xl">
+                <i class="fas fa-door-open"></i>
+            </div>
+            <div>
+                <p class="text-xs uppercase tracking-wide text-gray-500 font-semibold">Secciones</p>
+                <p class="text-2xl font-bold text-amber-600">{{ stats.secciones }}</p>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Tabla -->
+    <div class="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
+
+        <div class="flex items-center justify-between px-5 py-4 border-b border-gray-200 bg-gray-50">
+            <h3 class="font-semibold text-gray-800 flex items-center gap-2">
+                <i class="fas fa-list text-gray-400"></i>
+                Listado de niveles
+            </h3>
+            <span class="text-xs font-medium bg-blue-100 text-blue-700 px-2.5 py-1 rounded-full">
+                Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+            </span>
+        </div>
+
+        <div class="overflow-x-auto">
+
+            <table class="min-w-full divide-y divide-gray-200 text-sm">
+
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+                            Nombre
+                        </th>
+                        <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+                            Plantilla
+                        </th>
+                        <th class="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">
+                            Acciones
+                        </th>
+                    </tr>
+                </thead>
+
+                <tbody class="divide-y divide-gray-100">
+
+                    {% for nivel in niveles %}
+
+                    <tr class="hover:bg-blue-50/50 transition-colors">
+
+                        <td class="px-5 py-3">
+                            <div class="flex items-center gap-3">
+                                <div class="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center text-xs font-bold uppercase shrink-0">
+                                    {{ nivel.nombre|slice:":1" }}
+                                </div>
+                                <p class="font-medium text-gray-800">{{ nivel.nombre }}</p>
+                            </div>
+                        </td>
+
+                        <td class="px-5 py-3">
+                            <span class="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-md text-xs font-semibold">
+                                {{ nivel.get_tipo_display }}
+                            </span>
+                        </td>
+
+                        <td class="px-5 py-3">
+                            <div class="flex items-center justify-end gap-2">
+
+                                <a href="{% url 'nivel_update' nivel.id %}"
+                                   class="inline-flex items-center gap-1.5 bg-gray-200 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-gray-300 transition">
+                                    <i class="fas fa-pen"></i>
+                                    Editar
+                                </a>
+
+                                <button
+                                    onclick="eliminarNivel('{{ nivel.id }}', '{{ nivel.nombre }}', '{% url 'nivel_delete' nivel.id %}')"
+                                    class="inline-flex items-center gap-1.5 bg-red-100 text-red-700 px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-red-200 transition">
+                                    <i class="fas fa-trash"></i>
+                                    Eliminar
+                                </button>
+
+                            </div>
+                        </td>
+
+                    </tr>
+
+                    {% empty %}
+
+                    <tr>
+                        <td colspan="3" class="px-5 py-12 text-center">
+                            <i class="fas fa-layer-group text-3xl text-gray-300 mb-3 block"></i>
+                            <p class="text-gray-500 font-medium">No hay niveles registrados.</p>
+                        </td>
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-5 py-3 border-t border-gray-200 bg-gray-50 text-sm text-gray-600">
+            <span>
+                Mostrando
+                <strong>{{ page_obj.start_index }}</strong>–
+                <strong>{{ page_obj.end_index }}</strong> de
+                <strong>{{ page_obj.paginator.count }}</strong> niveles
+            </span>
+            <span class="text-xs text-gray-400 hidden md:block">
+                <i class="fas fa-school mr-1"></i>
+                {{ centro.nombre }}
+            </span>
+        </div>
+
+        {% include "academico/_paginador.html" %}
+
     </div>
 
 </div>
 
-
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
 function eliminarNivel(id, nombre, url) {

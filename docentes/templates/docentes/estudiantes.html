@@ -1,4 +1,5 @@
 {% extends "home.html" %}
+{% load formatos %}
 
 {% block title %}
 Estudiantes Asignados
@@ -148,7 +149,10 @@ Estudiantes Asignados
                     </td>
 
                     <td class="px-4 py-3">
-                        {{ i.estudiante.nombre_completo }}
+                        <div class="flex items-center gap-2">
+                            {% avatar i.estudiante size='w-8 h-8' texto='text-xs' %}
+                            {{ i.estudiante.nombre_completo }}
+                        </div>
                     </td>
 
                     <td class="px-4 py-3">

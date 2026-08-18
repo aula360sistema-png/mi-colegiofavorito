@@ -1,57 +1,254 @@
 {% extends "home.html" %}
 
-{% block content %}
-<div class="max-w-6xl mx-auto">
+{% block title %}Asignaturas por Grado{% endblock %}
 
-    <div class="flex justify-between items-center mb-6">
-        <h2 class="text-2xl font-semibold">
-            📚 Asignaturas por Grado
-        </h2>
+{% block content %}
+
+<div class="max-w-7xl mx-auto">
+
+    <!-- Encabezado -->
+    <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6">
+
+        <div>
+            <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                <i class="fas fa-link text-blue-600"></i>
+                Asignaturas por Grado
+            </h2>
+            <p class="text-sm text-gray-500 mt-1">
+                Asociación de asignaturas a grados académicos
+            </p>
+        </div>
 
         <a href="{% url 'grado_asignatura_create' %}"
-           class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm">
-            + Asignar Asignatura
+           class="inline-flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-lg shadow-sm hover:bg-blue-700 hover:shadow transition text-sm font-semibold">
+            <i class="fas fa-plus"></i>
+            Nueva Asignación
         </a>
+
     </div>
 
-    <div class="bg-white shadow rounded overflow-hidden">
-        <table class="w-full text-sm">
-            <thead class="bg-gray-100 text-left">
-                <tr>
-                    <th class="px-4 py-2">Grado</th>
-                    <th class="px-4 py-2">Nivel</th>
-                    <th class="px-4 py-2">Asignatura</th>
-                    <th class="px-4 py-2 w-32">Acciones</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for r in relaciones %}
-                <tr class="border-t">
-                    <td class="px-4 py-2">{{ r.grado.nombre }}</td>
-                    <td class="px-4 py-2">{{ r.grado.nivel.nombre }}</td>
-                    <td class="px-4 py-2">{{ r.asignatura.nombre }}</td>
-                    <td class="px-4 py-2">
-                        <form method="post"
-                              action="{% url 'grado_asignatura_delete' r.id %}">
-                            {% csrf_token %}
-                            <button
-                                class="bg-red-600 text-white px-3 py-1 rounded text-xs hover:bg-red-700">
-                                Quitar
-                            </button>
-                        </form>
-                    </td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="4"
-                        class="px-4 py-6 text-center text-gray-500">
-                        No hay asignaciones registradas
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <!-- Tarjetas de resumen -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+
+        <div class="bg-white shadow-sm rounded-xl p-5 border border-gray-200 flex items-center gap-4">
+            <div class="w-12 h-12 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center text-xl">
+                <i class="fas fa-link"></i>
+            </div>
+            <div>
+                <p class="text-xs uppercase tracking-wide text-gray-500 font-semibold">Total asignaciones</p>
+                <p class="text-2xl font-bold text-gray-800">{{ stats.total }}</p>
+            </div>
+        </div>
+
+        <div class="bg-white shadow-sm rounded-xl p-5 border border-gray-200 flex items-center gap-4">
+            <div class="w-12 h-12 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center text-xl">
+                <i class="fas fa-school"></i>
+            </div>
+            <div>
+                <p class="text-xs uppercase tracking-wide text-gray-500 font-semibold">Grados</p>
+                <p class="text-2xl font-bold text-indigo-600">{{ stats.grados }}</p>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Filtros -->
+    <div class="bg-white shadow-sm rounded-xl border border-gray-200 p-4 mb-6">
+
+        <form method="get" id="filtro-form" class="flex flex-col md:flex-row gap-3">
+
+            <div class="flex-1 relative">
+                <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                <input
+                    id="busqueda-input"
+                    type="text"
+                    name="q"
+                    value="{{ q }}"
+                    placeholder="Buscar por grado, nivel o asignatura..."
+                    class="w-full border border-gray-300 rounded-lg pl-10 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+            </div>
+
+            <button type="submit"
+                    class="inline-flex items-center justify-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-lg hover:bg-blue-700 text-sm font-semibold">
+                <i class="fas fa-filter"></i>
+                Filtrar
+            </button>
+
+            {% if q %}
+            <a href="{% url 'grado_asignatura_list' %}"
+               class="inline-flex items-center justify-center gap-2 bg-gray-200 text-gray-700 px-5 py-2.5 rounded-lg hover:bg-gray-300 text-sm font-medium">
+                <i class="fas fa-times"></i>
+                Limpiar
+            </a>
+            {% endif %}
+
+        </form>
+
+        {% if q %}
+        <div class="flex flex-wrap items-center gap-2 mt-4 pt-4 border-t border-gray-100">
+            <span class="text-xs font-semibold text-gray-500 uppercase tracking-wide mr-1">Filtros activos:</span>
+            <span class="inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 border border-blue-200 px-3 py-1.5 rounded-full text-xs font-medium">
+                <i class="fas fa-search text-[10px]"></i>
+                "{{ q }}"
+                <button type="button" onclick="removeFilter('q')" class="hover:text-red-500 transition">
+                    <i class="fas fa-xmark"></i>
+                </button>
+            </span>
+            <a href="{% url 'grado_asignatura_list' %}"
+               class="inline-flex items-center gap-1.5 text-xs font-medium text-red-600 hover:text-red-700 hover:underline ml-2 transition">
+                <i class="fas fa-trash-can"></i>
+                Limpiar todo
+            </a>
+        </div>
+        {% endif %}
+
+    </div>
+
+    <script>
+      function removeFilter(param) {
+        const url = new URL(window.location.href)
+        url.searchParams.delete(param)
+        url.searchParams.delete('page')
+        window.location.href = url.toString()
+      }
+
+      document.addEventListener('DOMContentLoaded', function () {
+        const form = document.getElementById('filtro-form')
+        const input = document.getElementById('busqueda-input')
+        if (input) {
+          let timer
+          input.addEventListener('input', function () {
+            clearTimeout(timer)
+            timer = setTimeout(function () {
+              form.submit()
+            }, 450)
+          })
+        }
+      })
+    </script>
+
+    <!-- Tabla -->
+    <div class="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
+
+        <div class="flex items-center justify-between px-5 py-4 border-b border-gray-200 bg-gray-50">
+            <h3 class="font-semibold text-gray-800 flex items-center gap-2">
+                <i class="fas fa-list text-gray-400"></i>
+                Listado de asignaciones
+            </h3>
+            <span class="text-xs font-medium bg-blue-100 text-blue-700 px-2.5 py-1 rounded-full">
+                Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+            </span>
+        </div>
+
+        <div class="overflow-x-auto">
+
+            <table class="min-w-full divide-y divide-gray-200 text-sm">
+
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+                            Grado
+                        </th>
+                        <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+                            Asignatura
+                        </th>
+                        <th class="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">
+                            Acciones
+                        </th>
+                    </tr>
+                </thead>
+
+                <tbody class="divide-y divide-gray-100">
+
+                    {% for r in relaciones %}
+
+                    <tr class="hover:bg-blue-50/50 transition-colors">
+
+                        <td class="px-5 py-3">
+                            <div class="flex items-center gap-3">
+                                <div class="w-9 h-9 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 text-white flex items-center justify-center text-xs font-bold uppercase shrink-0">
+                                    {{ r.grado.nombre|slice:":1" }}
+                                </div>
+                                <div>
+                                    <p class="font-medium text-gray-800">{{ r.grado.nombre }}</p>
+                                    <p class="text-xs text-gray-400">{{ r.grado.nivel.nombre }}</p>
+                                </div>
+                            </div>
+                        </td>
+
+                        <td class="px-5 py-3">
+                            <span class="bg-violet-100 text-violet-700 px-2 py-0.5 rounded-md text-xs font-semibold">
+                                {{ r.asignatura.nombre }}
+                            </span>
+                        </td>
+
+                        <td class="px-5 py-3">
+                            <div class="flex items-center justify-end gap-2">
+
+                                <button
+                                    onclick="confirmarEliminacion('{{ r.id }}', '{{ r.grado.nombre }} - {{ r.asignatura.nombre }}', '{% url 'grado_asignatura_delete' r.id %}')"
+                                    class="inline-flex items-center gap-1.5 bg-red-100 text-red-700 px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-red-200 transition">
+                                    <i class="fas fa-trash"></i>
+                                    Eliminar
+                                </button>
+
+                            </div>
+                        </td>
+
+                    </tr>
+
+                    {% empty %}
+
+                    <tr>
+                        <td colspan="3" class="px-5 py-12 text-center">
+                            <i class="fas fa-link text-3xl text-gray-300 mb-3 block"></i>
+                            <p class="text-gray-500 font-medium">No hay asignaciones registradas.</p>
+                            <p class="text-xs text-gray-400 mt-1">Prueba con otro término de búsqueda.</p>
+                        </td>
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-5 py-3 border-t border-gray-200 bg-gray-50 text-sm text-gray-600">
+            <span>
+                Mostrando
+                <strong>{{ page_obj.start_index }}</strong>–
+                <strong>{{ page_obj.end_index }}</strong> de
+                <strong>{{ page_obj.paginator.count }}</strong> asignaciones
+            </span>
+        </div>
+
+        {% include "academico/_paginador.html" %}
+
     </div>
 
 </div>
+
+
+<script>
+function confirmarEliminacion(id, nombre, url) {
+    Swal.fire({
+        title: '¿Eliminar asignación?',
+        text: `Se eliminará "${nombre}"`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc2626',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            window.location.href = url;
+        }
+    });
+}
+</script>
+
 {% endblock %}

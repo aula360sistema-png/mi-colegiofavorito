@@ -1,94 +1,382 @@
 {% extends "home.html" %}
+{% load formatos %}
 
 {% block title %}Constancias de Estudios{% endblock %}
 
 {% block content %}
 
-<div class="max-w-6xl mx-auto">
+<div class="max-w-7xl mx-auto">
 
-    <div class="flex justify-between items-center mb-6">
+    <!-- Encabezado -->
+    <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6">
 
         <div>
-            <h2 class="text-2xl font-semibold">
-                📜 Constancias de Estudios
+            <a href="{% url 'estudiante_list' %}"
+               class="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-blue-600 mb-2 transition">
+                <i class="fas fa-arrow-left"></i>
+                Volver a estudiantes
+            </a>
+
+            <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                <i class="fas fa-scroll text-green-600"></i>
+                Constancias de Estudios
             </h2>
 
-            <p class="text-gray-600">
+            <p class="text-sm text-gray-500 mt-1">
                 Emite constancias del año escolar
-                {% if anio_actual %}{{ anio_actual.nombre }}{% else %}activo{% endif %}.
+                {% if anio_actual %}
+                <span class="font-medium text-gray-700">{{ anio_actual.nombre }}</span>
+                {% else %}activo{% endif %}.
             </p>
         </div>
 
     </div>
 
-    <!-- Búsqueda -->
-    <form method="GET" class="mb-6 bg-white shadow rounded p-4 flex gap-3 items-end">
+    <!-- Resumen -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
 
-        <div class="flex-1">
-            <label class="text-sm text-gray-600">Buscar por matrícula o nombre</label>
-            <input type="text" name="q" value="{{ q }}"
-                   placeholder="Ej: 2024001 o Juan Pérez"
-                   class="w-full border rounded px-3 py-2 text-sm mt-1">
+        <div class="bg-white shadow-sm rounded-xl p-5 border border-gray-200 flex items-center gap-4">
+            <div class="w-12 h-12 rounded-lg bg-green-100 text-green-600 flex items-center justify-center text-xl">
+                <i class="fas fa-users"></i>
+            </div>
+            <div>
+                <p class="text-xs uppercase tracking-wide text-gray-500 font-semibold">Total estudiantes</p>
+                <p class="text-2xl font-bold text-gray-800">{{ stats.total }}</p>
+            </div>
         </div>
 
-        <button class="bg-blue-600 text-white px-4 py-2 rounded text-sm">
-            Buscar
-        </button>
+        <div class="bg-white shadow-sm rounded-xl p-5 border border-gray-200 flex items-center gap-4">
+            <div class="w-12 h-12 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center text-xl">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <div>
+                <p class="text-xs uppercase tracking-wide text-gray-500 font-semibold">Matriculados</p>
+                <p class="text-2xl font-bold text-blue-600">{{ stats.matriculados }}</p>
+            </div>
+        </div>
 
-        {% if q %}
-            <a href="{% url 'constancias' %}"
-               class="ml-2 text-gray-500 underline text-sm self-center">
-                Limpiar
-            </a>
-        {% endif %}
+        <div class="bg-white shadow-sm rounded-xl p-5 border border-gray-200 flex items-center gap-4">
+            <div class="w-12 h-12 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center text-xl">
+                <i class="fas fa-exclamation-circle"></i>
+            </div>
+            <div>
+                <p class="text-xs uppercase tracking-wide text-gray-500 font-semibold">Sin matrícula</p>
+                <p class="text-2xl font-bold text-amber-600">{{ stats.sin_matricula }}</p>
+            </div>
+        </div>
 
-    </form>
+    </div>
 
-    <div class="bg-white shadow rounded overflow-hidden">
+    <!-- Búsqueda -->
+    <div class="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden mb-6">
 
-        <table class="w-full text-sm">
+        <div class="flex items-center gap-3 px-5 py-4 border-b border-gray-200 bg-gray-50">
+            <div class="w-9 h-9 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center">
+                <i class="fas fa-search"></i>
+            </div>
+            <div>
+                <h3 class="font-semibold text-gray-800">Buscar estudiante</h3>
+                <p class="text-xs text-gray-500">Los resultados se filtran automáticamente al escribir.</p>
+            </div>
+        </div>
 
-            <thead class="bg-gray-100 text-left">
-                <tr>
-                    <th class="px-4 py-2">Matrícula</th>
-                    <th class="px-4 py-2">Estudiante</th>
-                    <th class="px-4 py-2">Grado</th>
-                    <th class="px-4 py-2">Sección</th>
-                    <th class="px-4 py-2 text-center">Acción</th>
-                </tr>
-            </thead>
+        <form method="GET" id="filtro-form" class="p-5">
 
-            <tbody>
-                {% for e in estudiantes %}
-                    <tr class="border-t hover:bg-gray-50">
-                        <td class="px-4 py-2">{{ e.matricula }}</td>
-                        <td class="px-4 py-2">{{ e.nombre_completo }}</td>
-                        <td class="px-4 py-2">
-                            {{ e.constancia_grado|default:"—" }}
-                        </td>
-                        <td class="px-4 py-2">
-                            {{ e.constancia_seccion|default:"—" }}
-                        </td>
-                        <td class="px-4 py-2 text-center">
-                            <a href="{% url 'constancia_estudiante' e.id %}"
-                               target="_blank"
-                               class="bg-green-600 text-white px-3 py-1 rounded text-xs hover:bg-green-700">
-                                🖨️ Imprimir constancia
-                            </a>
-                        </td>
-                    </tr>
-                {% empty %}
+            <div class="relative">
+                <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+
+                <input
+                    id="busqueda-input"
+                    type="text"
+                    name="q"
+                    value="{{ q }}"
+                    placeholder="Buscar por matrícula o nombre... Ej: 2024001 o Juan Pérez"
+                    autocomplete="off"
+                    class="w-full border border-gray-300 rounded-xl pl-11 pr-10 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+
+                {% if q %}
+                <button
+                    type="button"
+                    onclick="removeFilter('q')"
+                    title="Limpiar búsqueda"
+                    class="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center rounded-full text-gray-400 hover:text-red-500 hover:bg-red-50 transition">
+                    <i class="fas fa-xmark"></i>
+                </button>
+                {% endif %}
+            </div>
+
+            {% if q %}
+            <div class="flex flex-wrap items-center gap-2 mt-4 pt-4 border-t border-gray-100">
+
+                <span class="text-xs font-semibold text-gray-500 uppercase tracking-wide mr-1">
+                    Filtros activos:
+                </span>
+
+                <span class="inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 border border-blue-200 px-3 py-1.5 rounded-full text-xs font-medium">
+                    <i class="fas fa-search text-[10px]"></i>
+                    "{{ q }}"
+                    <button type="button" onclick="removeFilter('q')" class="hover:text-red-500 transition">
+                        <i class="fas fa-xmark"></i>
+                    </button>
+                </span>
+
+                <a href="{% url 'constancias' %}"
+                   class="inline-flex items-center gap-1.5 text-xs font-medium text-red-600 hover:text-red-700 hover:underline ml-2 transition">
+                    <i class="fas fa-trash-can"></i>
+                    Limpiar todo
+                </a>
+
+            </div>
+            {% endif %}
+
+        </form>
+
+    </div>
+
+    <script>
+      function removeFilter(param) {
+        const url = new URL(window.location.href)
+        url.searchParams.delete(param)
+        window.location.href = url.toString()
+      }
+
+      document.addEventListener('DOMContentLoaded', function () {
+        const input = document.getElementById('busqueda-input')
+        let timer
+        input.addEventListener('input', function () {
+          clearTimeout(timer)
+          timer = setTimeout(function () {
+            document.getElementById('filtro-form').submit()
+          }, 450)
+        })
+      })
+    </script>
+
+    <!-- Tabla -->
+    <div class="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
+
+        <div class="flex items-center justify-between px-5 py-4 border-b border-gray-200 bg-gray-50">
+            <h3 class="font-semibold text-gray-800 flex items-center gap-2">
+                <i class="fas fa-table text-gray-400"></i>
+                Estudiantes
+            </h3>
+            <span class="text-xs font-medium bg-green-100 text-green-700 px-2.5 py-1 rounded-full">
+                Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+            </span>
+        </div>
+
+        <div class="overflow-x-auto">
+
+            <table class="min-w-full divide-y divide-gray-200 text-sm">
+
+                <thead class="bg-gray-50">
                     <tr>
-                        <td colspan="5" class="px-4 py-6 text-center text-gray-500">
-                            No hay estudiantes que coincidan con la búsqueda.
+                        <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+                            Matrícula
+                        </th>
+                        <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+                            Estudiante
+                        </th>
+                        <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+                            Grado
+                        </th>
+                        <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+                            Sección
+                        </th>
+                        <th class="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-500">
+                            Matrícula actual
+                        </th>
+                        <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+                            Deuda
+                        </th>
+                        <th class="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">
+                            Acción
+                        </th>
+                    </tr>
+                </thead>
+
+                <tbody class="divide-y divide-gray-100">
+
+                    {% for e in estudiantes %}
+                    <tr class="hover:bg-blue-50/50 transition-colors">
+
+                        <td class="px-5 py-3">
+                            <span class="font-mono text-sm text-gray-600">{{ e.matricula }}</span>
+                        </td>
+
+                        <td class="px-5 py-3">
+                            <div class="flex items-center gap-3">
+                                {% avatar e color='from-green-500 to-emerald-600' %}
+                                <p class="font-medium text-gray-800">{{ e.nombre_completo }}</p>
+                            </div>
+                        </td>
+
+                        <td class="px-5 py-3">
+                            {% if e.constancia_grado %}
+                            <span class="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-md text-xs font-semibold">
+                                {{ e.constancia_grado }}
+                            </span>
+                            {% else %}
+                            <span class="text-gray-300">—</span>
+                            {% endif %}
+                        </td>
+
+                        <td class="px-5 py-3">
+                            {% if e.constancia_seccion %}
+                            <span class="bg-gray-100 text-gray-600 px-2 py-0.5 rounded-md text-xs font-medium">
+                                {{ e.constancia_seccion }}
+                            </span>
+                            {% else %}
+                            <span class="text-gray-300">—</span>
+                            {% endif %}
+                        </td>
+
+                        <td class="px-5 py-3 text-center">
+                            {% if e.constancia_grado %}
+                            <span class="inline-flex items-center gap-1 bg-green-100 text-green-700 px-2.5 py-1 rounded-full text-xs font-semibold">
+                                <i class="fas fa-check-circle text-[10px]"></i>
+                                Matriculado
+                            </span>
+                            {% else %}
+                            <span class="inline-flex items-center gap-1 bg-red-100 text-red-700 px-2.5 py-1 rounded-full text-xs font-semibold">
+                                <i class="fas fa-times-circle text-[10px]"></i>
+                                Sin matrícula
+                            </span>
+                            {% endif %}
+                        </td>
+
+                        <td class="px-5 py-3">
+                            <div class="flex flex-wrap items-center gap-1">
+                                {% if e.constancia_deuda.tiene_deuda %}
+                                    {% if e.constancia_deuda.vencida %}
+                                    <span class="inline-flex items-center gap-1 bg-red-100 text-red-700 px-2.5 py-1 rounded-full text-xs font-semibold">
+                                        Vencida RD$ {{ e.constancia_deuda.vencida|dop0 }}
+                                    </span>
+                                    {% endif %}
+                                    {% if e.constancia_deuda.proxima %}
+                                    <span class="inline-flex items-center gap-1 bg-amber-100 text-amber-700 px-2.5 py-1 rounded-full text-xs font-semibold">
+                                        Próxima RD$ {{ e.constancia_deuda.proxima|dop0 }}
+                                    </span>
+                                    {% endif %}
+                                {% else %}
+                                <span class="inline-flex items-center gap-1 bg-green-100 text-green-700 px-2.5 py-1 rounded-full text-xs font-semibold">
+                                    <i class="fas fa-check-circle text-[10px]"></i>
+                                    Al día
+                                </span>
+                                {% endif %}
+                            </div>
+                        </td>
+
+                        <td class="px-5 py-3">
+                            <div class="flex items-center justify-end">
+                                {% if e.constancia_deuda.tiene_deuda %}
+                                <span title="No se puede emitir: el estudiante tiene deuda pendiente"
+                                      class="inline-flex items-center gap-1.5 bg-gray-200 text-gray-500 px-3 py-1.5 rounded-lg text-xs font-medium cursor-not-allowed">
+                                    <i class="fas fa-lock"></i>
+                                    Deuda pendiente
+                                </span>
+                                {% else %}
+                                <a href="{% url 'constancia_estudiante' e.id %}"
+                                   target="_blank"
+                                   class="inline-flex items-center gap-1.5 bg-green-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-green-700 transition">
+                                    <i class="fas fa-print"></i>
+                                    Imprimir constancia
+                                </a>
+                                {% endif %}
+                            </div>
+                        </td>
+
+                    </tr>
+                    {% empty %}
+
+                    <tr>
+                        <td colspan="7" class="px-5 py-12 text-center">
+                            <i class="fas fa-user-slash text-3xl text-gray-300 mb-3 block"></i>
+                            <p class="text-gray-500 font-medium">No hay estudiantes que coincidan con la búsqueda.</p>
+                            <p class="text-xs text-gray-400 mt-1">Prueba con otro término.</p>
                         </td>
                     </tr>
-                {% endfor %}
-            </tbody>
 
-        </table>
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-5 py-3 border-t border-gray-200 bg-gray-50 text-sm text-gray-600">
+
+            <span>
+                Mostrando
+                <strong>{{ page_obj.start_index }}</strong>–
+                <strong>{{ page_obj.end_index }}</strong> de
+                <strong>{{ page_obj.paginator.count }}</strong> estudiantes
+            </span>
+
+        </div>
+
+        {% if page_obj.paginator.num_pages > 1 %}
+        <div class="flex items-center justify-between px-5 py-3 border-t border-gray-100">
+
+            <div class="flex items-center gap-1">
+
+                {% if page_obj.has_previous %}
+                <a href="?{% if q %}q={{ q|urlencode }}&{% endif %}page=1"
+                   class="w-9 h-9 flex items-center justify-center rounded-lg text-sm text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition" title="Primera página">
+                    <i class="fas fa-angles-left text-xs"></i>
+                </a>
+                <a href="?{% if q %}q={{ q|urlencode }}&{% endif %}page={{ page_obj.previous_page_number }}"
+                   class="w-9 h-9 flex items-center justify-center rounded-lg text-sm text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition" title="Página anterior">
+                    <i class="fas fa-chevron-left text-xs"></i>
+                </a>
+                {% else %}
+                <span class="w-9 h-9 flex items-center justify-center rounded-lg text-sm text-gray-300">
+                    <i class="fas fa-chevron-left text-xs"></i>
+                </span>
+                {% endif %}
+
+                {% for num in page_obj.paginator.page_range %}
+                    {% if num >= page_obj.number|add:"-2" and num <= page_obj.number|add:"2" %}
+                        {% if num == page_obj.number %}
+                        <span class="w-9 h-9 flex items-center justify-center rounded-lg text-sm font-semibold bg-blue-600 text-white">
+                            {{ num }}
+                        </span>
+                        {% else %}
+                        <a href="?{% if q %}q={{ q|urlencode }}&{% endif %}page={{ num }}"
+                           class="w-9 h-9 flex items-center justify-center rounded-lg text-sm text-gray-600 hover:bg-gray-100 hover:text-gray-800 transition">
+                            {{ num }}
+                        </a>
+                        {% endif %}
+                    {% endif %}
+                {% endfor %}
+
+                {% if page_obj.has_next %}
+                <a href="?{% if q %}q={{ q|urlencode }}&{% endif %}page={{ page_obj.next_page_number }}"
+                   class="w-9 h-9 flex items-center justify-center rounded-lg text-sm text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition" title="Página siguiente">
+                    <i class="fas fa-chevron-right text-xs"></i>
+                </a>
+                <a href="?{% if q %}q={{ q|urlencode }}&{% endif %}page={{ page_obj.paginator.num_pages }}"
+                   class="w-9 h-9 flex items-center justify-center rounded-lg text-sm text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition" title="Última página">
+                    <i class="fas fa-angles-right text-xs"></i>
+                </a>
+                {% else %}
+                <span class="w-9 h-9 flex items-center justify-center rounded-lg text-sm text-gray-300">
+                    <i class="fas fa-chevron-right text-xs"></i>
+                </span>
+                {% endif %}
+
+            </div>
+
+            <span class="text-xs text-gray-400">
+                Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+            </span>
+
+        </div>
+        {% endif %}
 
     </div>
 
 </div>
+
 {% endblock %}

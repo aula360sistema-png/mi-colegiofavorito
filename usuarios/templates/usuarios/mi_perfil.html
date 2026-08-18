@@ -1,0 +1,211 @@
+{% extends "home.html" %}
+
+{% block title %}Mi perfil{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto space-y-6">
+
+    <div>
+        <h2 class="text-2xl font-semibold text-gray-800 flex items-center gap-2">
+            <i class="fas fa-user-circle text-indigo-600"></i> Mi perfil
+        </h2>
+        <p class="text-gray-500 text-sm mt-1">
+            Información de tu cuenta. Los datos se gestionan desde el módulo correspondiente.
+        </p>
+    </div>
+
+    <!-- ================= PERFIL ================= -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="px-6 py-5 bg-gradient-to-r from-indigo-600 via-indigo-600 to-blue-600 text-white flex items-center gap-5">
+            <div class="shrink-0">
+                {% if request.user.foto %}
+                <img src="{{ request.user.foto.url }}" alt="{{ request.user.get_full_name }}"
+                     class="w-20 h-20 rounded-full object-cover ring-4 ring-white/30">
+                {% elif perfil.foto %}
+                <img src="{{ perfil.foto.url }}" alt="{{ request.user.get_full_name }}"
+                     class="w-20 h-20 rounded-full object-cover ring-4 ring-white/30">
+                {% else %}
+                <span class="w-20 h-20 rounded-full bg-white/20 ring-4 ring-white/30 flex items-center justify-center text-2xl font-bold uppercase">
+                    {{ request.user.first_name|slice:":1" }}{{ request.user.last_name|slice:":1" }}
+                </span>
+                {% endif %}
+            </div>
+
+            <div>
+                <h3 class="text-xl font-bold">{{ request.user.get_full_name }}</h3>
+                <p class="text-indigo-100 text-sm">@{{ request.user.username }}</p>
+                <span class="inline-block mt-2 bg-white/20 text-white text-xs font-semibold px-3 py-1 rounded-full">
+                    {{ request.user.get_rol_display }}
+                </span>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4 px-6 py-5 text-sm">
+            <div>
+                <p class="text-xs text-gray-400 uppercase tracking-wide">Correo electrónico</p>
+                <p class="text-gray-800 font-medium mt-0.5 break-all">{{ request.user.email|default:"—" }}</p>
+            </div>
+            <div>
+                <p class="text-xs text-gray-400 uppercase tracking-wide">Centro educativo</p>
+                <p class="text-gray-800 font-medium mt-0.5">
+                    {{ centro.nombre|default:"—" }}
+                    {% if centro.codigo_minerd %}<span class="text-gray-400 text-xs">· {{ centro.codigo_minerd }}</span>{% endif %}
+                </p>
+            </div>
+            <div>
+                <p class="text-xs text-gray-400 uppercase tracking-wide">Miembro desde</p>
+                <p class="text-gray-800 font-medium mt-0.5">{{ request.user.fecha_creacion|date:"d/m/Y" }}</p>
+            </div>
+            <div>
+                <p class="text-xs text-gray-400 uppercase tracking-wide">Último acceso</p>
+                <p class="text-gray-800 font-medium mt-0.5">
+                    {{ request.user.last_login|date:"d/m/Y H:i"|default:"—" }}
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= DATOS DEL ROL ================= -->
+    {% if perfil %}
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-100">
+            <h4 class="font-semibold text-gray-800 flex items-center gap-2">
+                <i class="fas fa-id-card text-gray-400"></i> Datos como {{ request.user.get_rol_display }}
+            </h4>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4 px-6 py-5 text-sm">
+            {% if perfil.nombre_completo %}
+            <div>
+                <p class="text-xs text-gray-400 uppercase tracking-wide">Nombre completo</p>
+                <p class="text-gray-800 font-medium mt-0.5">{{ perfil.nombre_completo }}</p>
+            </div>
+            {% endif %}
+            {% if perfil.matricula %}
+            <div>
+                <p class="text-xs text-gray-400 uppercase tracking-wide">Matrícula</p>
+                <p class="text-gray-800 font-medium mt-0.5 font-mono">{{ perfil.matricula }}</p>
+            </div>
+            {% endif %}
+            {% if perfil.cedula %}
+            <div>
+                <p class="text-xs text-gray-400 uppercase tracking-wide">Cédula</p>
+                <p class="text-gray-800 font-medium mt-0.5">{{ perfil.cedula }}</p>
+            </div>
+            {% endif %}
+            {% if perfil.cargo %}
+            <div>
+                <p class="text-xs text-gray-400 uppercase tracking-wide">Cargo</p>
+                <p class="text-gray-800 font-medium mt-0.5">{{ perfil.get_cargo_display|default:perfil.cargo }}</p>
+            </div>
+            {% endif %}
+            {% if perfil.area_especialidad %}
+            <div>
+                <p class="text-xs text-gray-400 uppercase tracking-wide">Área de especialidad</p>
+                <p class="text-gray-800 font-medium mt-0.5">{{ perfil.area_especialidad }}</p>
+            </div>
+            {% endif %}
+            {% if perfil.tanda %}
+            <div>
+                <p class="text-xs text-gray-400 uppercase tracking-wide">Tanda</p>
+                <p class="text-gray-800 font-medium mt-0.5">{{ perfil.get_tanda_display|default:perfil.tanda }}</p>
+            </div>
+            {% endif %}
+            {% if perfil.telefono %}
+            <div>
+                <p class="text-xs text-gray-400 uppercase tracking-wide">Teléfono</p>
+                <p class="text-gray-800 font-medium mt-0.5">{{ perfil.telefono }}</p>
+            </div>
+            {% endif %}
+            {% if perfil.fecha_ingreso %}
+            <div>
+                <p class="text-xs text-gray-400 uppercase tracking-wide">Fecha de ingreso</p>
+                <p class="text-gray-800 font-medium mt-0.5">{{ perfil.fecha_ingreso|date:"d/m/Y" }}</p>
+            </div>
+            {% endif %}
+            {% if perfil.nombre_tutor %}
+            <div>
+                <p class="text-xs text-gray-400 uppercase tracking-wide">Tutor/a</p>
+                <p class="text-gray-800 font-medium mt-0.5">{{ perfil.nombre_tutor }}</p>
+            </div>
+            {% endif %}
+            {% if perfil.parentesco_tutor %}
+            <div>
+                <p class="text-xs text-gray-400 uppercase tracking-wide">Parentesco</p>
+                <p class="text-gray-800 font-medium mt-0.5">{{ perfil.parentesco_tutor }}</p>
+            </div>
+            {% endif %}
+            {% if perfil.nacionalidad %}
+            <div>
+                <p class="text-xs text-gray-400 uppercase tracking-wide">Nacionalidad</p>
+                <p class="text-gray-800 font-medium mt-0.5">{{ perfil.nacionalidad }}</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- ================= SEGURIDAD ================= -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-100">
+            <h4 class="font-semibold text-gray-800 flex items-center gap-2">
+                <i class="fas fa-shield-halved text-gray-400"></i> Seguridad y acceso
+            </h4>
+        </div>
+
+        <div class="px-6 py-5 space-y-4 text-sm">
+            <div class="flex items-center justify-between gap-4">
+                <div>
+                    <p class="font-medium text-gray-800">Autenticación de dos factores</p>
+                    <p class="text-gray-500 text-xs mt-0.5">
+                        {% if request.user.totp_activo %}
+                            Protege tu cuenta con un código adicional al iniciar sesión.
+                        {% else %}
+                            Aún no la tienes activada.
+                            {% if request.user.tiene_2fa_obligatorio %}
+                                Es obligatoria para tu rol.
+                            {% endif %}
+                        {% endif %}
+                    </p>
+                </div>
+                <span class="shrink-0 text-xs font-semibold px-3 py-1 rounded-full
+                    {% if request.user.totp_activo %}bg-emerald-100 text-emerald-700{% else %}bg-amber-100 text-amber-700{% endif %}">
+                    {% if request.user.totp_activo %}Activada{% else %}Desactivada{% endif %}
+                </span>
+            </div>
+
+            <div class="flex items-center justify-between gap-4 pt-4 border-t border-gray-100">
+                <div>
+                    <p class="font-medium text-gray-800">Contraseña</p>
+                    <p class="text-gray-500 text-xs mt-0.5">
+                        {% if dias_password is None %}
+                            Aún no has definido una fecha de cambio.
+                        {% else %}
+                            Cambiada hace {{ dias_password }} día{{ dias_password|pluralize }}.
+                        {% endif %}
+                        {% if request.user.password_vencida %}
+                            <span class="text-red-600 font-medium">· Vencida, cámbiala pronto.</span>
+                        {% endif %}
+                    </p>
+                </div>
+                <span class="shrink-0 text-xs font-semibold px-3 py-1 rounded-full
+                    {% if request.user.password_vencida %}bg-red-100 text-red-700{% else %}bg-emerald-100 text-emerald-700{% endif %}">
+                    {% if request.user.password_vencida %}Vencida{% else %}Al día{% endif %}
+                </span>
+            </div>
+        </div>
+
+        <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex flex-wrap gap-3">
+            <a href="{% url 'usuarios:gestionar_2fa' %}"
+               class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2 rounded-xl transition">
+                <i class="fas fa-shield-halved"></i> Gestionar 2FA
+            </a>
+            <a href="{% url 'usuarios:cambiar_contrasena' %}"
+               class="inline-flex items-center gap-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 text-sm font-medium px-4 py-2 rounded-xl transition">
+                <i class="fas fa-key"></i> Cambiar contraseña
+            </a>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

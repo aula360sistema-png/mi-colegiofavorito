@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="es">
   {% load static %}
+{% load formatos %}
 
   <head>
     <meta charset="UTF-8" />
@@ -14,13 +15,13 @@
     </title>
 
     <!-- Tailwind -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="{% static 'vendor/tailwind/tailwind.js' %}"></script>
 
     <!-- SweetAlert -->
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="{% static 'vendor/sweetalert2/sweetalert2.all.min.js' %}"></script>
 
     <!-- FontAwesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link rel="stylesheet" href="{% static 'vendor/fontawesome/css/all.min.css' %}" />
 
     <!-- CSS GLOBAL -->
     <link rel="stylesheet" href="{% static 'css/dashboard.css' %}" />
@@ -34,13 +35,60 @@
 
   <body class="dashboard-body">
     <div class="dashboard-layout">
+      <!-- ================= MENÚ DE PERFIL (avatar) ================= -->
+      <div id="perfil-menu" class="perfil-menu hidden" role="menu" aria-label="Menú de cuenta">
+        <div class="perfil-menu-header">
+          {% if request.user.foto %}
+          <img src="{{ request.user.foto.url }}" alt="{{ request.user.get_full_name }}"
+               class="w-11 h-11 rounded-full object-cover ring-2 ring-white/40">
+          {% else %}
+          <span class="w-11 h-11 rounded-full bg-white/20 ring-2 ring-white/40 flex items-center justify-center text-sm font-bold uppercase">
+            {{ request.user.first_name|slice:":1" }}{{ request.user.last_name|slice:":1" }}
+          </span>
+          {% endif %}
+          <div class="min-w-0">
+            <p class="font-semibold text-white truncate">{{ request.user.get_full_name|default:request.user.username }}</p>
+            <p class="text-indigo-100 text-xs truncate">{{ request.user.get_rol_display }} · @{{ request.user.username }}</p>
+          </div>
+        </div>
+
+        <div class="perfil-menu-body">
+          <a href="{% url 'usuarios:mi_perfil' %}" class="perfil-menu-item">
+            <i class="fas fa-user"></i>
+            <span>Mi perfil</span>
+          </a>
+          <a href="{% url 'usuarios:gestionar_2fa' %}" class="perfil-menu-item">
+            <i class="fas fa-shield-halved"></i>
+            <span>Mi seguridad</span>
+          </a>
+          <a href="{% url 'usuarios:cambiar_contrasena' %}" class="perfil-menu-item">
+            <i class="fas fa-key"></i>
+            <span>Cambiar contraseña</span>
+          </a>
+        </div>
+
+        <div class="perfil-menu-footer">
+          <a href="{% url 'usuarios:logout' %}" class="perfil-menu-item perfil-menu-logout">
+            <i class="fas fa-sign-out-alt"></i>
+            <span>Cerrar sesión</span>
+          </a>
+        </div>
+      </div>
+
       <!-- ================= SIDEBAR ================= -->
       <aside class="sidebar">
         <!-- HEADER -->
         <div class="sidebar-header">
-          <div class="sidebar-logo">
-            <i class="fas fa-graduation-cap"></i>
-          </div>
+          <button type="button" id="perfil-btn" class="sidebar-logo" title="Mi cuenta" onclick="togglePerfilMenu(event)" aria-haspopup="true" aria-expanded="false">
+            {% if request.user.foto %}
+            <img src="{{ request.user.foto.url }}" alt="{{ request.user.get_full_name }}"
+                 class="w-10 h-10 rounded-full object-cover ring-2 ring-white/30">
+            {% else %}
+            <span class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center text-sm font-bold uppercase">
+              {{ request.user.first_name|slice:":1" }}{{ request.user.last_name|slice:":1" }}
+            </span>
+            {% endif %}
+          </button>
 
           <div>
             <h1 class="sidebar-title">Mi Colegio</h1>
@@ -87,6 +135,41 @@
       <i class="fas fa-home"></i>
       <span>Inicio</span>
     </a>
+
+    <a href="{% url 'estudiante_solicitudes' %}" class="sidebar-link">
+      <i class="fas fa-scroll"></i>
+      <span>Certificados</span>
+    </a>
+
+    <a href="{% url 'estudiante_historial_clinico' %}" class="sidebar-link">
+      <i class="fas fa-heartbeat"></i>
+      <span>Historial clínico</span>
+    </a>
+  {% endif %}
+
+  <!-- ================= TUTOR ================= -->
+  {% if request.user.rol == 'tutor' %}
+    <div class="sidebar-section">
+      <span>
+        <i class="fas fa-users"></i>
+        Tutor
+      </span>
+    </div>
+
+    <a href="{% url 'tutores:tutor_inicio' %}" class="sidebar-link">
+      <i class="fas fa-home"></i>
+      <span>Inicio</span>
+    </a>
+
+    <a href="{% url 'tutores:tutor_solicitudes' %}" class="sidebar-link">
+      <i class="fas fa-scroll"></i>
+      <span>Certificados</span>
+    </a>
+
+    <a href="{% url 'tutores:tutor_historial_clinico' %}" class="sidebar-link">
+      <i class="fas fa-heartbeat"></i>
+      <span>Historial clínico</span>
+    </a>
   {% endif %}
 
   <!-- ================= SECRETARIA ================= -->
@@ -98,34 +181,98 @@
       </span>
     </div>
 
-    <a href="{% url 'core:home' %}" class="sidebar-link">
+    <a href="{% url 'administracion:dashboard_admin' %}" class="sidebar-link">
       <i class="fas fa-home"></i>
       <span>Inicio</span>
     </a>
 
-    <a href="{% url 'estudiante_list' %}" class="sidebar-link">
-      <i class="fas fa-user-graduate"></i>
-      <span>Estudiantes</span>
-    </a>
+    <!-- ESTUDIANTES -->
+    <button type="button" onclick="toggleMenu('menu-sec-estudiantes')" data-menu-toggle="menu-sec-estudiantes" class="menu-toggle">
+      <div>
+        <i class="fas fa-user-graduate"></i>
+        <span>Estudiantes</span>
+      </div>
 
-    <a href="{% url 'historial_estudiantes' %}" class="sidebar-link">
-      <i class="fas fa-file-pen"></i>
-      <span>Matrícula</span>
-    </a>
+      <i class="fas fa-chevron-down"></i>
+    </button>
 
-    <a href="{% url 'constancias' %}" class="sidebar-link">
-      <i class="fas fa-scroll"></i>
-      <span>Constancias</span>
-    </a>
+    <div id="menu-sec-estudiantes" class="submenu hidden">
+      <a href="{% url 'estudiante_list' %}" class="sidebar-sublink">
+        <i class="fas fa-list"></i>
+        <span>Listado</span>
+      </a>
 
-    <a href="{% url 'administracion:reportes' %}" class="sidebar-link">
-      <i class="fas fa-chart-bar"></i>
-      <span>Reportes</span>
+      <a href="{% url 'estudiante_create' %}" class="sidebar-sublink">
+        <i class="fas fa-user-plus"></i>
+        <span>Nuevo estudiante</span>
+      </a>
+
+      <a href="{% url 'historial_estudiantes' %}" class="sidebar-sublink">
+        <i class="fas fa-file-pen"></i>
+        <span>Matrícula</span>
+      </a>
+
+      <a href="{% url 'constancias' %}" class="sidebar-sublink">
+        <i class="fas fa-scroll"></i>
+        <span>Constancias</span>
+      </a>
+
+      <a href="{% url 'disciplina' %}" class="sidebar-sublink">
+        <i class="fas fa-shield-halved"></i>
+        <span>Disciplina</span>
+      </a>
+
+      <a href="{% url 'solicitudes_certificados' %}" class="sidebar-sublink">
+        <i class="fas fa-file-circle-check"></i>
+        <span>Solicitudes de certificados</span>
+      </a>
+
+      <a href="{% url 'historial_clinico_list' %}" class="sidebar-sublink">
+        <i class="fas fa-heartbeat"></i>
+        <span>Historial clínico</span>
+      </a>
+
+      <a href="{% url 'administracion:reportes' %}" class="sidebar-sublink">
+        <i class="fas fa-chart-bar"></i>
+        <span>Reportes</span>
+      </a>
+    </div>
+
+    <!-- DOCENTES -->
+    <button type="button" onclick="toggleMenu('menu-sec-docentes')" data-menu-toggle="menu-sec-docentes" class="menu-toggle">
+      <div>
+        <i class="fas fa-chalkboard-teacher"></i>
+        <span>Docentes</span>
+      </div>
+
+      <i class="fas fa-chevron-down"></i>
+    </button>
+
+    <div id="menu-sec-docentes" class="submenu hidden">
+      <a href="{% url 'docente_list' %}" class="sidebar-sublink">
+        <i class="fas fa-list"></i>
+        <span>Listado de docentes</span>
+      </a>
+
+      <a href="{% url 'docente_create' %}" class="sidebar-sublink">
+        <i class="fas fa-user-plus"></i>
+        <span>Nuevo docente</span>
+      </a>
+    </div>
+
+    <a href="{% url 'tutores:tutor_list' %}" class="sidebar-link">
+      <i class="fas fa-users"></i>
+      <span>Tutores</span>
     </a>
 
     <a href="{% url 'administracion:mantenimiento' %}" class="sidebar-link">
       <i class="fas fa-tools"></i>
       <span>Mantenimiento</span>
+    </a>
+
+    <a href="{% url 'auditoria:bitacora' %}" class="sidebar-link">
+      <i class="fas fa-book"></i>
+      <span>Bitácora</span>
     </a>
   {% endif %}
 
@@ -138,13 +285,18 @@
       </span>
     </div>
 
-    <a href="{% url 'core:home' %}" class="sidebar-link">
+    <a href="{% url 'administracion:dashboard_admin' %}" class="sidebar-link">
       <i class="fas fa-chart-pie"></i>
       <span>Dashboard</span>
     </a>
 
+    <a href="{% url 'usuarios:crear_miembro' %}" class="sidebar-link">
+      <i class="fas fa-user-plus"></i>
+      <span>Crear usuario</span>
+    </a>
+
     <!-- ESTUDIANTES -->
-    <button type="button" onclick="toggleMenu('menu-estudiantes')" class="menu-toggle">
+    <button type="button" onclick="toggleMenu('menu-estudiantes')" data-menu-toggle="menu-estudiantes" class="menu-toggle">
       <div>
         <i class="fas fa-user-graduate"></i>
         <span>Estudiantes</span>
@@ -164,6 +316,11 @@
         <span>Nuevo estudiante</span>
       </a>
 
+      <a href="{% url 'tutores:tutor_list' %}" class="sidebar-sublink">
+        <i class="fas fa-users"></i>
+        <span>Tutores</span>
+      </a>
+
       <a href="{% url 'administracion:seguimiento_estudiantes' %}" class="sidebar-sublink">
         <i class="fas fa-chart-line"></i>
         <span>Seguimiento académico</span>
@@ -179,6 +336,21 @@
         <span>Constancias</span>
       </a>
 
+      <a href="{% url 'solicitudes_certificados' %}" class="sidebar-sublink">
+        <i class="fas fa-file-circle-check"></i>
+        <span>Solicitudes de certificados</span>
+      </a>
+
+      <a href="{% url 'disciplina' %}" class="sidebar-sublink">
+        <i class="fas fa-shield-halved"></i>
+        <span>Disciplina y conducta</span>
+      </a>
+
+      <a href="{% url 'historial_clinico_list' %}" class="sidebar-sublink">
+        <i class="fas fa-heartbeat"></i>
+        <span>Historial clínico</span>
+      </a>
+
       <a href="{% url 'administracion:reportes' %}" class="sidebar-sublink">
         <i class="fas fa-chart-bar"></i>
         <span>Reportes</span>
@@ -186,7 +358,7 @@
     </div>
 
     <!-- MATRÍCULA -->
-    <button type="button" onclick="toggleMenu('menu-matricula')" class="menu-toggle">
+    <button type="button" onclick="toggleMenu('menu-matricula')" data-menu-toggle="menu-matricula" class="menu-toggle">
       <div>
         <i class="fas fa-file-pen"></i>
         <span>Matrícula</span>
@@ -203,7 +375,7 @@
     </div>
 
     <!-- DOCENTES -->
-    <button type="button" onclick="toggleMenu('menu-docentes')" class="menu-toggle">
+    <button type="button" onclick="toggleMenu('menu-docentes')" data-menu-toggle="menu-docentes" class="menu-toggle">
       <div>
         <i class="fas fa-chalkboard-teacher"></i>
         <span>Docentes</span>
@@ -220,7 +392,7 @@
     </div>
 
     <!-- PERSONAL -->
-    <button type="button" onclick="toggleMenu('menu-personal')" class="menu-toggle">
+    <button type="button" onclick="toggleMenu('menu-personal')" data-menu-toggle="menu-personal" class="menu-toggle">
       <div>
         <i class="fas fa-users"></i>
         <span>Personal</span>
@@ -234,11 +406,26 @@
         <i class="fas fa-users"></i>
         <span>Personal</span>
       </a>
+
+      <a href="{% url 'nomina:dashboard' %}" class="sidebar-sublink">
+        <i class="fas fa-money-check-dollar"></i>
+        <span>Nómina</span>
+      </a>
     </div>
 
     <a href="{% url 'administracion:mantenimiento' %}" class="sidebar-link">
       <i class="fas fa-tools"></i>
       <span>Mantenimiento</span>
+    </a>
+
+    <a href="{% url 'auditoria:bitacora' %}" class="sidebar-link">
+      <i class="fas fa-book"></i>
+      <span>Bitácora</span>
+    </a>
+
+    <a href="{% url 'core:configuracion_centro' %}" class="sidebar-link">
+      <i class="fas fa-sliders"></i>
+      <span>Configuración del centro</span>
     </a>
   {% endif %}
 
@@ -256,20 +443,101 @@
       <span>Inicio</span>
     </a>
 
-    <a href="{% url 'docente_list' %}" class="sidebar-link">
-      <i class="fas fa-chalkboard-teacher"></i>
-      <span>Docentes</span>
-    </a>
+    <!-- ESTUDIANTES -->
+    <button type="button" onclick="toggleMenu('menu-admin-estudiantes')" data-menu-toggle="menu-admin-estudiantes" class="menu-toggle">
+      <div>
+        <i class="fas fa-user-graduate"></i>
+        <span>Estudiantes</span>
+      </div>
 
-    <a href="{% url 'estudiante_list' %}" class="sidebar-link">
-      <i class="fas fa-user-graduate"></i>
-      <span>Estudiantes</span>
-    </a>
+      <i class="fas fa-chevron-down"></i>
+    </button>
 
-    <a href="{% url 'historial_estudiantes' %}" class="sidebar-link">
-      <i class="fas fa-file-pen"></i>
-      <span>Matrícula</span>
-    </a>
+    <div id="menu-admin-estudiantes" class="submenu hidden">
+      <a href="{% url 'estudiante_list' %}" class="sidebar-sublink">
+        <i class="fas fa-list"></i>
+        <span>Listado</span>
+      </a>
+
+      <a href="{% url 'estudiante_create' %}" class="sidebar-sublink">
+        <i class="fas fa-user-plus"></i>
+        <span>Nuevo estudiante</span>
+      </a>
+
+      <a href="{% url 'tutores:tutor_list' %}" class="sidebar-sublink">
+        <i class="fas fa-users"></i>
+        <span>Tutores</span>
+      </a>
+
+      <a href="{% url 'historial_estudiantes' %}" class="sidebar-sublink">
+        <i class="fas fa-file-pen"></i>
+        <span>Matrícula</span>
+      </a>
+
+      <a href="{% url 'constancias' %}" class="sidebar-sublink">
+        <i class="fas fa-scroll"></i>
+        <span>Constancias</span>
+      </a>
+
+      <a href="{% url 'disciplina' %}" class="sidebar-sublink">
+        <i class="fas fa-shield-halved"></i>
+        <span>Disciplina</span>
+      </a>
+
+      <a href="{% url 'solicitudes_certificados' %}" class="sidebar-sublink">
+        <i class="fas fa-file-circle-check"></i>
+        <span>Solicitudes de certificados</span>
+      </a>
+
+      <a href="{% url 'historial_clinico_list' %}" class="sidebar-sublink">
+        <i class="fas fa-heartbeat"></i>
+        <span>Historial clínico</span>
+      </a>
+
+      <a href="{% url 'administracion:reportes' %}" class="sidebar-sublink">
+        <i class="fas fa-chart-bar"></i>
+        <span>Reportes</span>
+      </a>
+    </div>
+
+    <!-- DOCENTES -->
+    <button type="button" onclick="toggleMenu('menu-admin-docentes')" data-menu-toggle="menu-admin-docentes" class="menu-toggle">
+      <div>
+        <i class="fas fa-chalkboard-teacher"></i>
+        <span>Docentes</span>
+      </div>
+
+      <i class="fas fa-chevron-down"></i>
+    </button>
+
+    <div id="menu-admin-docentes" class="submenu hidden">
+      <a href="{% url 'docente_list' %}" class="sidebar-sublink">
+        <i class="fas fa-list"></i>
+        <span>Listado de docentes</span>
+      </a>
+    </div>
+
+    <!-- PERSONAL -->
+    <button type="button" onclick="toggleMenu('menu-admin-personal')" data-menu-toggle="menu-admin-personal" class="menu-toggle">
+      <div>
+        <i class="fas fa-users"></i>
+        <span>Personal</span>
+      </div>
+
+      <i class="fas fa-chevron-down"></i>
+    </button>
+
+    <div id="menu-admin-personal" class="submenu hidden">
+      <a href="{% url 'administracion:listado_personal' %}" class="sidebar-sublink">
+        <i class="fas fa-users"></i>
+        <span>Personal</span>
+      </a>
+
+      <a href="{% url 'nomina:dashboard' %}" class="sidebar-sublink">
+        <i class="fas fa-money-check-dollar"></i>
+        <span>Nómina</span>
+      </a>
+    </div>
 
     <a href="{% url 'usuarios:crear_miembro' %}" class="sidebar-link">
       <i class="fas fa-user-plus"></i>
@@ -283,8 +551,18 @@
       </a>
     {% endif %}
 
+    <a href="{% url 'administracion:mantenimiento' %}" class="sidebar-link">
+      <i class="fas fa-tools"></i>
+      <span>Mantenimiento</span>
+    </a>
+
+    <a href="{% url 'auditoria:bitacora' %}" class="sidebar-link">
+      <i class="fas fa-book"></i>
+      <span>Bitácora</span>
+    </a>
+
     <!-- CONFIGURACION GLOBAL -->
-    <button type="button" onclick="toggleMenu('menu-configuracion')" class="menu-toggle">
+    <button type="button" onclick="toggleMenu('menu-configuracion')" data-menu-toggle="menu-configuracion" class="menu-toggle">
       <div>
         <i class="fas fa-sliders"></i>
         <span>Configuración global</span>
@@ -299,10 +577,12 @@
         <span>Seleccionar centro</span>
       </a>
 
+      {% if request.user.rol == 'superadmin' or request.user.is_superuser %}
       <a href="{% url 'core:configuracion_centro' %}" class="sidebar-sublink">
         <i class="fas fa-sliders"></i>
         <span>Configuración del centro</span>
       </a>
+      {% endif %}
 
       <a href="{% url 'admin:index' %}" class="sidebar-sublink">
         <i class="fas fa-shield-halved"></i>
@@ -321,7 +601,7 @@
     </div>
 
     {% for modulo in modulos_sidebar %}
-      <button type="button" onclick="toggleMenu('{{ modulo.id }}')" class="menu-toggle">
+      <button type="button" onclick="toggleMenu('{{ modulo.id }}')" data-menu-toggle="{{ modulo.id }}" class="menu-toggle">
         <div>
           <i class="fas {{ modulo.icono }}"></i>
           <span>{{ modulo.nombre }}</span>
@@ -367,9 +647,54 @@
     <script>
       function toggleMenu(id) {
         const menu = document.getElementById(id)
-      
+        const button = document.querySelector(`[data-menu-toggle="${id}"]`)
+        const collapsed = document.querySelector('.dashboard-layout').classList.contains('sidebar-collapsed')
+
+        if (collapsed) return
+
         menu.classList.toggle('hidden')
+        if (button) button.classList.toggle('open')
       }
+
+      function togglePerfilMenu(event) {
+        if (event) event.stopPropagation()
+        const menu = document.getElementById('perfil-menu')
+        const btn = document.getElementById('perfil-btn')
+
+        if (!menu.classList.contains('hidden')) {
+          closePerfilMenu()
+          return
+        }
+
+        const rect = btn.getBoundingClientRect()
+        const menuWidth = menu.offsetWidth || 268
+        const left = Math.max(8, Math.min(rect.left, window.innerWidth - menuWidth - 8))
+        menu.style.left = left + 'px'
+        menu.style.top = (rect.bottom + 8) + 'px'
+
+        menu.classList.remove('hidden')
+        btn.setAttribute('aria-expanded', 'true')
+      }
+
+      function closePerfilMenu() {
+        const menu = document.getElementById('perfil-menu')
+        if (menu.classList.contains('hidden')) return
+        menu.classList.add('hidden')
+        const btn = document.getElementById('perfil-btn')
+        if (btn) btn.setAttribute('aria-expanded', 'false')
+      }
+
+      document.addEventListener('click', function (e) {
+        const menu = document.getElementById('perfil-menu')
+        const btn = document.getElementById('perfil-btn')
+        if (!menu || menu.classList.contains('hidden')) return
+        if (menu.contains(e.target) || (btn && btn.contains(e.target))) return
+        closePerfilMenu()
+      })
+
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') closePerfilMenu()
+      })
 
       function toggleSidebar() {
         const layout = document.querySelector('.dashboard-layout')
@@ -385,6 +710,30 @@
         icon.classList.toggle('fa-angles-right', collapsed)
       }
 
+      function highlightActiveLink() {
+        const path = window.location.pathname
+
+        document.querySelectorAll('.sidebar-link, .sidebar-sublink').forEach(function (link) {
+          const href = link.getAttribute('href')
+          if (!href) return
+
+          const url = new URL(href, window.location.origin)
+
+          if (path === url.pathname) {
+            link.classList.add('active')
+          }
+        })
+
+        // Abre el submenú que contenga el enlace activo
+        document.querySelectorAll('.submenu').forEach(function (menu) {
+          if (menu.querySelector('.sidebar-sublink.active')) {
+            menu.classList.remove('hidden')
+            const button = document.querySelector(`[data-menu-toggle="${menu.id}"]`)
+            if (button) button.classList.add('open')
+          }
+        })
+      }
+
       document.addEventListener('DOMContentLoaded', function () {
         const layout = document.querySelector('.dashboard-layout')
         const collapsed = localStorage.getItem('sidebar-collapsed') === '1'
@@ -392,6 +741,8 @@
           layout.classList.add('sidebar-collapsed')
           updateToggleIcon(true)
         }
+
+        highlightActiveLink()
       })
     </script>
 
@@ -412,6 +763,58 @@
 
         });
       </script>
+    {% endif %}
+
+    {% if request.user.rol == 'docente' %}
+    <script>
+      (function () {
+        var URL_ESTADO = '{% url "asistencia:estado_asistencia" %}';
+        var URL_PASE = '{% url "asistencia:tomar_asistencia" %}';
+        var INTERVALO_MS = 5 * 60 * 1000;
+        var EN_ASISTENCIA = window.location.pathname.indexOf('/asistencia/') !== -1;
+        var pendienteActiva = false;
+
+        function verificarAsistencia() {
+          fetch(URL_ESTADO, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+          })
+          .then(function (r) { return r.json(); })
+          .then(function (data) {
+            if (data.pendiente) {
+              if (!pendienteActiva) {
+                pendienteActiva = true;
+                Swal.fire({
+                  toast: true,
+                  position: 'top-end',
+                  icon: 'warning',
+                  title: 'Pase de lista pendiente',
+                  text: 'Aún no has registrado la asistencia de hoy.',
+                  showConfirmButton: true,
+                  confirmButtonText: 'Ir ahora',
+                  confirmButtonColor: '#2563eb',
+                  timer: 20000,
+                  timerProgressBar: true
+                }).then(function (result) {
+                  if (result.isConfirmed) {
+                    window.location.href = URL_PASE;
+                  }
+                });
+              }
+            } else {
+              pendienteActiva = false;
+            }
+          })
+          .catch(function () {});
+        }
+
+        if (!EN_ASISTENCIA) {
+          document.addEventListener('DOMContentLoaded', function () {
+            setTimeout(verificarAsistencia, 3000);
+            setInterval(verificarAsistencia, INTERVALO_MS);
+          });
+        }
+      })();
+    </script>
     {% endif %}
   </body>
 </html>

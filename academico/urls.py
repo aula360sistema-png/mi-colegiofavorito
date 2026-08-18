@@ -1,16 +1,12 @@
 from django.urls import path
 
 from administracion.views import anio_escolar_create, anio_escolar_list, anio_escolar_update
-from .views import area_competencia_create, area_competencia_delete, area_competencia_list, competencia_create, competencia_delete, competencia_list, competencia_update, docentemateria_create, docentemateria_delete, docentemateria_list, docentemateria_update, registrar_calificaciones, cerrar_anio_escolar
+from .views import competencia_create, competencia_delete, competencia_list, competencia_update, docentemateria_create, docentemateria_delete, docentemateria_list, docentemateria_update, cerrar_anio_escolar
 from . import views
 
 
 urlpatterns = [
-    path(
-        'calificaciones/<int:inscripcion_id>/<int:asignatura_id>/',
-        registrar_calificaciones,
-        name='registrar_calificaciones'
-    ),
+    path('curriculo/', views.curriculo, name='curriculo'),
 
 path(
     'ajax/asignaturas-por-grado/<int:grado_id>/',
@@ -30,6 +26,7 @@ path(
     path('niveles/nuevo/', views.nivel_create, name='nivel_create'),
     path('niveles/<int:pk>/editar/', views.nivel_update, name='nivel_update'),
     path('niveles/<int:pk>/eliminar/', views.nivel_delete, name='nivel_delete'),
+    path('niveles/estructura-minerd/', views.estructura_minerd, name='estructura_minerd'),
 
 # academico/urls.py
 path(
@@ -86,11 +83,8 @@ path('competencias/nueva/', competencia_create, name='competencia_create'),
 path('competencias/<int:pk>/editar/', competencia_update, name='competencia_update'),
 path('competencias/<int:pk>/eliminar/', competencia_delete, name='competencia_delete'),
 
-path('area-competencias/', area_competencia_list, name='area_competencia_list'),
-path('area-competencias/nueva/', area_competencia_create, name='area_competencia_create'),
-path('area-competencias/<int:pk>/eliminar/', area_competencia_delete, name='area_competencia_delete'),
-
     path('periodos/cerrar-todos/', views.cerrar_todos_los_periodos, name='cerrar_todos_periodos'),
+    path('periodos/<int:pk>/alternar/', views.alternar_periodo_anio, name='alternar_periodo_anio'),
 
     path('periodos/', views.periodo_list, name='periodo_list'),
     path('periodos/nuevo/', views.periodo_create, name='periodo_create'),
@@ -107,5 +101,15 @@ path('docente-materia/<int:pk>/eliminar/', docentemateria_delete, name='docentem
     path('anio-escolar/crear/', anio_escolar_create, name='anio_escolar_create'),
     path('anio-escolar/<int:pk>/editar/', anio_escolar_update, name='anio_escolar_update'),
     path('anio-escolar/<int:pk>/cerrar/', views.cerrar_anio_escolar, name='cerrar_anio_escolar'),
+
+    path('franjas/', views.franja_list, name='franja_list'),
+    path('franjas/nueva/', views.franja_create, name='franja_create'),
+    path('franjas/<int:pk>/editar/', views.franja_update, name='franja_update'),
+    path('franjas/<int:pk>/eliminar/', views.franja_delete, name='franja_delete'),
+
+    path('horario/', views.horario_list, name='horario_list'),
+    path('horario/clase/nueva/', views.horario_clase_create, name='horario_clase_create'),
+    path('horario/clase/<int:pk>/editar/', views.horario_clase_update, name='horario_clase_update'),
+    path('horario/clase/<int:pk>/eliminar/', views.horario_clase_delete, name='horario_clase_delete'),
 
 ]

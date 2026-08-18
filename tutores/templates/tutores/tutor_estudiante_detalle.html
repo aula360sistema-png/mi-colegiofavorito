@@ -1,0 +1,270 @@
+{% extends 'home.html' %}
+{% load formatos %}
+
+{% block title %}Estudiante - Portal Tutor{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-6">
+
+    <a href="{% url 'tutores:tutor_inicio' %}"
+       class="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700">
+        <i class="fas fa-arrow-left"></i> Volver a mis estudiantes
+    </a>
+
+    <!-- ==================== CABECERA ==================== -->
+    <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-teal-700 via-teal-600 to-cyan-600 shadow-xl">
+        <div class="absolute inset-0 opacity-20"
+             style="background-image: radial-gradient(circle at 20% 30%, white 1px, transparent 1px); background-size: 24px 24px;">
+        </div>
+
+        <div class="relative p-6 flex items-center gap-6">
+            <div class="shrink-0">
+                {% avatar estudiante size='w-20 h-20' color='from-teal-500 to-cyan-600' texto='text-3xl' extra='ring-4 ring-white/30' %}
+            </div>
+
+            <div class="flex-1 min-w-0">
+                <p class="text-teal-200 text-sm font-medium uppercase tracking-wider">Estudiante a mi cargo</p>
+                <h2 class="text-2xl font-bold text-white truncate">{{ estudiante.nombre_completo }}</h2>
+                <p class="text-teal-100 text-sm mt-1">
+                    Matrícula {{ estudiante.matricula }} · {{ estudiante.get_sexo_display }} · {{ estudiante.edad }} años
+                </p>
+
+                <div class="flex flex-wrap gap-2 mt-3">
+                    {% if estudiante.estado == "activo" %}
+                        <span class="bg-green-500/20 text-teal-50 px-2 py-1 rounded text-xs font-medium">Activo</span>
+                    {% elif estudiante.estado == "retirado" %}
+                        <span class="bg-yellow-500/20 text-yellow-100 px-2 py-1 rounded text-xs font-medium">Retirado</span>
+                    {% else %}
+                        <span class="bg-blue-400/20 text-blue-50 px-2 py-1 rounded text-xs font-medium">Egresado</span>
+                    {% endif %}
+
+                    {% if inscripcion_actual %}
+                        <span class="bg-white/10 text-white px-2 py-1 rounded text-xs font-medium">
+                            {{ inscripcion_actual.inscripcion.grado.nombre }} · {{ inscripcion_actual.inscripcion.seccion.nombre }}
+                        </span>
+                        <span class="bg-white/10 text-white px-2 py-1 rounded text-xs font-medium">
+                            {{ inscripcion_actual.anio.nombre }}
+                        </span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <a href="{% url 'tutores:tutor_historial_clinico' %}"
+               class="bg-white/10 text-white border border-white/30 px-4 py-2 rounded-lg font-medium hover:bg-white/20">
+                <i class="fas fa-heartbeat mr-1"></i> Historial clínico
+            </a>
+        </div>
+    </div>
+
+    <!-- ==================== RESUMEN ==================== -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+            <p class="text-xs text-gray-500 font-medium mb-1">Grado actual</p>
+            {% if inscripcion_actual %}
+                <p class="font-semibold text-gray-800">{{ inscripcion_actual.inscripcion.grado.nombre }}</p>
+                <p class="text-xs text-gray-500">Sección {{ inscripcion_actual.inscripcion.seccion.nombre }}</p>
+            {% else %}
+                <p class="text-sm text-gray-400">Sin matrícula activa</p>
+            {% endif %}
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+            <p class="text-xs text-gray-500 font-medium mb-1">Promedio general</p>
+            {% if inscripcion_actual and inscripcion_actual.promedio_general is not None %}
+                <p class="text-2xl font-bold text-emerald-600">{{ inscripcion_actual.promedio_general }}</p>
+                <p class="text-xs text-gray-500">{{ inscripcion_actual.anio.nombre }}</p>
+            {% else %}
+                <p class="text-sm text-gray-400">Sin calificaciones</p>
+            {% endif %}
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+            <p class="text-xs text-gray-500 font-medium mb-1">Asistencia</p>
+            {% if inscripcion_actual and inscripcion_actual.asistencia.porcentaje is not None %}
+                <p class="text-2xl font-bold text-blue-700">{{ inscripcion_actual.asistencia.porcentaje }}%</p>
+                <p class="text-xs text-gray-500">{{ inscripcion_actual.asistencia.presente }} presentes · {{ inscripcion_actual.asistencia.ausente }} ausencias</p>
+            {% else %}
+                <p class="text-sm text-gray-400">Sin registro</p>
+            {% endif %}
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+            <p class="text-xs text-gray-500 font-medium mb-1">Años cursados</p>
+            <p class="text-2xl font-bold text-gray-800">{{ total_anios }}</p>
+        </div>
+    </div>
+
+    <!-- ==================== DATOS DEL ESTUDIANTE ==================== -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-100">
+            <h3 class="font-semibold text-gray-800 flex items-center gap-2">
+                <i class="fas fa-id-card text-teal-500"></i> Datos del estudiante
+            </h3>
+        </div>
+
+        <dl class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-3 text-sm p-6">
+            <div>
+                <dt class="text-gray-500 text-xs">Matrícula</dt>
+                <dd class="font-medium">{{ estudiante.matricula }}</dd>
+            </div>
+
+            <div>
+                <dt class="text-gray-500 text-xs">Sexo</dt>
+                <dd class="font-medium">{{ estudiante.get_sexo_display }}</dd>
+            </div>
+
+            <div>
+                <dt class="text-gray-500 text-xs">Fecha de nacimiento</dt>
+                <dd class="font-medium">{{ estudiante.fecha_nacimiento|default:"No registrada" }}</dd>
+            </div>
+
+            <div>
+                <dt class="text-gray-500 text-xs">Lugar de nacimiento</dt>
+                <dd class="font-medium">{{ estudiante.lugar_nacimiento|default:"No registrado" }}</dd>
+            </div>
+
+            <div>
+                <dt class="text-gray-500 text-xs">Nacionalidad</dt>
+                <dd class="font-medium">{{ estudiante.nacionalidad|default:"No registrada" }}</dd>
+            </div>
+
+            <div>
+                <dt class="text-gray-500 text-xs">Teléfono</dt>
+                <dd class="font-medium">{{ estudiante.telefono|default:"No registrado" }}</dd>
+            </div>
+
+            <div class="sm:col-span-2 lg:col-span-3">
+                <dt class="text-gray-500 text-xs">Dirección</dt>
+                <dd class="font-medium">{{ estudiante.direccion|default:"No registrada" }}</dd>
+            </div>
+        </dl>
+    </div>
+
+    <!-- ==================== ASIGNATURAS Y CALIFICACIONES ==================== -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-100">
+            <h3 class="font-semibold text-gray-800 flex items-center gap-2">
+                <i class="fas fa-book-open text-teal-500"></i> Asignaturas y calificaciones
+            </h3>
+        </div>
+
+        <div class="p-6">
+            {% if kardex.anios %}
+
+                <!-- Trayectoria -->
+                <div class="overflow-x-auto mb-6">
+                    <table class="min-w-full divide-y divide-gray-200 text-sm">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-3 text-left font-semibold">Año escolar</th>
+                                <th class="px-4 py-3 text-left font-semibold">Grado</th>
+                                <th class="px-4 py-3 text-left font-semibold">Sección</th>
+                                <th class="px-4 py-3 text-center font-semibold">Asistencia</th>
+                                <th class="px-4 py-3 text-center font-semibold">Promedio</th>
+                                <th class="px-4 py-3 text-center font-semibold">Situación final</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            {% for y in kardex.anios %}
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-4 py-3">{{ y.anio.nombre }}</td>
+                                <td class="px-4 py-3">{{ y.inscripcion.grado.nombre }}</td>
+                                <td class="px-4 py-3">{{ y.inscripcion.seccion.nombre }}</td>
+                                <td class="px-4 py-3 text-center">
+                                    {% if y.asistencia.porcentaje is not None %}{{ y.asistencia.porcentaje }}%{% else %}-{% endif %}
+                                </td>
+                                <td class="px-4 py-3 text-center font-semibold">{{ y.promedio_general|default:"-" }}</td>
+                                <td class="px-4 py-3 text-center">{{ y.inscripcion.get_estado_final_display }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Detalle por año -->
+                {% for y in kardex.anios %}
+                <details class="mb-4 border rounded" {% if forloop.last %}open{% endif %}>
+                    <summary class="cursor-pointer px-4 py-3 bg-gray-50 font-semibold text-sm">
+                        {{ y.anio.nombre }} — {{ y.inscripcion.grado.nombre }} {{ y.inscripcion.seccion.nombre }}
+                    </summary>
+
+                    <div class="p-4">
+                        {% if y.asignaturas %}
+                        <div class="overflow-x-auto mb-4">
+                            <table class="min-w-full divide-y divide-gray-200 text-sm">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-3 py-2 text-left font-semibold">Área</th>
+                                        <th class="px-3 py-2 text-left font-semibold">Asignatura</th>
+                                        {% for p in y.periodos %}
+                                            <th class="px-3 py-2 text-center font-semibold">{{ p }}</th>
+                                        {% endfor %}
+                                        <th class="px-3 py-2 text-center font-semibold">PF</th>
+                                        {% if y.tiene_completivo %}
+                                            <th class="px-3 py-2 text-center font-semibold">Completivo</th>
+                                        {% endif %}
+                                        <th class="px-3 py-2 text-center font-semibold">Estado</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100">
+                                    {% for asig in y.asignaturas %}
+                                    <tr class="hover:bg-gray-50">
+                                        <td class="px-3 py-2">{{ asig.area }}</td>
+                                        <td class="px-3 py-2">{{ asig.asignatura }}</td>
+                                        {% for n in asig.notas_periodo %}
+                                            <td class="px-3 py-2 text-center">{{ n.promedio|default:"-" }}</td>
+                                        {% endfor %}
+                                        <td class="px-3 py-2 text-center font-semibold">{{ asig.pf|default:"-" }}</td>
+                                        {% if y.tiene_completivo %}
+                                            <td class="px-3 py-2 text-center">
+                                                {% if asig.nota_completivo is not None %}
+                                                    {{ asig.nota_completivo }}
+                                                    {% if asig.aprueba_completivo %}
+                                                        <span class="text-emerald-600 text-xs">✓</span>
+                                                    {% else %}
+                                                        <span class="text-red-600 text-xs">✗</span>
+                                                    {% endif %}
+                                                {% else %}
+                                                    -
+                                                {% endif %}
+                                            </td>
+                                        {% endif %}
+                                        <td class="px-3 py-2 text-center">
+                                            {% if asig.estado == "aprobada" %}
+                                                <span class="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded text-xs font-medium">Aprobada</span>
+                                            {% elif asig.estado == "reprobada" %}
+                                                <span class="bg-red-100 text-red-700 px-2 py-0.5 rounded text-xs font-medium">Reprobada</span>
+                                            {% else %}
+                                                <span class="bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-xs font-medium">Sin notas</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <p class="text-sm text-gray-500">Sin asignaturas registradas para este año.</p>
+                        {% endif %}
+
+                        {% if y.asistencia.total %}
+                        <p class="text-xs text-gray-500">
+                            Asistencia: {{ y.asistencia.presente }} presentes · {{ y.asistencia.tardanza }} tardanzas ·
+                            {{ y.asistencia.justificado }} justificadas · {{ y.asistencia.ausente }} ausencias
+                            ({{ y.asistencia.porcentaje }}% de asistencia).
+                        </p>
+                        {% endif %}
+                    </div>
+                </details>
+                {% endfor %}
+
+            {% else %}
+                <p class="text-sm text-gray-500">
+                    Este estudiante aún no tiene asignaturas ni calificaciones registradas.
+                </p>
+            {% endif %}
+        </div>
+    </div>
+
+</div>
+{% endblock %}

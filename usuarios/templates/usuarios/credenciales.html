@@ -1,0 +1,115 @@
+{% extends "home.html" %}
+
+{% block title %}Credenciales Generadas{% endblock %}
+
+{% block content %}
+<div class="max-w-xl mx-auto">
+
+    <div class="bg-white shadow-sm rounded-2xl border border-gray-200 overflow-hidden">
+
+        <!-- Header -->
+        <div class="flex items-center gap-4 px-6 py-5 bg-gradient-to-r from-emerald-500 to-teal-600">
+            <div class="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+                <i class="fas fa-check text-white text-xl"></i>
+            </div>
+            <div>
+                <h2 class="text-lg font-bold text-white">¡{{ tipo_nombre }} creado correctamente!</h2>
+                <p class="text-sm text-emerald-50">Guarde estas credenciales, son de un solo uso.</p>
+            </div>
+        </div>
+
+        <!-- Cuerpo -->
+        <div class="p-6 space-y-5">
+
+            <!-- Datos del centro -->
+            <div class="flex items-center gap-3 bg-gray-50 rounded-xl px-4 py-3">
+                <div class="w-9 h-9 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center">
+                    <i class="fas fa-school"></i>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-500">Centro educativo</p>
+                    <p class="text-sm font-semibold text-gray-800">{{ centro }}</p>
+                </div>
+                {% if cargo %}
+                <span class="ml-auto inline-flex items-center gap-1.5 bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-semibold">
+                    <i class="fas fa-user-tie"></i>
+                    {{ cargo|capfirst }}
+                </span>
+                {% endif %}
+            </div>
+
+            <!-- Credenciales -->
+            <div class="border border-dashed border-amber-300 bg-amber-50 rounded-xl p-4">
+                <p class="flex items-center gap-2 text-xs font-semibold text-amber-700 uppercase tracking-wide mb-3">
+                    <i class="fas fa-key"></i>
+                    Credenciales de acceso
+                </p>
+
+                <div class="space-y-3">
+                    <div>
+                        <p class="text-xs text-gray-500 mb-1">Usuario</p>
+                        <div class="flex items-center gap-2">
+                            <code class="flex-1 bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm font-semibold text-gray-800 select-all">
+                                {{ usuario }}
+                            </code>
+                            <button type="button"
+                                    onclick="navigator.clipboard.writeText('{{ usuario }}'); this.textContent='✓ Copiado';"
+                                    class="copy-btn px-3 py-2 rounded-lg bg-white border border-gray-200 text-xs font-medium text-gray-600 hover:bg-gray-50 transition">
+                                Copiar
+                            </button>
+                        </div>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-500 mb-1">Contraseña</p>
+                        <div class="flex items-center gap-2">
+                            <code class="flex-1 bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm font-semibold text-gray-800 select-all">
+                                {{ password }}
+                            </code>
+                            <button type="button"
+                                    onclick="navigator.clipboard.writeText('{{ password }}'); this.textContent='✓ Copiado';"
+                                    class="copy-btn px-3 py-2 rounded-lg bg-white border border-gray-200 text-xs font-medium text-gray-600 hover:bg-gray-50 transition">
+                                Copiar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <p class="text-xs text-gray-500 flex items-start gap-2">
+                <i class="fas fa-info-circle text-blue-500 mt-0.5"></i>
+                La persona podrá cambiar su contraseña en su primer inicio de sesión.
+            </p>
+
+            <!-- Acciones -->
+            <div class="flex flex-col sm:flex-row gap-3 pt-1">
+                <a href="{% url 'usuarios:crear_miembro' %}?tipo={{ tipo_slug }}"
+                   class="inline-flex items-center justify-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-lg shadow-sm hover:bg-blue-700 transition text-sm font-semibold">
+                    <i class="fas fa-plus"></i>
+                    Crear otro {{ tipo_nombre|lower }}
+                </a>
+                <a href="{% url 'core:home' %}"
+                   class="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 transition">
+                    <i class="fas fa-arrow-left"></i>
+                    Volver al inicio
+                </a>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.copy-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            setTimeout(function () {
+                btn.textContent = 'Copiar';
+            }, 2000);
+        });
+    });
+});
+</script>
+
+{% endblock %}
