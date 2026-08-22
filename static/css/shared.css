@@ -1,0 +1,335 @@
+/* ============================================================
+   shared.css — Estilos compartidos (CSP-safe, sin inline)
+   ============================================================ */
+
+/* --- Auth pages (login, 2FA) --- */
+.auth-body {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(to right, #4b6cb7, #182848);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.auth-box {
+  background: #fff;
+  padding: 40px 50px;
+  border-radius: 12px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+  width: 100%;
+  max-width: 480px;
+  text-align: center;
+}
+
+.auth-box h2 {
+  margin-bottom: 25px;
+  color: #333;
+  font-size: 28px;
+  font-weight: 600;
+}
+
+.auth-box p.sub {
+  color: #666;
+  margin-bottom: 25px;
+  font-size: 14px;
+}
+
+.auth-box p.error {
+  color: #e74c3c;
+  margin-bottom: 20px;
+  font-weight: 500;
+}
+
+.auth-box label {
+  display: block;
+  text-align: left;
+  margin-bottom: 5px;
+  font-weight: 500;
+  color: #555;
+}
+
+.auth-box input {
+  width: 100%;
+  padding: 12px 15px;
+  margin-bottom: 20px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  font-size: 16px;
+  transition: all 0.3s ease;
+}
+
+.auth-box input:focus {
+  border-color: #4b6cb7;
+  box-shadow: 0 0 5px rgba(75, 108, 183, 0.5);
+  outline: none;
+}
+
+.auth-box input.otp-input {
+  font-size: 18px;
+  letter-spacing: 4px;
+  text-align: center;
+}
+
+.auth-box button {
+  width: 100%;
+  padding: 12px;
+  background: #4b6cb7;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.auth-box button:hover {
+  background: #3a54a0;
+}
+
+.auth-box a.back {
+  display: inline-block;
+  margin-top: 15px;
+  color: #888;
+  font-size: 14px;
+  text-decoration: none;
+}
+
+.auth-footer {
+  margin-top: 15px;
+  font-size: 14px;
+  color: #888;
+}
+
+#qrcode {
+  margin: 0 auto 20px;
+}
+
+.auth-secret {
+  background: #f4f4f4;
+  border-radius: 8px;
+  padding: 12px;
+  font-family: monospace;
+  font-size: 16px;
+  letter-spacing: 2px;
+  margin-bottom: 20px;
+  word-break: break-all;
+}
+
+/* --- Hero background (radial gradient) --- */
+.hero-bg {
+  background-image: radial-gradient(circle at 20% 30%, white 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* --- Honeypot (hidden field for bots) --- */
+.honeypot {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+}
+
+/* --- TomSelect overrides --- */
+.ts-wrapper .ts-control,
+.ts-wrapper.single .ts-control {
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  min-height: 42px;
+  padding: 0.375rem 0.75rem;
+  background-color: #ffffff;
+  box-shadow: none;
+  font-size: 0.875rem;
+  color: #111827;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.ts-wrapper.focus .ts-control {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+.ts-wrapper .ts-control:hover {
+  border-color: #9ca3af;
+}
+.ts-wrapper .ts-control .item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+.ts-wrapper .ts-dropdown {
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+  font-size: 0.875rem;
+}
+.ts-wrapper .ts-dropdown .ts-dropdown-content .option {
+  padding: 0.5rem 0.75rem;
+}
+.ts-wrapper .ts-dropdown .ts-dropdown-content .option.active {
+  background-color: #eff6ff;
+  color: #1d4ed8;
+}
+.ts-wrapper .ts-dropdown .ts-dropdown-content .option.selected {
+  background-color: #bfdbfe;
+  color: #1e40af;
+}
+.ts-wrapper .ts-control .dropdown-menu {
+  display: none;
+}
+
+/* --- Modal animations --- */
+@keyframes modal-pop {
+  from { opacity: 0; transform: scale(.92) translateY(14px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+@keyframes modal-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.modal-panel { animation: modal-pop .28s cubic-bezier(.22,1,.36,1); }
+.modal-backdrop { animation: modal-fade .22s ease-out; }
+
+/* --- Print styles (boletines, constancias, recibos, nominas) --- */
+@media print {
+  .sidebar, .sidebar-footer, .main-content > div > .mb-4 {
+    display: none !important;
+  }
+}
+
+.boleta-document {
+  box-shadow: none !important;
+  border-top-width: 6px;
+}
+
+/* --- Boletin print layout --- */
+@page { size: letter; margin: 12mm; }
+.boletin-body {
+  font-family: 'Segoe UI', Arial, sans-serif;
+  color: #111;
+  margin: 0;
+}
+.boletin-encabezado {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border-bottom: 3px solid #111;
+  padding-bottom: 10px;
+}
+.boletin-titulo { text-align: center; margin: 14px 0 12px; }
+.boletin-titulo h2 { margin: 0; font-size: 16px; text-transform: uppercase; }
+.boletin-titulo p { margin: 4px 0 0; font-size: 12px; color: #444; }
+.boletin-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+.boletin-table th {
+  background: #111; color: #fff; padding: 6px 8px;
+  border: 1px solid #111; text-transform: uppercase; font-size: 9.5px; text-align: left;
+}
+.boletin-table td {
+  padding: 5px 8px; border: 1px solid #bbb; vertical-align: top;
+}
+.boletin-table tr:nth-child(even) td { background: #f3f4f6; }
+.boletin-table .c { text-align: center; }
+.boletin-table .d { text-align: right; white-space: nowrap; }
+.boletin-table .neto { font-weight: 700; background: #eef2ff; }
+.boletin-table .tot td { font-weight: 700; background: #e5e7eb; border-top: 2px solid #111; }
+
+/* --- Progress bar widths (set via CSS variable) --- */
+.progress-bar {
+  height: 100%;
+  border-radius: 9999px;
+  transition: width 0.5s ease;
+}
+
+
+/* ============================================================
+   Mini tarjeta de persona (popover estilo Odoo)
+   ============================================================ */
+
+button.persona-card-trigger {
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  border-radius: 9999px;
+  transition: transform .18s ease, filter .25s ease;
+}
+/* Brillo que invita a hacer clic */
+button.persona-card-trigger:hover,
+button.persona-card-trigger:focus-visible {
+  transform: scale(1.1);
+  filter: drop-shadow(0 0 5px rgba(59, 130, 246, .9))
+          drop-shadow(0 0 14px rgba(59, 130, 246, .45));
+}
+button.persona-card-trigger:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+.persona-card {
+  position: fixed;
+  z-index: 9999;
+  width: 240px;
+  padding: 14px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px -5px rgba(0,0,0,.15), 0 4px 10px -6px rgba(0,0,0,.1);
+  opacity: 0;
+  transform: translateY(4px) scale(.97);
+  transition: opacity .15s ease, transform .15s ease;
+  pointer-events: none;          /* invisible para el mouse hasta visible */
+}
+.persona-card.persona-card-visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+
+.persona-card-cuerpo { display: flex; align-items: center; gap: 12px; }
+
+.persona-card-foto {
+  width: 52px; height: 52px;
+  flex-shrink: 0;
+  border-radius: 9999px;
+  object-fit: cover;
+  color: #fff;
+  font-weight: 700;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.persona-card-textos { min-width: 0; }
+.persona-card-nombre {
+  margin: 0;
+  font-weight: 600;
+  font-size: 14px;
+  color: #1f2937;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.persona-card-subtitulo {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: #9ca3af;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.persona-card-boton {
+  display: block;
+  width: fit-content;
+  margin-top: 10px;
+  margin-left: auto;              /* alineado a la derecha */
+  padding: 3px 12px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #fff !important;
+  background-image: linear-gradient(to right, #3b82f6, #4f46e5);
+  text-decoration: none;
+}
+.persona-card-boton:hover { filter: brightness(1.08); }

@@ -1,7 +1,8 @@
 from django.contrib import admin
 from core.models import (
     CentroEducativo, AnioEscolar, RolCentro, UsuarioCentro,
-    ConfiguracionCentro, Proveedor, CentroProveedor
+    ConfiguracionCentro, Proveedor, CentroProveedor,
+    PermisoPagina, TemaCentro
 )
 from estudiantes.models import Estudiante, HistorialAcademico, Inscripcion
 from docentes.models import Docente, AsignacionDocente
@@ -189,3 +190,18 @@ class DocenteMateriaAdmin(admin.ModelAdmin):
     list_display = ('docente', 'asignatura', 'grado', 'seccion', 'anio_escolar')
     list_filter = ('grado', 'seccion', 'anio_escolar', 'asignatura')
     search_fields = ('docente__primer_nombre', 'docente__primer_apellido', 'asignatura__nombre')
+
+
+@admin.register(PermisoPagina)
+class PermisoPaginaAdmin(admin.ModelAdmin):
+    list_display = ('url_name', 'descripcion', 'activo')
+    list_filter = ('activo',)
+    search_fields = ('url_name', 'descripcion')
+    filter_horizontal = ('roles_permitidos', 'usuarios_permitidos')
+
+
+@admin.register(TemaCentro)
+class TemaCentroAdmin(admin.ModelAdmin):
+    list_display = ('nombre', 'centro', 'color_primario', 'color_fondo_sidebar')
+    list_filter = ('centro',)
+    search_fields = ('nombre', 'centro__nombre')

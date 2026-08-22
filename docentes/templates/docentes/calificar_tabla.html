@@ -1,6 +1,7 @@
 {% extends "home.html" %}
 {% load notas_extras %}
 {% load formatos %}
+{% load l10n %}
 
 {% block content %}
 
@@ -9,7 +10,7 @@
     <!-- ENCABEZADO -->
     <div class="mb-6">
         <h2 class="text-2xl font-bold">
-            📘 {{ asignacion.asignatura.nombre }}
+            <i class="fa-solid fa-book text-blue-600"></i> {{ asignacion.asignatura.nombre }}
         </h2>
         <p class="text-gray-600">
             {{ asignacion.grado }} {{ asignacion.seccion }} ·
@@ -58,7 +59,7 @@
                     {% for c in competencias %}
                         {% for p in periodos %}
                             <th class="border px-1 py-1 text-xs">
-                                {{ p.nombre }}
+                                P{{ forloop.counter }}
                             </th>
                         {% endfor %}
                     {% endfor %}
@@ -91,15 +92,13 @@
                         {% for p in periodos %}
                         <td class="border px-0.5">
                             <input
-                                type="number"
-                                step="0.01"
-                                min="0"
-                                max="100"
+                                type="text"
+                                inputmode="decimal"
                                 class="nota-input w-14 text-center border rounded"
                                 data-inscripcion="{{ ins.id }}"
                                 data-competencia="{{ c.id }}"
                                 data-periodo="{{ p.id }}"
-                                value="{{ notas|get_item:ins.id|get_item:c.id|get_item:p.id }}"
+                                value="{{ notas|get_item:ins.id|get_item:c.id|get_item:p.id|default:''|unlocalize }}"
                                 {% if p.id in periodos_cerrados %}disabled{% endif %}
                             >
                         </td>
@@ -128,12 +127,12 @@
         class="btn-guardar-estudiante bg-blue-600 text-white px-3 py-1 rounded text-xs hover:bg-blue-700 transition"
         data-inscripcion="{{ ins.id }}"
     >
-        💾 Guardar
+        <i class="fa-solid fa-floppy-disk"></i> Guardar
     </button>
 </td>
 {% else %}
 <td class="border px-2 text-center text-gray-400 text-xs">
-    🔒 Cerrado
+    <i class="fa-solid fa-lock text-gray-400"></i> Cerrado
 </td>
 {% endif %}
 
@@ -148,18 +147,19 @@
     <div class="flex justify-end mt-6">
       {% if todos_cerrados %}
 <button
-    type="submit"
+    type="button"
     disabled
     class="bg-gray-400 text-white px-4 py-2 rounded cursor-not-allowed opacity-60"
 >
-    🔒 Todos los períodos cerrados
+    <i class="fa-solid fa-lock"></i> Todos los períodos cerrados
 </button>
 {% else %}
 <button
-    type="submit"
+    type="button"
+    id="btn-guardar-todo"
     class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
 >
-    💾 Guardar todo
+    <i class="fa-solid fa-floppy-disk"></i> Guardar todo
 </button>
 {% endif %}
 
@@ -171,33 +171,22 @@
 
 <script>
 function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        document.cookie.split(';').forEach(cookie => {
-            cookie = cookie.trim();
-            if (cookie.startsWith(name + '=')) {
-                cookieValue = decodeURIComponent(cookie.slice(name.length + 1));
-            }
-        });
-    }
-    return cookieValue;
+    var v = document.cookie.match('(^|;) ?' + name + '=([^;]*)(;|$)');
+    return v ? v[2] : null;
 }
 </script>
 
 <script>
 // GUARDAR POR ESTUDIANTE
 document.querySelectorAll('.btn-guardar-estudiante').forEach(btn => {
-    btn.addEventListener('click', () => guardarEstudiante(btn.dataset.inscripcion, btn));
+    btn.addEventListener('click', () => guardarEstudiante(btn.dataset.inscripcion));
 });
 
-function guardarEstudiante(inscripcionId, btn = null) {
-
+function recopilarNotasEstudiante(inscripcionId) {
     const inputs = document.querySelectorAll(
         `.nota-input[data-inscripcion="${inscripcionId}"]`
     );
-
     let notas = [];
-
     inputs.forEach(input => {
         if (input.value !== '') {
             notas.push({
@@ -207,43 +196,122 @@ function guardarEstudiante(inscripcionId, btn = null) {
             });
         }
     });
+    return notas;
+}
 
- fetch("{% url 'guardar_notas_ajax' asignacion.id %}", {
-    method: "POST",
-    headers: {
-        "Content-Type": "application/json",
-        "X-CSRFToken": getCookie('csrftoken'),
-        "X-Requested-With": "XMLHttpRequest"
-    },
-    body: JSON.stringify({
-        inscripcion: inscripcionId,
-        notas: notas
+function guardarEstudiante(inscripcionId) {
+    const notas = recopilarNotasEstudiante(inscripcionId);
+
+    return fetch("{% url 'guardar_notas_ajax' asignacion.id %}", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": getCookie('csrftoken'),
+            "X-Requested-With": "XMLHttpRequest"
+        },
+        body: JSON.stringify({
+            inscripcion: inscripcionId,
+            notas: notas
+        })
     })
-})
     .then(res => res.json())
     .then(data => {
-        if (data.ok && btn) {
-            btn.textContent = "✔ Guardado";
-            btn.classList.remove('bg-blue-600');
-            btn.classList.add('bg-green-600');
+        if (data.ok) {
+            Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Notas guardadas', showConfirmButton: false, timer: 2000, timerProgressBar: true });
+        } else {
+            Swal.fire({ toast: true, position: 'top-end', icon: 'error', title: data.error || 'Error al guardar', showConfirmButton: false, timer: 3000, timerProgressBar: true });
         }
+    })
+    .catch(() => {
+        Swal.fire({ toast: true, position: 'top-end', icon: 'error', title: 'Error de red', showConfirmButton: false, timer: 3000, timerProgressBar: true });
     });
 }
 </script>
 
 <script>
-// GUARDAR TODO
-document.getElementById('btn-guardar-todo').addEventListener('click', () => {
-    document.querySelectorAll('.btn-guardar-estudiante').forEach(btn => {
-        guardarEstudiante(btn.dataset.inscripcion);
+// GUARDAR TODO — CONFIRMACION + UN SOLO REQUEST
+document.getElementById('btn-guardar-todo').addEventListener('click', function() {
+    const btn = this;
+
+    const estudiantes = [];
+    const inscripcionesSet = new Set();
+
+    document.querySelectorAll('.btn-guardar-estudiante').forEach(b => {
+        inscripcionesSet.add(b.dataset.inscripcion);
+    });
+
+    inscripcionesSet.forEach(insId => {
+        const notas = recopilarNotasEstudiante(insId);
+        if (notas.length > 0) {
+            estudiantes.push({ inscripcion: insId, notas: notas });
+        }
+    });
+
+    if (estudiantes.length === 0) {
+        Swal.fire({ toast: true, position: 'top-end', icon: 'info', title: 'No hay notas para guardar', showConfirmButton: false, timer: 2000, timerProgressBar: true });
+        return;
+    }
+
+    Swal.fire({
+        title: 'Guardar todas las notas',
+        html: 'Se guardaran <b>' + estudiantes.length + '</b> estudiantes con calificaciones.',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        confirmButtonText: 'Si, guardar todo',
+        cancelButtonText: 'Cancelar'
+    }).then(function(result) {
+        if (!result.isConfirmed) return;
+
+        btn.disabled = true;
+        btn.innerHTML = "<i class='fa-solid fa-spinner fa-spin'></i> Guardando...";
+
+        fetch("{% url 'guardar_notas_ajax' asignacion.id %}", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": getCookie('csrftoken'),
+                "X-Requested-With": "XMLHttpRequest"
+            },
+            body: JSON.stringify({ estudiantes: estudiantes })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.ok) {
+                Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: data.guardadas + ' notas guardadas correctamente', showConfirmButton: false, timer: 3000, timerProgressBar: true });
+            } else {
+                Swal.fire({ toast: true, position: 'top-end', icon: 'error', title: data.error || 'Error al guardar', showConfirmButton: false, timer: 3000, timerProgressBar: true });
+            }
+        })
+        .catch(() => {
+            Swal.fire({ toast: true, position: 'top-end', icon: 'error', title: 'Error de red', showConfirmButton: false, timer: 3000, timerProgressBar: true });
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Guardar todo';
+        });
     });
 });
 </script>
 
 <script>
-// CÁLCULO EN TIEMPO REAL
+// CÁLCULO EN TIEMPO REAL + VALIDACIÓN 0-100
 document.addEventListener("input", function (e) {
     if (!e.target.classList.contains("nota-input")) return;
+
+    let valor = e.target.value.replace(/[^0-9.]/g, '');
+    let parts = valor.split('.');
+    if (parts.length > 2) valor = parts[0] + '.' + parts.slice(1).join('');
+    e.target.value = valor;
+
+    if (valor !== '') {
+        let num = parseFloat(valor);
+        if (!isNaN(num)) {
+            if (num < 0) e.target.value = '0';
+            else if (num > 100) e.target.value = '100';
+        }
+    }
+
     recalcularPromedios(e.target.dataset.inscripcion);
 });
 

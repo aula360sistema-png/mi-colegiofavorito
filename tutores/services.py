@@ -68,7 +68,7 @@ def _datos_inicio_tutor_sql(tutor):
         .select_related('centro')
         .prefetch_related(
             Prefetch(
-                'inscripcion_set',
+                'inscripciones',
                 queryset=(
                     Inscripcion.objects
                     .filter(anio_escolar__activo=True)

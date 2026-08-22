@@ -1,4 +1,5 @@
 {% extends "home.html" %}
+{% load static %}
 
 {% block title %}{{ accion }} Asignatura a Grado{% endblock %}
 
@@ -109,69 +110,6 @@
 
 {% include "academico/_tomselect.html" %}
 
-<!-- =================== AJAX =================== -->
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    const gradoSelect = document.getElementById('id_grado');
-    const asignaturaSelect = document.getElementById('id_asignatura');
-    const mensaje = document.getElementById('asignatura-msg');
-
-    function actualizarMensaje(texto) {
-        if (texto) {
-            mensaje.textContent = texto;
-            mensaje.classList.remove('hidden');
-        } else {
-            mensaje.classList.add('hidden');
-        }
-    }
-
-    gradoSelect.addEventListener('change', function () {
-        const gradoId = this.value;
-
-        asignaturaSelect.innerHTML =
-            '<option value="">Cargando asignaturas...</option>';
-        asignaturaSelect.disabled = true;
-        actualizarMensaje('');
-
-        if (!gradoId) {
-            asignaturaSelect.innerHTML =
-                '<option value="">Seleccione un grado primero</option>';
-            asignaturaSelect.disabled = true;
-            return;
-        }
-
-        fetch(`/academico/ajax/asignaturas-por-grado/${gradoId}/`)
-            .then(response => response.json())
-            .then(data => {
-                asignaturaSelect.innerHTML = '';
-
-                if (data.asignaturas.length === 0) {
-                    asignaturaSelect.innerHTML =
-                        '<option value="">No hay asignaturas disponibles</option>';
-                    asignaturaSelect.disabled = true;
-                    actualizarMensaje('Todas las asignaturas ya están asignadas a este grado.');
-                    return;
-                }
-
-                asignaturaSelect.innerHTML =
-                    '<option value="">Seleccione una asignatura</option>';
-
-                data.asignaturas.forEach(asig => {
-                    const option = document.createElement('option');
-                    option.value = asig.id;
-                    option.textContent = asig.nombre;
-                    asignaturaSelect.appendChild(option);
-                });
-
-                asignaturaSelect.disabled = false;
-            })
-            .catch(() => {
-                asignaturaSelect.innerHTML =
-                    '<option value="">Error cargando asignaturas</option>';
-                asignaturaSelect.disabled = true;
-            });
-    });
-});
-</script>
+<script src="{% static 'js/grado-asignatura-cascade.js' %}"></script>
 
 {% endblock %}

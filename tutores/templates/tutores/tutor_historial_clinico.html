@@ -33,6 +33,7 @@
         Seleccionar estudiante
       </label>
       <select name="estudiante" id="id_estudiante"
+              data-auto-submit
               class="w-full rounded-lg border-gray-300 text-sm focus:ring-indigo-500 focus:border-indigo-500">
         {% for est in estudiantes %}
           <option value="{{ est.id }}" {% if est.id == estudiante.id %}selected{% endif %}>
@@ -152,9 +153,5 @@
   {% endif %}
 </div>
 
-<script>
-  document.getElementById('id_estudiante').addEventListener('change', function () {
-    this.form.submit();
-  });
-</script>
+
 {% endblock %}

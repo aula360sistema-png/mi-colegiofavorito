@@ -6,8 +6,8 @@ from core.models import CentroEducativo
 def obtener_centro_del_usuario(request):
     user = request.user
 
-    # SUPERADMIN → desde sesión
-    if user.rol == 'superadmin':
+    # SUPERADMIN / ADMIN → desde sesión
+    if user.rol in ('superadmin', 'admin'):
         return CentroEducativo.objects.filter(
             id=request.session.get('centro_id')
         ).first()

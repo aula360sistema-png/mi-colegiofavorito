@@ -1,0 +1,92 @@
+{% extends "home.html" %}
+{% load formatos %}
+
+{% block title %}Consentimientos Informados{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <a href="{% url 'seguridad:dashboard' %}"
+               class="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-blue-600 mb-2 transition">
+                <i class="fas fa-arrow-left"></i> Volver al panel
+            </a>
+            <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                <i class="fas fa-file-signature text-green-600"></i> Consentimientos Informados
+            </h2>
+        </div>
+        <a href="{% url 'seguridad:consentimiento_create' %}"
+           class="inline-flex items-center gap-2 bg-green-600 text-white px-5 py-2.5 rounded-lg text-sm font-semibold shadow-md hover:bg-green-700 transition">
+            <i class="fas fa-plus"></i> Nuevo Consentimiento
+        </a>
+    </div>
+
+    <div class="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200 text-sm">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Estudiante</th>
+                        <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Tutor</th>
+                        <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Permisos</th>
+                        <th class="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-500">Estado</th>
+                        <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Fecha</th>
+                        <th class="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-500">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    {% for item in items %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-5 py-4 font-medium text-gray-800">{{ item.estudiante }}</td>
+                        <td class="px-5 py-4 text-gray-600">{{ item.tutor_nombre }}</td>
+                        <td class="px-5 py-4">
+                            <div class="flex flex-wrap gap-1">
+                                {% if item.acepta_datos_personales %}
+                                <span class="bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs">Personales</span>
+                                {% endif %}
+                                {% if item.acepta_datos_academicos %}
+                                <span class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs">Académicos</span>
+                                {% endif %}
+                                {% if item.acepta_datos_clinicos %}
+                                <span class="bg-purple-100 text-purple-700 px-2 py-0.5 rounded text-xs">Clínicos</span>
+                                {% endif %}
+                                {% if item.acepta_comunicaciones %}
+                                <span class="bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded text-xs">Comunicaciones</span>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td class="px-5 py-4 text-center">
+                            {% if item.activo %}
+                            <span class="bg-green-100 text-green-700 px-2.5 py-1 rounded-full text-xs font-semibold">Activo</span>
+                            {% else %}
+                            <span class="bg-red-100 text-red-700 px-2.5 py-1 rounded-full text-xs font-semibold">Revocado</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-5 py-4 text-gray-500 text-sm">{{ item.fecha_firma|date:"d/m/Y H:i" }}</td>
+                        <td class="px-5 py-4 text-center">
+                            <a href="{% url 'seguridad:consentimiento_detail' item.pk %}"
+                               class="text-blue-600 hover:text-blue-800 text-sm mr-2">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            {% if item.activo %}
+                            <a href="{% url 'seguridad:consentimiento_revocar' item.pk %}"
+                               class="text-red-600 hover:text-red-800 text-sm">
+                                <i class="fas fa-ban"></i>
+                            </a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="px-5 py-12 text-center text-gray-500">
+                            <i class="fas fa-file-signature text-3xl mb-3 text-gray-300 block"></i>
+                            No hay consentimientos registrados.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -5,6 +5,8 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
 
+from seguridad.fields import EncryptedCharField, EncryptedTextField
+
 
 class Estudiante(models.Model):
     usuario = models.OneToOneField(
@@ -113,8 +115,9 @@ class Estudiante(models.Model):
 
 class DocumentoEstudiante(models.Model):
     estudiante = models.ForeignKey(
-        Estudiante,
-        on_delete=models.CASCADE
+        'estudiantes.Estudiante',
+        on_delete=models.CASCADE,
+        related_name='documentos'
     )
 
     nombre = models.CharField(max_length=150)
@@ -200,7 +203,8 @@ class Inscripcion(models.Model):
 
     estudiante = models.ForeignKey(
         'estudiantes.Estudiante',
-        on_delete=models.CASCADE
+        on_delete=models.CASCADE,
+        related_name='inscripciones'
     )
     centro = models.ForeignKey(
         'core.CentroEducativo',
@@ -418,52 +422,52 @@ class HistorialClinicoEstudiante(models.Model):
         default='desconocido'
     )
 
-    alergias = models.TextField(
+    alergias = EncryptedTextField(
         blank=True,
         help_text="Alergias a medicamentos, alimentos u otros."
     )
 
-    condiciones_medicas = models.TextField(
+    condiciones_medicas = EncryptedTextField(
         blank=True,
         help_text="Enfermedades crónicas, condiciones o diagnósticos relevantes."
     )
 
-    medicamentos_habituales = models.TextField(
+    medicamentos_habituales = EncryptedTextField(
         blank=True,
         help_text="Medicamentos que toma de forma habitual."
     )
 
-    vacunas = models.TextField(
+    vacunas = EncryptedTextField(
         blank=True,
         help_text="Vacunas y dosis (opcional)."
     )
 
-    contacto_emergencia_nombre = models.CharField(
-        max_length=200,
+    contacto_emergencia_nombre = EncryptedCharField(
+        max_length=512,
         blank=True
     )
 
-    contacto_emergencia_telefono = models.CharField(
-        max_length=20,
+    contacto_emergencia_telefono = EncryptedCharField(
+        max_length=512,
         blank=True
     )
 
-    contacto_emergencia_parentesco = models.CharField(
-        max_length=100,
+    contacto_emergencia_parentesco = EncryptedCharField(
+        max_length=512,
         blank=True
     )
 
-    contacto_emergencia_secundario_nombre = models.CharField(
-        max_length=200,
+    contacto_emergencia_secundario_nombre = EncryptedCharField(
+        max_length=512,
         blank=True
     )
 
-    contacto_emergencia_secundario_telefono = models.CharField(
-        max_length=20,
+    contacto_emergencia_secundario_telefono = EncryptedCharField(
+        max_length=512,
         blank=True
     )
 
-    observaciones = models.TextField(
+    observaciones = EncryptedTextField(
         blank=True,
         help_text="Cualquier otra información relevante para emergencias."
     )

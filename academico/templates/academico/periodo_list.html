@@ -1,4 +1,5 @@
 {% extends "home.html" %}
+{% load static %}
 
 {% block title %}Períodos Académicos{% endblock %}
 
@@ -97,15 +98,15 @@
     <!-- Pestañas: Catálogo / Relación -->
     <div class="flex border-b overflow-x-auto mb-6">
         <button type="button"
-                onclick="switchTab('catalogo')"
-                data-tab="catalogo"
+                id="tab-catalogo"
+                data-action="switch-tab" data-target="catalogo"
                 class="tab-btn px-5 py-3 text-sm font-medium whitespace-nowrap border-b-2 border-blue-600 text-blue-700">
             <i class="fas fa-list mr-1"></i>
             Catálogo
         </button>
         <button type="button"
-                onclick="switchTab('relacion')"
-                data-tab="relacion"
+                id="tab-relacion"
+                data-action="switch-tab" data-target="relacion"
                 class="tab-btn px-5 py-3 text-sm font-medium whitespace-nowrap border-b-2 border-transparent text-gray-500 hover:text-gray-700">
             <i class="fas fa-link mr-1"></i>
             Relación
@@ -113,7 +114,7 @@
     </div>
 
     <!-- Tab: Catálogo -->
-    <div id="tab-catalogo" class="tab-panel">
+    <div id="panel-catalogo" class="tab-content">
 
         <div class="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
 
@@ -222,7 +223,11 @@
                                 </a>
 
                                 <button
-                                    onclick="confirmarEliminacion('{{ item.periodo.id }}', '{{ item.periodo.nombre }}', '{% url 'periodo_delete' item.periodo.id %}')"
+                                    data-action="confirm-delete-fetch"
+                                    data-url="{% url 'periodo_delete' item.periodo.id %}"
+                                    data-confirm-title="¿Eliminar período?"
+                                    data-confirm-text="Se eliminará el período &quot;{{ item.periodo.nombre }}&quot; de todos los años escolares"
+                                    data-confirm-btn="Sí, eliminar"
                                     class="inline-flex items-center gap-1.5 bg-red-100 text-red-700 px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-red-200 transition">
                                     <i class="fas fa-trash"></i>
                                     Eliminar
@@ -258,14 +263,14 @@
     </div>
 
     <!-- Tab: Relación -->
-    <div id="tab-relacion" class="tab-panel hidden">
+    <div id="panel-relacion" class="tab-content hidden">
 
         <div class="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
 
             <div class="flex items-center justify-between px-5 py-4 border-b border-gray-200 bg-gray-50">
                 <h3 class="font-semibold text-gray-800 flex items-center gap-2">
                     <i class="fas fa-link text-gray-400"></i>
-                    Relación Período ↔ Año Escolar
+                    Relación Período <i class="fa-solid fa-arrows-left-right"></i> Año Escolar
                 </h3>
             </div>
 
@@ -336,103 +341,7 @@
 </div>
 
 
-<script>
-function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let cookie of cookies) {
-            cookie = cookie.trim();
-            if (cookie.startsWith(name + '=')) {
-                cookieValue = decodeURIComponent(
-                    cookie.substring(name.length + 1)
-                );
-                break;
-            }
-        }
-    }
-    return cookieValue;
-}
-</script>
-
-<script>
-function confirmarEliminacion(id, nombre, url) {
-    Swal.fire({
-        title: '¿Eliminar período?',
-        text: `Se eliminará el período "${nombre}" de todos los años escolares`,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#dc2626',
-        cancelButtonColor: '#6b7280',
-        confirmButtonText: 'Sí, eliminar',
-        cancelButtonText: 'Cancelar'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            fetch(url, {
-                method: 'POST',
-                headers: {
-                    'X-CSRFToken': getCookie('csrftoken')
-                }
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    Swal.fire(
-                        'Eliminado',
-                        'El período fue eliminado correctamente',
-                        'success'
-                    ).then(() => location.reload())
-                } else {
-                    Swal.fire('Error', data.error || 'No se pudo eliminar el período', 'error')
-                }
-            })
-        }
-    })
-}
-</script>
-
-<script>
-// ABRIR / CERRAR PERÍODO DEL AÑO ACTIVO
-document.querySelectorAll('.btn-alternar').forEach(btn => {
-    btn.addEventListener('click', () => {
-        fetch(btn.dataset.url, {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': getCookie('csrftoken')
-            }
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.success) {
-                location.reload();
-            } else {
-                Swal.fire('Error', data.error || 'No se pudo cambiar el estado', 'error');
-            }
-        })
-    });
-});
-</script>
-
-<script>
-// PESTAÑAS: CATÁLOGO / RELACIÓN
-function switchTab(nombre) {
-    document.querySelectorAll('.tab-panel').forEach(function (p) {
-        p.classList.add('hidden');
-    });
-
-    document.getElementById('tab-' + nombre).classList.remove('hidden');
-
-    document.querySelectorAll('.tab-btn').forEach(function (b) {
-        b.classList.remove('border-blue-600', 'text-blue-700');
-        b.classList.add('border-transparent', 'text-gray-500');
-    });
-
-    var btn = document.querySelector('.tab-btn[data-tab="' + nombre + '"]');
-    if (btn) {
-        btn.classList.remove('border-transparent', 'text-gray-500');
-        btn.classList.add('border-blue-600', 'text-blue-700');
-    }
-}
-</script>
+<script src="{% static 'js/periodo-toggle.js' %}"></script>
+<script src="{% static 'js/periodo-alternar.js' %}"></script>
 
 {% endblock %}

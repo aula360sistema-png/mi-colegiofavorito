@@ -181,7 +181,7 @@
                                     </details>
 
                                     <form method="post" action="{% url 'solicitud_anular' s.pk %}"
-                                          onsubmit="return confirm('¿Anular la solicitud {{ s.folio }}?');">
+                                          data-confirm="¿Anular la solicitud {{ s.folio }}?">
                                         {% csrf_token %}
                                         <button type="submit"
                                                 class="inline-flex items-center gap-1.5 bg-gray-50 text-gray-500 px-3 py-1.5 rounded-lg hover:bg-gray-100 text-xs font-semibold">
@@ -211,7 +211,7 @@
                                     </details>
 
                                     <form method="post" action="{% url 'solicitud_anular' s.pk %}"
-                                          onsubmit="return confirm('¿Anular la solicitud {{ s.folio }}?');">
+                                          data-confirm="¿Anular la solicitud {{ s.folio }}?">
                                         {% csrf_token %}
                                         <button type="submit"
                                                 class="inline-flex items-center gap-1.5 bg-gray-50 text-gray-500 px-3 py-1.5 rounded-lg hover:bg-gray-100 text-xs font-semibold">
@@ -238,7 +238,7 @@
                                     </a>
 
                                     <form method="post" action="{% url 'solicitud_anular' s.pk %}"
-                                          onsubmit="return confirm('¿Anular la solicitud {{ s.folio }}?');">
+                                          data-confirm="¿Anular la solicitud {{ s.folio }}?">
                                         {% csrf_token %}
                                         <button type="submit"
                                                 class="inline-flex items-center gap-1.5 bg-gray-50 text-gray-500 px-3 py-1.5 rounded-lg hover:bg-gray-100 text-xs font-semibold">

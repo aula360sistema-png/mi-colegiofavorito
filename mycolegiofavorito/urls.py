@@ -43,6 +43,7 @@ urlpatterns = [
     path('auditoria/', include('auditoria.urls', namespace='auditoria')),
     path('entrenamiento/', include('entrenamiento.urls', namespace='entrenamiento')),
     path('orientacion/', include('orientacion.urls', namespace='orientacion')),
+    path('seguridad/', include('seguridad.urls', namespace='seguridad')),
 
 ]
 

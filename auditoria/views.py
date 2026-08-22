@@ -10,33 +10,6 @@ from core.decorators import centro_required, role_required
 from .models import Bitacora
 
 
-def _usuarios_del_centro(centro):
-    """IDs de usuarios asociados al centro (todas las relaciones)."""
-    from core.models import UsuarioCentro
-    from administracion.models import Administrativo
-    from docentes.models import Docente
-    from estudiantes.models import Estudiante
-    from tutores.models import Tutor
-
-    ids = set()
-
-    ids.update(
-        UsuarioCentro.objects
-        .filter(centro=centro, activo=True)
-        .values_list('usuario_id', flat=True)
-    )
-
-    for modelo in (Administrativo, Docente, Estudiante, Tutor):
-        ids.update(
-            modelo.objects
-            .filter(centro=centro)
-            .exclude(usuario=None)
-            .values_list('usuario_id', flat=True)
-        )
-
-    return ids
-
-
 @login_required
 @role_required('director', 'secretaria', 'admin', 'superadmin')
 @centro_required
@@ -52,11 +25,8 @@ def bitacora_list(request):
     desde = request.GET.get('desde', '').strip()
     hasta = request.GET.get('hasta', '').strip()
 
-    ids = _usuarios_del_centro(centro)
-    ids.add(request.user.id)
-
     base = Bitacora.objects.filter(
-        Q(usuario_id__in=ids) | Q(usuario__isnull=True)
+        centro=centro,
     ).select_related('usuario')
 
     modulos = list(

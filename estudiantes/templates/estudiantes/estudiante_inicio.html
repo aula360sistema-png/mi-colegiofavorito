@@ -9,7 +9,7 @@
     <!-- ==================== CABECERA ==================== -->
     <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-900 via-blue-800 to-indigo-800 shadow-xl">
         <div class="absolute inset-0 opacity-20"
-             style="background-image: radial-gradient(circle at 20% 30%, white 1px, transparent 1px); background-size: 24px 24px;">
+             class="absolute inset-0 opacity-20 hero-bg">
         </div>
 
         <div class="relative p-6 flex flex-col md:flex-row md:items-center gap-6">
@@ -280,9 +280,9 @@
                                                 {% if asig.nota_completivo is not None %}
                                                     {{ asig.nota_completivo }}
                                                     {% if asig.aprueba_completivo %}
-                                                        <span class="text-emerald-600 text-xs">✓</span>
+                                                        <span class="text-emerald-600 text-xs"><i class="fa-solid fa-check text-green-600"></i></span>
                                                     {% else %}
-                                                        <span class="text-red-600 text-xs">✗</span>
+                                                        <span class="text-red-600 text-xs"><i class="fa-solid fa-xmark text-red-600"></i></span>
                                                     {% endif %}
                                                 {% else %}
                                                     -
@@ -341,6 +341,119 @@
                 </p>
             {% endif %}
         </div>
+    </div>
+
+    <!-- ==================== HISTORIAL DE PAGOS ==================== -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+            <h3 class="font-semibold text-gray-800 flex items-center gap-2">
+                <i class="fas fa-receipt text-indigo-500"></i> Historial de pagos
+            </h3>
+            {% if anio_actual %}
+                <span class="text-sm text-gray-500">{{ anio_actual.nombre }}</span>
+            {% endif %}
+        </div>
+
+        {% if deuda and deuda.tiene_deuda %}
+        <!-- Resumen de deuda -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 p-6">
+            <div class="rounded-xl border border-gray-100 p-4">
+                <p class="text-xs text-gray-500 font-medium">Saldo pendiente</p>
+                <p class="text-2xl font-bold text-slate-800 mt-1">RD$ {{ deuda.saldo_total|dop0 }}</p>
+            </div>
+            {% if deuda.vencida %}
+            <div class="rounded-xl border border-red-100 bg-red-50 p-4">
+                <p class="text-xs text-red-500 font-medium">Vencida</p>
+                <p class="text-2xl font-bold text-red-600 mt-1">RD$ {{ deuda.vencida|dop0 }}</p>
+            </div>
+            {% endif %}
+            {% if deuda.proxima %}
+            <div class="rounded-xl border border-amber-100 bg-amber-50 p-4">
+                <p class="text-xs text-amber-500 font-medium">Próximo a vencer</p>
+                <p class="text-2xl font-bold text-amber-600 mt-1">RD$ {{ deuda.proxima|dop0 }}</p>
+            </div>
+            {% endif %}
+        </div>
+        {% elif deuda and not deuda.tiene_deuda %}
+        <div class="p-6 flex items-center gap-3">
+            <span class="bg-green-100 text-green-600 w-10 h-10 rounded-full flex items-center justify-center">
+                <i class="fas fa-check"></i>
+            </span>
+            <div>
+                <p class="font-semibold text-green-700">Estás al día</p>
+                <p class="text-xs text-slate-500">No tienes deuda pendiente en el año escolar activo.</p>
+            </div>
+        </div>
+        {% else %}
+        <div class="p-6 text-center text-gray-400 text-sm">
+            No hay datos de pagos disponibles.
+        </div>
+        {% endif %}
+
+        <!-- Balance por concepto -->
+        {% if balance_conceptos %}
+        <div class="px-6 pb-4">
+            <h4 class="text-sm font-semibold text-gray-700 mb-3">Balance por concepto</h4>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-50 text-left text-xs uppercase text-gray-500">
+                        <tr>
+                            <th class="px-4 py-2">Concepto</th>
+                            <th class="px-4 py-2 text-right">Esperado</th>
+                            <th class="px-4 py-2 text-right">Pagado</th>
+                            <th class="px-4 py-2 text-right">Saldo</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for b in balance_conceptos %}
+                        <tr class="border-t hover:bg-gray-50">
+                            <td class="px-4 py-2.5 font-medium">{{ b.concepto.nombre }}</td>
+                            <td class="px-4 py-2.5 text-right text-gray-600">RD$ {{ b.esperado|dop0 }}</td>
+                            <td class="px-4 py-2.5 text-right text-emerald-600">RD$ {{ b.pagado|dop0 }}</td>
+                            <td class="px-4 py-2.5 text-right font-bold {% if b.saldo > 0 %}text-amber-600{% else %}text-green-600{% endif %}">
+                                RD$ {{ b.saldo|dop0 }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Pagos recientes -->
+        {% if pagos_recientes %}
+        <div class="px-6 pb-6">
+            <h4 class="text-sm font-semibold text-gray-700 mb-3">Pagos recientes</h4>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-50 text-left text-xs uppercase text-gray-500">
+                        <tr>
+                            <th class="px-4 py-2">Fecha</th>
+                            <th class="px-4 py-2">Concepto</th>
+                            <th class="px-4 py-2">Método</th>
+                            <th class="px-4 py-2 text-right">Monto</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in pagos_recientes %}
+                        <tr class="border-t hover:bg-gray-50">
+                            <td class="px-4 py-2.5 text-gray-600">{{ p.fecha|date:"d/m/Y" }}</td>
+                            <td class="px-4 py-2.5 font-medium">{{ p.concepto.nombre }}</td>
+                            <td class="px-4 py-2.5 text-gray-500">{{ p.get_metodo_pago_display }}</td>
+                            <td class="px-4 py-2.5 text-right font-semibold text-emerald-600">RD$ {{ p.monto|dop0 }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% elif deuda and not deuda.tiene_deuda %}
+        {% else %}
+        <div class="px-6 pb-6 text-center text-gray-400 text-sm">
+            No hay pagos registrados este año.
+        </div>
+        {% endif %}
     </div>
 
 </div>

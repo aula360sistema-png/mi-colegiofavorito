@@ -3,119 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <title>Boletín de Calificaciones - Nivel Inicial</title>
-
-    <style>
-        * { box-sizing: border-box; }
-        body {
-            font-family: Arial, sans-serif;
-            font-size: 11px;
-            margin: 20px;
-            color: #000;
-        }
-
-        .encabezado {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 8px;
-        }
-        .encabezado td {
-            padding: 2px 4px;
-            border: 1px solid #000;
-        }
-        .encabezado .dato {
-            font-weight: bold;
-        }
-
-        .titulo {
-            background: #d35400;
-            color: white;
-            text-align: center;
-            padding: 6px;
-            font-weight: bold;
-            margin-bottom: 4px;
-        }
-        .subtitulo {
-            text-align: center;
-            font-weight: bold;
-            margin-bottom: 10px;
-        }
-
-        table.rendimiento {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 8px;
-        }
-        table.rendimiento th, table.rendimiento td {
-            border: 1px solid #000;
-            padding: 3px 2px;
-            text-align: center;
-            vertical-align: middle;
-        }
-        table.rendimiento th {
-            background: #f5cba7;
-            font-weight: bold;
-        }
-        table.rendimiento td.left {
-            text-align: left;
-            font-weight: bold;
-        }
-        table.rendimiento tr.promedio td {
-            background: #fdebd0;
-            font-weight: bold;
-        }
-
-        .situacion {
-            margin-top: 10px;
-            border: 1px solid #000;
-            padding: 6px;
-            font-weight: bold;
-        }
-
-        .escala {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 9px;
-            margin-top: 10px;
-        }
-        .escala th, .escala td {
-            border: 1px solid #000;
-            padding: 3px;
-            text-align: center;
-        }
-        .escala td.left {
-            text-align: left;
-        }
-
-        .leyenda {
-            margin-top: 6px;
-            font-size: 9px;
-        }
-
-        .firma {
-            margin-top: 40px;
-            display: flex;
-            justify-content: space-between;
-            text-align: center;
-            font-size: 10px;
-        }
-        .firma div {
-            width: 30%;
-        }
-
-        .footer {
-            margin-top: 12px;
-            font-size: 8px;
-            color: #555;
-            display: flex;
-            justify-content: space-between;
-        }
-
-        @media print {
-            body { margin: 0; }
-        }
-    </style>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/administracion.css' %}" />
 </head>
-<body>
+<body class="auto-print">
 
 <!-- ================= ENCABEZADO ================= -->
 <table class="encabezado">
@@ -197,7 +88,7 @@
             <td>{{ a.pf|default:"" }}</td>
             <td>
                 {% if a.nota_completivo %}
-                    {{ a.nota_completivo }}{% if a.completivo_aprueba %}(✔){% endif %}
+                    {{ a.nota_completivo }}{% if a.completivo_aprueba %}(<i class="fa-solid fa-check text-green-600"></i>){% endif %}
                 {% endif %}
             </td>
         </tr>
@@ -225,7 +116,7 @@
     {% if datos.completivo.aprobado %} Aprobado {% else %} Reprobado {% endif %}
     {% if datos.completivo.detalle %} —
         {% for d in datos.completivo.detalle %}
-            {{ d.asignatura }}: {{ d.nota_completivo|default:"—" }}{% if d.aprueba %}(✔){% else %}(✘){% endif %}{% if not forloop.last %}, {% endif %}
+            {{ d.asignatura }}: {{ d.nota_completivo|default:"—" }}{% if d.aprueba %}(<i class="fa-solid fa-check text-green-600"></i>){% else %}(<i class="fa-solid fa-xmark text-red-600"></i>){% endif %}{% if not forloop.last %}, {% endif %}
         {% endfor %}
     {% endif %}
 </div>
@@ -288,11 +179,6 @@
     <span>Documento oficial no editable</span>
 </div>
 
-<script>
-    window.onload = () => {
-        window.print();
-    }
-</script>
-
+<script src="{% static 'js/shared.js' %}"></script>
 </body>
 </html>

@@ -49,7 +49,7 @@
       - Template: estudiantes/templates/estudiantes/disciplina.html (form sticky + tabla + paginación).
       - Acceso desde el sidebar (home.html) para director/secretaria/admin/superadmin.
       - Tests: 8 en estudiantes/tests.py (DisciplinaTestCase).
-- [x] **Solicitudes de certificados**: flujo solicitud → aprobación → cobro → entrega.
+- [x] **Solicitudes de certificados**: flujo solicitud -> aprobación -> cobro -> entrega.
       - estudiantes/models.py: SolicitudCertificado (folio SC-AAAA-NNNN único, estudiante,
         solicitante, tipo, estado pendiente/aprobada/rechazada/pagada/entregada/anulada,
         motivo, monto, método de pago efectivo/en línea, referencia_pago, pagado/aprobado/
@@ -93,10 +93,32 @@
 
 ## PRIORIDAD BAJA (extras)
 
-- [ ] **Comunicados/notificaciones**: anuncios del colegio por sección.
+- [x] **Historial de pagos + notificaciones de vencimiento**:
+      - Portal estudiante: `estudiante_inicio` pasa deuda, pagos_recientes y balance_por_concepto;
+        template muestra resumen de deuda, tabla de balance por concepto y pagos recientes (2026-08-19).
+      - Portal tutor: `tutor_inicio` pasa pagos_recientes y balance_por_conceptos por estudiante;
+        template muestra sección colapsable con balance y pagos recientes por hijo (2026-08-19).
+      - Notificaciones automáticas: management command `notificar_pagos_vencidos --centro N`
+        envía email + WhatsApp a tutores con pagos vencidos; evita duplicados diarios.
+      - Modelo `NotificacionPagoVencida` en comunicaciones (unique_together por día).
+      - Funciones `enviar_email_vencimiento` y `enviar_whatsapp_vencimiento` en servicios de
+        comunicaciones (reutiliza infraestructura SMTP y gateway WhatsApp existentes).
 - [ ] **Biblioteca**: préstamos de libros (ConfiguracionCentro ya tiene flag modulo_biblioteca).
 - [ ] **Transporte escolar**: rutas y paradas (ConfiguracionCentro ya tiene flag modulo_transporte).
 - [ ] **Matrícula en línea**: preinscripción con estado pendiente/aprobado.
+- [x] **Comunicados/anuncios por seccion** (2026-08-22): modelo Comunicado en
+      comunicaciones (alcance: todo el centro o una seccion del ano activo,
+      vencimiento opcional, fijado arriba). CRUD admin (Comunicaciones > Comunicados);
+      portales de solo lectura mis-comunicados/ (estudiante) y comunicados-familia/
+      (tutor); enlaces en sidebar para director, estudiante y tutor. Visibilidad
+      cacheada bajo dominio comunicaciones:{centro} con invalidacion por signals.
+      Fix extra: faltaba {% load static %} en campania_form.html. Tests: 12 nuevos,
+      35 OK en la app.
+      PENDIENTE INVESTIGAR: 2 tests fallan en la suite completa pero pasan en git
+      HEAD limpio: estudiantes.tests.HistorialClinicoTestCase.
+      test_listado_filtra_por_grado (FieldError inscripcion) y core.tests.
+      ConfiguracionCorreoCentralTests.test_formulario_incluye_campos_de_correo
+      (302 != 200). Confirmar si son por cambios sin commitear previos.
 
 ---
 
@@ -127,8 +149,9 @@
 ## RENDIMIENTO Y ESCALABILIDAD (2026-08-10)
 
 ### Hecho en desarrollo local (Windows + SQLite)
-- [x] **Capa de caché env-driven**: `REDIS_URL` vacía → LocMemCache (dev); definida →
-      RedisCache (prod). TTL configurables (CACHE_TTL_CORTO/MEDIO/LARGO).- [x] **Sesiones en caché**: `SESSION_ENGINE=cached_db` reduce escrituras a la BD.
+- [x] **Capa de caché env-driven**: `REDIS_URL` vacía -> LocMemCache (dev); definida ->
+      RedisCache (prod). TTL configurables (CACHE_TTL_CORTO/MEDIO/LARGO).
+- [x] **Sesiones en caché**: `SESSION_ENGINE=cached_db` reduce escrituras a la BD.
 - [x] **Context processor `configuracion_centro` cacheado**: configuración del centro
       y módulos del sidebar se cachean (ya no se consulta la BD en cada request).
 - [x] **Kardex/Record cacheados**: `construir_kardex` y `construir_record_notas` con
@@ -260,3 +283,289 @@
       (Nginx upstream) + sesiones/caché en Redis (ya configurado) + archivos en
       almacenamiento compartido.
 
+---
+
+## PROGRENTIS — PLATAFORMA DE ENTRENAMIENTO COGNITIVO (2026-08-19)
+
+### Concepto
+Sistema de entrenamiento cerebral para estudiantes (5-18 años) inspirado en
+Progrentis.com. Desarrolla destrezas cognitivas: atención, comprensión lectora,
+velocidad de procesamiento, pensamiento crítico y resolución de problemas. Ejercicios
+adaptativos por IA, gamificación con niveles/puntos, y seguimiento de progreso por
+docente, tutor y director.
+
+### App: `entrenamiento/`
+
+---
+
+### MODELOS (entrenamiento/models.py)
+
+```
+NivelConsola              Consolas por rango de edad
+├── nombre                (PRE, ABC, Mentor, Elite)
+├── edad_min              (5, 7, 10, 13)
+├── edad_max              (6, 9, 12, 18)
+├── descripcion
+└── orden                 (para ordenar las consolas)
+
+Destreza                  Catálogo de destrezas a entrenar
+├── nombre                (Atención, Comprensión Lectora, Velocidad, Lógica, Vocabulario, Cálculo)
+├── descripcion
+├── icono                 (FontAwesome class)
+├── color                 (hex para UI)
+└── activa                (bool)
+
+UnidadPedagogica          Contenido de cada consola (20 unidades por consola)
+├── consola               FK → NivelConsola
+├── numero                (1-20)
+├── nombre
+├── descripcion
+└── orden
+
+Ejercicio                 Ejercicios dentro de cada unidad
+├── unidad                FK → UnidadPedagogica
+├── destreza              FK → Destreza
+├── tipo                  (choice: comprension_lector, velocidad, logica,
+│                           atencion, vocabulario, calculo)
+├── titulo
+├── instrucciones         (texto de la consigna)
+├── contenido_json        (JSONField: textos, opciones, imágenes, tiempos)
+├── tiempo_limite         (segundos, null = sin limite)
+├── nivel_dificultad      (1-5)
+└── puntos_base           (puntos que vale el ejercicio)
+
+EvaluacionInicial         Evaluación diagnóstica por estudiante
+├── estudiante            FK → Estudiante
+├── consola               FK → NivelConsola
+├── fecha
+├── resultados_json       (JSONField: {destreza: {correctas, total, tiempo}})
+└── nivel_estimado        (entero: nivel inicial del estudiante)
+
+SesionEntrenamiento       Cada sesión de trabajo del estudiante
+├── estudiante            FK → Estudiante
+├── consola               FK → NivelConsola
+├── unidad                FK → UnidadPedagogica
+├── fecha_inicio
+├── fecha_fin             (null si está en curso)
+├── ejercicios_totales
+├── ejercicios_completados
+├── puntos_obtenidos
+├── tiempo_total          (segundos)
+└── completada            (bool)
+
+IntentoEjercicio          Cada intento individual de un ejercicio
+├── sesion                FK → SesionEntrenamiento
+├── ejercicio             FK → Ejercicio
+├── respuesta_json        (JSONField: lo que respondió el estudiante)
+├── correcta              (bool)
+├── tiempo_empleado       (segundos)
+├── puntos_ganados
+└── created_at
+
+ProgresoEstudiante        Acumulado global por estudiante y destreza
+├── estudiante            FK → Estudiante (unique_together con destreza)
+├── destreza              FK → Destreza
+├── nivel_actual          (1-20, avanza con desempeño)
+├── total_ejercicios
+├── total_correctos
+├── puntos_acumulados
+├── racha_actual          (días consecutivos entrenando)
+├── mejor_racha
+└── updated_at
+
+Logro                     Insignias y logros desbloqueados
+├── estudiante            FK → Estudiante
+├── tipo                  (choice: racha, maestro_destreza, unidad_completada,
+│                           excelencia, superacion)
+├── titulo
+├── descripcion
+├── icono
+├── fecha
+└── puntos_extra
+
+ConfiguracionEntrenamiento   Config por centro educativo
+├── centro                FK → CentroEducativo (OneToOne)
+├── sesiones_por_semana   (default 3)
+├── minutos_por_sesion    (default 15)
+├── mostrar_ranking       (bool)
+├── gamificacion_activa   (bool)
+└── consolas_activas      (M2M → NivelConsola)
+```
+
+---
+
+### VISTAS POR ROL
+
+#### Director (/entrenamiento/)
+| Vista                          | URL                                  | Función                                               |
+|--------------------------------|--------------------------------------|-------------------------------------------------------|
+| entrenamiento_dashboard        | /entrenamiento/                      | Métricas globales, estudiantes activos, destrezas más débiles, ranking |
+| entrenamiento_config           | /entrenamiento/configuracion/        | Config del centro (consolas activas, sesiones/minutos, gamificación) |
+| entrenamiento_estudiantes      | /entrenamiento/estudiantes/          | Listado con filtros (consola, grado, sección) y progreso individual |
+| entrenamiento_estudiante_det   | /entrenamiento/estudiantes/<id>/     | Detalle: gráficas por destreza, historial de sesiones |
+| entrenamiento_unidades         | /entrenamiento/unidades/             | CRUD de unidades y ejercicios por consola              |
+| entrenamiento_reportes         | /entrenamiento/reportes/             | Comparativa por grados, destrezas débiles, tiempo promedio |
+
+#### Docente (/entrenamiento/docente/)
+| Vista                          | URL                                  | Función                                               |
+|--------------------------------|--------------------------------------|-------------------------------------------------------|
+| entrenamiento_mis_estudiantes  | /entrenamiento/docente/              | Estudiantes asignados con progreso resumido            |
+| entrenamiento_seguimiento      | /entrenamiento/docente/<id>/         | Detalle de un estudiante                               |
+
+#### Estudiante (/entrenamiento/alumno/)
+| Vista                          | URL                                  | Función                                               |
+|--------------------------------|--------------------------------------|-------------------------------------------------------|
+| entrenamiento_inicio           | /entrenamiento/alumno/               | Consola disponible, nivel actual, logros, btn Entrenar |
+| entrenamiento_ejercicios       | /entrenamiento/alumno/ejercicios/    | Interfaz de ejercicios adaptativos (fetch API)         |
+| entrenamiento_perfil           | /entrenamiento/alumno/perfil/        | Progreso: gráficas, logros, racha, historial           |
+
+#### Tutor (/entrenamiento/tutor/)
+| Vista                          | URL                                  | Función                                               |
+|--------------------------------|--------------------------------------|-------------------------------------------------------|
+| entrenamiento_tutor            | /entrenamiento/tutor/                | Progreso de hijos                                     |
+| entrenamiento_tutor_detalle    | /entrenamiento/tutor/<id>/           | Detalle por hijo                                       |
+
+#### API REST (para ejercicios en tiempo real)
+| Endpoint                                    | Método | Función                                           |
+|---------------------------------------------|--------|---------------------------------------------------|
+| /api/entrenamiento/sesion/iniciar/          | POST   | Crea sesión y retorna primer ejercicio            |
+| /api/entrenamiento/intento/                 | POST   | Registra intento, retorna siguiente ejercicio     |
+| /api/entrenamiento/sesion/finalizar/        | POST   | Cierra sesión, calcula puntos y logros             |
+| /api/entrenamiento/progreso/<estudiante_id>/| GET    | Progreso JSON para gráficas                       |
+| /api/entrenamiento/ranking/                 | GET    | Ranking de estudiantes del centro                 |
+
+---
+
+### FLUJO ADAPTATIVO (IA simple)
+
+1. **Evaluación inicial**: 10 ejercicios por destreza → calcula nivel por destreza
+2. **Por sesión**: el motor selecciona ejercicios del nivel actual del estudiante
+3. **Regla de avance**: si >= 80% correctas en la unidad → sube de nivel
+4. **Regla de retroceso**: si < 40% correctas → baja de nivel
+5. **Dificultad progresiva**: dentro de cada ejercicio, la dificultad sube/baja según
+   aciertos consecutivos (ej: texto más largo, opciones más similares, tiempo menor)
+
+---
+
+### SERVICIOS (entrenamiento/services.py)
+
+- `seleccionar_ejercicios(sesion, estudiante)` → retorna lista ordenada de ejercicios
+- `calcular_nivel(destreza, historial)` → recomienda nivel según desempeño reciente
+- `calcular_puntos(intento)` → puntos ganados según dificultad, tiempo y racha
+- `verificar_logros(estudiante)` → chequea y desbloquea insignias
+- `actualizar_racha(estudiante)` → incrementa/resetea racha de días consecutivos
+- `metricas_dashboard(centro)` → métricas agregadas para el panel del director
+- `reportes_por_grado(centro)` → comparativa de progreso por grado/sección
+
+---
+
+### TEMPLATES
+
+```
+entrenamiento/templates/entrenamiento/
+├── dashboard.html              # Panel director: métricas + ranking + alertas
+├── configuracion.html          # Config del centro
+├── estudiantes_list.html       # Listado con filtros
+├── estudiante_detalle.html     # Detalle con gráficas (Chart.js)
+├── unidades_list.html          # CRUD unidades
+├── ejercicio_form.html         # Crear/editar ejercicio
+├── reportes.html               # Reportes agregados
+├── docente_list.html           # Panel docente
+├── docente_detalle.html        # Seguimiento estudiante
+├── alumno_inicio.html          # Portal estudiante: consola + btn entrenar
+├── alumno_ejercicios.html      # Interfaz de ejercicios (SPA-like)
+├── alumno_perfil.html          # Mi progreso con gráficas
+├── tutor_inicio.html           # Portal tutor
+├── tutor_detalle.html          # Detalle por hijo
+└── partials/
+    ├── stat_card.html          # Tarjeta de métrica reutilizable
+    ├── progress_bar.html       # Barra de progreso
+    ├── destreza_chart.html     # Gráfica de destreza (Chart.js doughnut)
+    └── ranking_table.html      # Tabla de ranking
+```
+
+---
+
+### SIDEBAR (home.html)
+
+#### Director
+```html
+<!-- ENTRENAMIENTO (submenú) -->
+├── Dashboard
+├── Configuración
+├── Estudiantes (listado)
+├── Unidades y ejercicios
+└── Reportes
+```
+
+#### Docente
+```html
+<!-- ENTRENAMIENTO -->
+└── Mis estudiantes
+```
+
+#### Estudiante
+```html
+<!-- ENTRENAMIENTO -->
+├── Mi consola
+└── Mi perfil
+```
+
+#### Tutor
+```html
+<!-- ENTRENAMIENTO -->
+└── Progreso de hijos
+```
+
+---
+
+### INTEGRACIÓN CON EXISTENTE
+
+- **ConfiguracionCentro**: nuevo campo `modulo_entrenamiento` (bool) para activar/desactivar
+- **Estudiante**: se auto-asigna consola según edad (edad_min/edad_max de NivelConsola)
+- **Cache**: `entrenamiento:{centro}` para métricas del dashboard
+- **Signals**: invalidar caché al crear/completar sesiones
+- **Static files**: CSS custom para la interfaz de ejercicios + Chart.js para gráficas
+
+---
+
+### FASES DE IMPLEMENTACIÓN
+
+#### Fase 1 — Modelos + Admin (1-2 días)
+- [ ] Crear app `entrenamiento/`
+- [ ] Los 8 modelos con migración
+- [ ] Admin registrado con filtros y búsqueda
+- [ ] Seed data: 4 consolas, 6 destrezas, 5 ejercicios de prueba por tipo
+
+#### Fase 2 — Vistas Director (2-3 días)
+- [ ] Dashboard con métricas cacheadas
+- [ ] Configuración del centro (consolas activas, gamificación)
+- [ ] Listado de estudiantes con filtros y progreso
+- [ ] Detalle de estudiante con gráficas (Chart.js)
+- [ ] CRUD de unidades y ejercicios
+- [ ] Reportes agregados
+
+#### Fase 3 — Portal Estudiante (3-4 días)
+- [ ] Evaluación inicial
+- [ ] Interfaz de ejercicios adaptativos (fetch API)
+- [ ] Registro de intentos y cálculo de puntos
+- [ ] Sistema de logros e insignias
+- [ ] Perfil de progreso con gráficas
+- [ ] Racha de días consecutivos
+
+#### Fase 4 — Portales Docente + Tutor (1-2 días)
+- [ ] Panel docente: seguimiento de estudiantes asignados
+- [ ] Panel tutor: progreso de hijos
+
+#### Fase 5 — Gamificación + polish (1-2 días)
+- [ ] Ranking de estudiantes
+- [ ] Notificaciones de logros
+- [ ] Animaciones de ejercicios
+- [ ] Responsive móvil
+
+#### Fase 6 — Tests + caché (1 día)
+- [ ] Tests de modelos, servicios y vistas
+- [ ] Caché de métricas del dashboard
+- [ ] Signals de invalidación
+
+**Estimación total: 9-14 días de desarrollo**

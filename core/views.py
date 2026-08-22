@@ -74,8 +74,8 @@ def home(request):
     if user.rol in ['director', 'secretaria']:
         return redirect('administracion:dashboard_admin')
 
-    # 🔥 SUPERADMIN → debe elegir centro
-    if user.rol == 'superadmin':
+    # 🔥 ADMIN / SUPERADMIN → debe elegir centro (si no tiene)
+    if user.rol in ('admin', 'superadmin'):
         if not request.session.get('centro_id'):
             return redirect('core:seleccionar_centro')
         return redirect('administracion:dashboard_admin')
@@ -270,22 +270,200 @@ def configuracion_centro(request):
         if form.is_valid():
             form.save()
 
-            return redirect('core:configuracion_centro')
+    return redirect('core:configuracion_centro')
 
+
+# =========================
+# PERMISOS POR PAGINA
+# =========================
+
+@login_required
+@role_required('superadmin')
+def permiso_pagina_list(request):
+    from .models import PermisoPagina
+    permisos = PermisoPagina.objects.prefetch_related('roles_permitidos', 'usuarios_permitidos').all()
+    q = request.GET.get('q', '').strip()
+    if q:
+        permisos = permisos.filter(url_name__icontains=q)
+    return render(request, 'core/permiso_pagina_list.html', {
+        'permisos': permisos,
+        'q': q,
+    })
+
+
+@login_required
+@role_required('superadmin')
+def permiso_pagina_create(request):
+    from .models import PermisoPagina
+    from .forms import PermisoPaginaForm
+
+    if request.method == 'POST':
+        form = PermisoPaginaForm(request.POST)
+        if form.is_valid():
+            permiso = form.save()
+            from core.cache_utils import borrar
+            borrar(f'perm_mw:{permiso.url_name}')
+            borrar(f'perm_page:{permiso.url_name}')
+            messages.success(request, f'Permiso para "{permiso.url_name}" creado.')
+            return redirect('core:permiso_pagina_list')
     else:
+        form = PermisoPaginaForm()
 
-        form = ConfiguracionCentroForm(
-            instance=configuracion
-        )
+    return render(request, 'core/permiso_pagina_form.html', {
+        'form': form,
+        'accion': 'Crear',
+    })
 
-    return render(
-        request,
-        'core/configuracion_centro.html',
-        {
-            'form': form,
-            'centro': centro
-        }
+
+@login_required
+@role_required('superadmin')
+def permiso_pagina_update(request, pk):
+    from .models import PermisoPagina
+    from .forms import PermisoPaginaForm
+
+    permiso = get_object_or_404(PermisoPagina, pk=pk)
+
+    if request.method == 'POST':
+        form = PermisoPaginaForm(request.POST, instance=permiso)
+        if form.is_valid():
+            old_url = permiso.url_name
+            form.save()
+            from core.cache_utils import borrar
+            borrar(f'perm_mw:{old_url}')
+            borrar(f'perm_page:{old_url}')
+            if permiso.url_name != old_url:
+                borrar(f'perm_mw:{permiso.url_name}')
+                borrar(f'perm_page:{permiso.url_name}')
+            messages.success(request, f'Permiso para "{permiso.url_name}" actualizado.')
+            return redirect('core:permiso_pagina_list')
+    else:
+        form = PermisoPaginaForm(instance=permiso)
+
+    return render(request, 'core/permiso_pagina_form.html', {
+        'form': form,
+        'accion': 'Editar',
+    })
+
+
+@login_required
+@role_required('superadmin')
+def permiso_pagina_delete(request, pk):
+    from .models import PermisoPagina
+
+    permiso = get_object_or_404(PermisoPagina, pk=pk)
+
+    if request.method == 'POST':
+        from core.cache_utils import borrar
+        url_name = permiso.url_name
+        permiso.delete()
+        borrar(f'perm_mw:{url_name}')
+        borrar(f'perm_page:{url_name}')
+        messages.success(request, f'Permiso para "{url_name}" eliminado.')
+        return redirect('core:permiso_pagina_list')
+
+    return render(request, 'core/permiso_pagina_confirm_delete.html', {
+        'permiso': permiso,
+    })
+
+
+# =========================
+# APARIENCIA / TEMA
+# =========================
+
+@login_required
+@role_required('superadmin', 'director')
+def tema_centro(request):
+    from .models import TemaCentro, TEMAS_PREDEFINIDOS
+    from .forms import TemaCentroForm
+
+    centro_id = request.session.get('centro_id')
+    if not centro_id:
+        return redirect('core:seleccionar_centro')
+
+    centro = get_object_or_404(CentroEducativo, id=centro_id)
+    tema, created = TemaCentro.objects.get_or_create(
+        centro=centro,
+        defaults=TEMAS_PREDEFINIDOS[0],
     )
+
+    if request.method == 'POST':
+        if 'aplicar_tema' in request.POST:
+            tema_nombre = request.POST.get('tema_nombre', '')
+            for t in TEMAS_PREDEFINIDOS:
+                if t['nombre'] == tema_nombre:
+                    for campo, valor in t.items():
+                        setattr(tema, campo, valor)
+                    tema.save()
+                    messages.success(request, f'Tema "{tema_nombre}" aplicado.')
+                    return redirect('core:tema_centro')
+
+        form = TemaCentroForm(request.POST, instance=tema)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Tema actualizado.')
+            return redirect('core:tema_centro')
+    else:
+        form = TemaCentroForm(instance=tema)
+
+    return render(request, 'core/tema_centro.html', {
+        'form': form,
+        'tema': tema,
+        'temas_predefinidos': TEMAS_PREDEFINIDOS,
+        'centro': centro,
+    })
+
+
+@login_required
+@role_required('superadmin', 'director')
+def tema_centro_preview(request):
+    """Endpoint AJAX para previsualizar un color en vivo."""
+    from django.http import JsonResponse
+    from .models import TemaCentro
+
+    centro_id = request.session.get('centro_id')
+    if not centro_id:
+        return JsonResponse({'error': 'Sin centro'}, status=400)
+
+    tema, _ = TemaCentro.objects.get_or_create(centro_id=centro_id)
+    return JsonResponse({
+        'css': tema.to_css_variables(),
+    })
+
+
+# =========================
+# LOGO DEL CENTRO
+# =========================
+
+@login_required
+@role_required('superadmin', 'director')
+def logo_centro(request):
+    centro_id = request.session.get('centro_id')
+    if not centro_id:
+        return redirect('core:seleccionar_centro')
+
+    centro = get_object_or_404(CentroEducativo, id=centro_id)
+
+    if request.method == 'POST':
+        if 'eliminar_logo' in request.POST:
+            if centro.logo:
+                centro.logo.delete()
+                centro.logo = None
+                centro.save()
+                messages.success(request, 'Logo eliminado.')
+            return redirect('core:logo_centro')
+
+        logo = request.FILES.get('logo')
+        if logo:
+            centro.logo = logo
+            centro.save()
+            messages.success(request, 'Logo actualizado correctamente.')
+            return redirect('core:logo_centro')
+        else:
+            messages.error(request, 'Selecciona un archivo de imagen.')
+
+    return render(request, 'core/logo_centro.html', {
+        'centro': centro,
+    })
 
 
 @login_required
@@ -330,3 +508,83 @@ def test_correo(request):
         )
 
     return redirect('core:configuracion_centro')
+
+# =========================
+# MINI TARJETA DE PERSONA (popover estilo Odoo al pasar el mouse)
+# =========================
+
+@login_required
+def persona_card_ajax(request):
+    """Devuelve los datos de la mini tarjeta de un estudiante, docente o usuario.
+
+    GET /ajax/persona-card/?tipo=estudiante|docente|usuario&id=<pk>
+    Solo expone campos seguros (nombre, iniciales, foto, URL de perfil).
+    """
+    from django.http import JsonResponse
+    from django.urls import reverse
+    from django.core.exceptions import ObjectDoesNotExist, ValidationError
+
+    tipo = request.GET.get('tipo', '')
+    try:
+        objeto_id = int(request.GET.get('id', ''))
+    except ValueError:
+        return JsonResponse({'error': 'id invalido'}, status=400)
+
+    datos = {'nombre': '', 'subtitulo': '', 'iniciales': '?', 'foto_url': None,
+             'color': 'from-blue-500 to-indigo-600', 'perfil_url': None}
+
+    try:
+        if tipo == 'estudiante':
+            from estudiantes.models import Estudiante
+            persona = Estudiante.objects.only(
+                'primer_nombre', 'segundo_nombre', 'primer_apellido',
+                'segundo_apellido', 'matricula', 'foto').get(pk=objeto_id)
+            datos.update(
+                nombre=persona.nombre_completo(),
+                subtitulo=f'Matricula {persona.matricula}',
+                iniciales=(persona.primer_nombre[:1] + persona.primer_apellido[:1]).upper(),
+                perfil_url=reverse('estudiante_detail', args=[persona.id]),
+            )
+            if persona.foto:
+                datos['foto_url'] = persona.foto.url
+
+        elif tipo == 'docente':
+            from docentes.models import Docente
+            persona = Docente.objects.select_related(None).only(
+                'primer_nombre', 'segundo_nombre', 'primer_apellido',
+                'segundo_apellido', 'codigo_docente_minerd', 'foto').get(pk=objeto_id)
+            datos.update(
+                nombre=persona.nombre_completo(),
+                subtitulo=persona.codigo_docente_minerd or 'Docente',
+                iniciales=(persona.primer_nombre[:1] + persona.primer_apellido[:1]).upper(),
+                perfil_url=reverse('docente_detail', args=[persona.id]),
+            )
+            if persona.foto:
+                datos['foto_url'] = persona.foto.url
+
+        elif tipo == 'usuario':
+            from usuarios.models import Usuario
+            persona = Usuario.objects.only(
+                'first_name', 'last_name', 'username', 'rol', 'foto').get(pk=objeto_id)
+            datos.update(
+                nombre=persona.get_full_name() or persona.username,
+                subtitulo=f'@{persona.username} � {persona.get_rol_display()}',
+                iniciales=((persona.first_name[:1] or '') + (persona.last_name[:1] or '')).upper() or '?',
+                color='from-indigo-500 to-purple-600',
+                # No hay pagina de detalle de terceros: solo el propio perfil.
+                perfil_url=(
+                    reverse('usuarios:mi_perfil')
+                    if persona.id == request.user.id else None
+                ),
+            )
+            if persona.foto:
+                datos['foto_url'] = persona.foto.url
+        else:
+            return JsonResponse({'error': 'tipo invalido'}, status=400)
+
+    except ObjectDoesNotExist:
+        return JsonResponse({'error': 'no encontrado'}, status=404)
+    except ValidationError:
+        return JsonResponse({'error': 'id invalido'}, status=400)
+
+    return JsonResponse(datos)

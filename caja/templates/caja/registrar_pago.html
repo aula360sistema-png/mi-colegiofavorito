@@ -3,19 +3,11 @@
 {% block title %}Registrar Pago{% endblock %}
 
 {% block content %}
-<style>
-    @keyframes modal-pop { from { opacity: 0; transform: translateY(14px) scale(.96); } to { opacity: 1; transform: none; } }
-    @keyframes modal-fade { from { opacity: 0; } to { opacity: 1; } }
-    .modal-panel { animation: modal-pop .2s ease-out; }
-    .modal-backdrop { animation: modal-fade .18s ease-out; }
-</style>
 <div class="max-w-6xl mx-auto space-y-6">
 
     <!-- ================= HERO ================= -->
     <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 shadow-xl">
-        <div class="absolute inset-0 opacity-20"
-             style="background-image: radial-gradient(circle at 20% 30%, white 1px, transparent 1px); background-size: 24px 24px;">
-        </div>
+        <div class="absolute inset-0 opacity-20 hero-bg"></div>
         <div class="relative px-8 py-7 flex flex-wrap items-center justify-between gap-6">
             <div>
                 <p class="text-emerald-200 text-sm font-medium uppercase tracking-wider">Caja · Entrada de efectivo</p>
@@ -152,7 +144,7 @@
                     </h3>
 
                     <div id="resumen-pago" class="flex flex-wrap items-center gap-2">
-                        <button type="button" onclick="abrirModalMetodo()"
+                        <button type="button" data-action="open-metodo"
                                 class="inline-flex items-center gap-2 rounded-xl border border-dashed border-gray-300 px-4 py-2.5 text-sm text-gray-500 hover:border-indigo-400 hover:text-indigo-600 transition">
                             <i class="fas fa-plus"></i> Elegir método de pago
                         </button>
@@ -242,7 +234,7 @@
 
 <!-- ================= MODAL: MÉTODO DE PAGO ================= -->
 <div id="modal-metodo" class="fixed inset-0 z-[60] hidden items-center justify-center p-4">
-    <div class="modal-backdrop absolute inset-0 bg-slate-900/70 backdrop-blur-sm" onclick="cerrarModalMetodo()"></div>
+    <div class="modal-backdrop absolute inset-0 bg-slate-900/70 backdrop-blur-sm" data-action="close-metodo"></div>
     <div class="modal-panel relative w-full max-w-md rounded-2xl bg-white shadow-2xl ring-1 ring-black/5 overflow-hidden">
         <div class="relative px-6 py-5 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 overflow-hidden">
             <div class="absolute -right-8 -top-8 h-28 w-28 rounded-full bg-emerald-500/20 blur-2xl"></div>
@@ -252,7 +244,7 @@
             </p>
             <h3 class="relative text-xl font-bold text-white mt-1.5">¿Cómo desea pagar?</h3>
             <p class="relative text-sm text-slate-400 mt-0.5">Seleccione una de las siguientes opciones</p>
-            <button type="button" onclick="cerrarModalMetodo()"
+            <button type="button" data-action="close-metodo"
                     class="absolute right-4 top-4 grid h-8 w-8 place-items-center rounded-full text-slate-400 transition hover:bg-white/10 hover:text-white">
                 <i class="fas fa-xmark"></i>
             </button>
@@ -263,10 +255,10 @@
             <button type="button" data-metodo="{{ valor }}" data-etiqueta="{{ etiqueta }}"
                     class="opcion-metodo group w-full flex items-center gap-4 rounded-xl border border-gray-200 bg-white px-4 py-3.5 text-left transition hover:border-emerald-500 hover:bg-emerald-50/60 hover:shadow-md">
                 <span class="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-slate-100 text-xl transition group-hover:bg-emerald-100">
-                    {% if valor == 'efectivo' %}💵
-                    {% elif valor == 'cheque' %}🏦
-                    {% elif valor == 'transferencia' %}🏧
-                    {% else %}💳{% endif %}
+                    {% if valor == 'efectivo' %}<i class="fa-solid fa-money-bill"></i>
+                    {% elif valor == 'cheque' %}<i class="fa-solid fa-building-columns"></i>
+                    {% elif valor == 'transferencia' %}<i class="fa-solid fa-building-columns"></i>
+                    {% else %}<i class="fa-solid fa-credit-card"></i>{% endif %}
                 </span>
                 <span class="min-w-0 flex-1">
                     <span class="block text-sm font-semibold text-gray-800">{{ etiqueta }}</span>
@@ -293,7 +285,7 @@
         </div>
 
         <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between gap-3">
-            <button type="button" onclick="cerrarModalMetodo()"
+            <button type="button" data-action="close-metodo"
                     class="inline-flex items-center gap-1.5 text-sm font-medium text-gray-500 transition hover:text-gray-700">
                 <i class="fas fa-xmark"></i> Cancelar
             </button>
@@ -306,7 +298,7 @@
 
 <!-- ================= MODAL: COMPROBANTE ================= -->
 <div id="modal-comprobante" class="fixed inset-0 z-[70] hidden items-center justify-center p-4">
-    <div class="modal-backdrop absolute inset-0 bg-slate-900/70 backdrop-blur-sm" onclick="cerrarModalComprobante()"></div>
+    <div class="modal-backdrop absolute inset-0 bg-slate-900/70 backdrop-blur-sm" data-action="close-comprobante"></div>
     <div class="modal-panel relative w-full max-w-md rounded-2xl bg-white shadow-2xl ring-1 ring-black/5 overflow-hidden">
         <div class="relative px-6 py-5 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 overflow-hidden">
             <div class="absolute -right-8 -top-8 h-28 w-28 rounded-full bg-sky-500/20 blur-2xl"></div>
@@ -316,7 +308,7 @@
             </p>
             <h3 class="relative text-xl font-bold text-white mt-1.5">¿Tipo de comprobante?</h3>
             <p class="relative text-sm text-slate-400 mt-0.5">¿Emitimos factura fiscal o solo recibo?</p>
-            <button type="button" onclick="cerrarModalComprobante()"
+            <button type="button" data-action="close-comprobante"
                     class="absolute right-4 top-4 grid h-8 w-8 place-items-center rounded-full text-slate-400 transition hover:bg-white/10 hover:text-white">
                 <i class="fas fa-xmark"></i>
             </button>
@@ -348,7 +340,7 @@
             </button>
         </div>
         <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
-            <button type="button" onclick="volverAMetodo()"
+            <button type="button" data-action="volver-metodo"
                     class="inline-flex items-center gap-1.5 text-sm font-medium text-gray-500 transition hover:text-gray-700">
                 <i class="fas fa-arrow-left"></i> Atrás
             </button>
@@ -360,7 +352,7 @@
     </div>
 </div>
 
-<script>
+<script nonce="{{ request.csp_nonce }}">
 (function () {
     const URL_BALANCE = "{% url 'caja:api_balance_pago' 0 %}";
     const PERMITE_FACTURACION = {% if config and config.permitir_facturacion %}true{% else %}false{% endif %};
@@ -544,12 +536,15 @@
                     '</div>' +
                     '<div class="h-1.5 w-full rounded-full bg-gray-200 overflow-hidden">' +
                     '<div class="h-full rounded-full ' + (c.saldo <= 0 ? 'bg-emerald-500' : 'bg-amber-500') +
-                    '" style="width:' + pct + '%"></div></div>' +
+                    '" data-progress="' + pct + '"></div></div>' +
                     '<div class="flex justify-between mt-1.5 text-[11px] text-gray-500">' +
                     '<span>Precio ' + fmt(c.monto) + '</span>' +
                     '<span class="font-semibold ' + (c.saldo > 0 ? 'text-amber-700' : 'text-emerald-700') + '">' +
                     fmt(c.saldo) + '</span></div></div>';
             }).join('');
+            cont.querySelectorAll('[data-progress]').forEach(function (bar) {
+                bar.style.width = bar.dataset.progress + '%';
+            });
         }
     }
 
@@ -870,7 +865,7 @@
             html += chip('<i class="fas fa-credit-card"></i> Voucher: ' + voucherTexto, 'bg-slate-100 text-slate-600');
         }
         resumenPago.innerHTML = html +
-            '<button type="button" onclick="abrirModalMetodo()" class="text-xs font-semibold text-indigo-600 hover:text-indigo-700 hover:underline">Editar</button>';
+            '<button type="button" data-action="open-metodo" class="text-xs font-semibold text-indigo-600 hover:text-indigo-700 hover:underline">Editar</button>';
     }
 
     document.querySelectorAll('.opcion-metodo').forEach(boton => {
@@ -928,6 +923,17 @@
     window.cerrarModalMetodo = cerrarModalMetodo;
     window.cerrarModalComprobante = cerrarModalComprobante;
     window.volverAMetodo = volverAMetodo;
+
+    document.addEventListener('click', function (e) {
+        var target = e.target.closest('[data-action]');
+        if (!target) return;
+        switch (target.dataset.action) {
+            case 'open-metodo': abrirModalMetodo(); break;
+            case 'close-metodo': cerrarModalMetodo(); break;
+            case 'close-comprobante': cerrarModalComprobante(); break;
+            case 'volver-metodo': volverAMetodo(); break;
+        }
+    });
 
     /* ================= CONFIRMACIÓN Y ENVÍO ================= */
 

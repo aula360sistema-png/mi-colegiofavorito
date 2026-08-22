@@ -1,0 +1,107 @@
+{% extends "home.html" %}
+{% load formatos %}
+
+{% block title %}Detalle de Métrica - {{ centro }}{% endblock %}
+
+{% block content %}
+
+<div class="max-w-6xl mx-auto">
+
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <a href="{% url 'entrenamiento:metrica_list' %}"
+               class="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-blue-600 mb-2 transition">
+                <i class="fas fa-arrow-left"></i> Volver al listado
+            </a>
+            <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                <i class="fas fa-chart-bar text-yellow-600"></i> Métrica Cognitiva
+            </h2>
+            <p class="text-sm text-gray-500 mt-1">{{ obj.estudiante }} &mdash; {{ obj.periodo }}</p>
+        </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        <div class="bg-white shadow-sm rounded-xl p-5 border border-gray-200 flex items-center gap-4">
+            <div class="w-12 h-12 rounded-lg bg-yellow-100 text-yellow-600 flex items-center justify-center text-xl">
+                <i class="fas fa-chart-line"></i>
+            </div>
+            <div>
+                <p class="text-xs uppercase tracking-wide text-gray-500 font-semibold">IPD</p>
+                <p class="text-2xl font-bold text-yellow-600">{{ obj.ipd }}</p>
+            </div>
+        </div>
+        <div class="bg-white shadow-sm rounded-xl p-5 border border-gray-200 flex items-center gap-4">
+            <div class="w-12 h-12 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center text-xl">
+                <i class="fas fa-percent"></i>
+            </div>
+            <div>
+                <p class="text-xs uppercase tracking-wide text-gray-500 font-semibold">Percentil</p>
+                <p class="text-2xl font-bold text-indigo-600">{{ obj.percentil_edad }}</p>
+            </div>
+        </div>
+        <div class="bg-white shadow-sm rounded-xl p-5 border border-gray-200 flex items-center gap-4">
+            <div class="w-12 h-12 rounded-lg bg-gray-100 text-gray-600 flex items-center justify-center text-xl">
+                <i class="fas fa-calendar"></i>
+            </div>
+            <div>
+                <p class="text-xs uppercase tracking-wide text-gray-500 font-semibold">Fecha de corte</p>
+                <p class="text-lg font-bold text-gray-800">{{ obj.fecha_corte|date:"d/m/Y" }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <!-- Info -->
+        <div class="bg-white shadow-sm rounded-xl border border-gray-200 p-5">
+            <h3 class="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                <i class="fas fa-info-circle text-gray-400"></i> Información
+            </h3>
+            <dl class="space-y-3 text-sm">
+                <div class="flex justify-between">
+                    <dt class="text-gray-500">Estudiante</dt>
+                    <dd class="font-medium">{{ obj.estudiante }}</dd>
+                </div>
+                <div class="flex justify-between">
+                    <dt class="text-gray-500">Año escolar</dt>
+                    <dd class="font-medium">{{ obj.anio_escolar }}</dd>
+                </div>
+                <div class="flex justify-between">
+                    <dt class="text-gray-500">Periodo</dt>
+                    <dd class="font-medium">{{ obj.periodo }}</dd>
+                </div>
+                <div class="flex justify-between">
+                    <dt class="text-gray-500">Tramo</dt>
+                    <dd><span class="bg-purple-100 text-purple-700 px-2 py-0.5 rounded-md text-xs font-semibold">{{ obj.tramo.nombre }}</span></dd>
+                </div>
+                <div class="flex justify-between">
+                    <dt class="text-gray-500">IPD</dt>
+                    <dd class="font-bold text-lg text-yellow-600">{{ obj.ipd }}</dd>
+                </div>
+                <div class="flex justify-between">
+                    <dt class="text-gray-500">Percentil edad</dt>
+                    <dd class="font-bold text-lg text-indigo-600">{{ obj.percentil_edad }}</dd>
+                </div>
+            </dl>
+        </div>
+
+        <!-- Desglose -->
+        <div class="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
+            <div class="px-5 py-4 border-b border-gray-200 bg-gray-50">
+                <h3 class="font-semibold text-gray-800 flex items-center gap-2">
+                    <i class="fas fa-code text-gray-400"></i> Desglose por destreza
+                </h3>
+            </div>
+            <div class="p-6">
+                {% if obj.desglose %}
+                <pre class="bg-gray-50 border border-gray-200 rounded-lg p-4 text-sm text-gray-700 overflow-x-auto font-mono">{{ obj.desglose|pprint }}</pre>
+                {% else %}
+                <p class="text-gray-400 text-sm text-center py-6">Sin desglose disponible</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}

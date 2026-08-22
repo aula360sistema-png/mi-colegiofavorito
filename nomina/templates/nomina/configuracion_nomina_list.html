@@ -115,7 +115,7 @@
                         </form>
 
                         <form method="post" action="{% url 'nomina:configuracion_nomina_delete' emp.id %}"
-                              onsubmit="return confirm('¿Eliminar la configuración de {{ emp.usuario.get_full_name }}?')">
+                              data-confirm="¿Eliminar la configuración de {{ emp.usuario.get_full_name }}?">
                             {% csrf_token %}
                             <button type="submit" class="btn-action btn-action-danger" title="Eliminar">
                                 <i class="fas fa-trash"></i>

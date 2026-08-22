@@ -1,4 +1,5 @@
 {% extends 'home.html' %}
+{% load static %}
 {% load formatos %}
 
 {% block title %}
@@ -290,80 +291,6 @@ Asistencia de Estudiantes
 
 {% include "academico/_tomselect.html" %}
 
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const grado = document.getElementById('grado');
-        const seccion = document.getElementById('seccion');
-
-        if (!grado || !seccion) return;
-
-        function opcionesDeSeccion(gid) {
-            return Array.from(seccion.querySelectorAll('option')).filter(function (op) {
-                return !op.value || op.dataset.grado === gid;
-            });
-        }
-
-        function sincronizarSecciones(gid) {
-            const ts = seccion.tomselect;
-
-            if (!ts) {
-                seccion.querySelectorAll('option').forEach(function (op) {
-                    if (!op.value) return;
-                    op.style.display = (op.dataset.grado === gid) ? '' : 'none';
-                });
-                return;
-            }
-
-            const actual = seccion.value;
-            const opciones = opcionesDeSeccion(gid).map(function (op) {
-                return { value: op.value, text: op.textContent };
-            });
-
-            ts.clearOptions(true);
-            ts.addOption(opciones);
-
-            if (!opciones.some(function (o) { return o.value === actual; })) {
-                ts.clear(true);
-            }
-
-            ts.refreshOptions(false);
-        }
-
-        function limpiarSeccion() {
-            const ts = seccion.tomselect;
-            if (ts) {
-                ts.clear();
-            } else {
-                seccion.value = '';
-            }
-        }
-
-        function onGradoChange() {
-            limpiarSeccion();
-            sincronizarSecciones(grado.value);
-        }
-
-        grado.addEventListener('change', onGradoChange);
-        if (grado.tomselect) {
-            grado.tomselect.on('change', onGradoChange);
-        }
-
-        sincronizarSecciones(grado.value);
-
-        document.querySelectorAll('.asistencia-radios').forEach(function (group) {
-            group.querySelectorAll('input[type="radio"]').forEach(function (input) {
-                input.addEventListener('change', function () {
-                    group.querySelectorAll('label.asistencia-radio').forEach(function (label) {
-                        label.classList.remove('activo');
-                    });
-
-                    if (input.checked) {
-                        input.closest('label').classList.add('activo');
-                    }
-                });
-            });
-        });
-    });
-</script>
+<script src="{% static 'js/asistencia-filtros.js' %}"></script>
 
 {% endblock %}

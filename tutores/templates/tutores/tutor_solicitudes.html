@@ -6,147 +6,376 @@
 {% endblock %}
 
 {% block content %}
-<div class="p-6">
-  <div class="mb-6">
-    <h1 class="text-2xl font-bold text-slate-800">
-      Solicitudes de certificados
-    </h1>
-    <p class="text-slate-500">
-      {{ tutor.nombre_completo }}
-    </p>
+<div class="max-w-6xl mx-auto space-y-6">
+
+  <!-- ==================== HEADER ==================== -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div>
+      <nav class="flex items-center gap-1.5 text-xs text-gray-400 mb-2">
+        <a href="{% url 'tutores:tutor_inicio' %}" class="hover:text-indigo-600 transition">Inicio</a>
+        <i class="fas fa-chevron-right text-[10px]"></i>
+        <span class="text-gray-600">Certificados</span>
+      </nav>
+      <h1 class="text-2xl font-bold text-slate-800 flex items-center gap-3">
+        <span class="bg-indigo-100 text-indigo-600 w-10 h-10 rounded-xl flex items-center justify-center">
+          <i class="fas fa-scroll"></i>
+        </span>
+        Solicitudes de Certificados
+      </h1>
+      <p class="text-slate-500 mt-1 text-sm">
+        {{ tutor.nombre_completo }} · {{ estudiantes.count }} estudiante(s) vinculado(s)
+      </p>
+    </div>
+
+    {% if modulo_activo %}
+    <button onclick="document.getElementById('modal-solicitud').classList.remove('hidden')"
+            class="inline-flex items-center gap-2 bg-indigo-600 text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-indigo-700 transition shadow-sm">
+      <i class="fas fa-plus"></i> Nueva solicitud
+    </button>
+    {% endif %}
   </div>
 
-  {% if messages %}
-    {% for message in messages %}
-      <div class="mb-4 rounded-xl px-4 py-3 text-sm font-medium {% if message.tags == 'success' %}bg-emerald-50 text-emerald-700 border border-emerald-200{% elif message.tags == 'error' %}bg-red-50 text-red-700 border border-red-200{% else %}bg-blue-50 text-blue-700 border border-blue-200{% endif %}">
-        {{ message }}
-      </div>
-    {% endfor %}
-  {% endif %}
-
   {% if not modulo_activo %}
-    <div class="bg-amber-50 border border-amber-200 text-amber-700 rounded-xl px-4 py-3 text-sm mb-6">
-      El centro aún no ha habilitado el módulo de solicitudes de certificados.
+  <div class="bg-amber-50 border border-amber-200 rounded-2xl p-8 text-center">
+    <div class="w-14 h-14 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
+      <i class="fas fa-lock text-amber-500 text-xl"></i>
     </div>
+    <h3 class="font-semibold text-amber-800 mb-1">Módulo no habilitado</h3>
+    <p class="text-sm text-amber-600">El centro aún no ha habilitado el módulo de solicitudes de certificados. Contacta con la administración.</p>
+  </div>
+
   {% else %}
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <div class="lg:col-span-2 space-y-4">
-        {% for solicitud in solicitudes %}
-          <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
-            <div class="flex items-start justify-between gap-4">
-              <div>
-                <div class="flex items-center gap-2 flex-wrap">
-                  <span class="font-semibold text-slate-800">{{ solicitud.folio }}</span>
-                  <span class="text-sm text-slate-400">{{ solicitud.created_at|date:"d/m/Y h:i A" }}</span>
-                </div>
-                <p class="text-sm text-slate-600 mt-1">
-                  {{ solicitud.estudiante.nombre_completo }}
-                  <span class="text-slate-400">({{ solicitud.estudiante.matricula }})</span>
-                </p>
-                <p class="text-sm text-slate-500 mt-1">
-                  {{ solicitud.get_tipo_certificado_display }}
-                  <span class="text-slate-400">•</span>
-                  Costo: ${{ solicitud.monto|floatformat:2 }}
-                </p>
-                {% if solicitud.motivo %}
-                  <p class="text-sm text-slate-500 mt-1 italic">{{ solicitud.motivo }}</p>
-                {% endif %}
-                {% if solicitud.referencia_pago %}
-                  <p class="text-xs text-slate-400 mt-1">
-                    Ref. pago: {{ solicitud.referencia_pago }}
-                  </p>
-                {% endif %}
-              </div>
 
-              <div class="text-right shrink-0">
-                {% if solicitud.estado == 'pendiente' %}
-                  <span class="inline-block rounded-full bg-amber-100 text-amber-700 text-xs font-semibold px-3 py-1">
-                    Pendiente
-                  </span>
-                {% elif solicitud.estado == 'aprobada' %}
-                  <span class="inline-block rounded-full bg-blue-100 text-blue-700 text-xs font-semibold px-3 py-1">
-                    Aprobada — pago en caja
-                  </span>
-                {% elif solicitud.estado == 'pagada' %}
-                  <span class="inline-block rounded-full bg-emerald-100 text-emerald-700 text-xs font-semibold px-3 py-1">
-                    Pagada
-                  </span>
-                {% elif solicitud.estado == 'entregada' %}
-                  <span class="inline-block rounded-full bg-green-100 text-green-700 text-xs font-semibold px-3 py-1">
-                    Entregada
-                  </span>
-                {% elif solicitud.estado == 'rechazada' %}
-                  <span class="inline-block rounded-full bg-red-100 text-red-700 text-xs font-semibold px-3 py-1">
-                    Rechazada
-                  </span>
-                {% else %}
-                  <span class="inline-block rounded-full bg-gray-100 text-gray-600 text-xs font-semibold px-3 py-1">
-                    {{ solicitud.get_estado_display }}
-                  </span>
-                {% endif %}
-              </div>
+  <!-- ==================== ESTADÍSTICAS ==================== -->
+  <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+    <a href="?filtro=todas"
+       class="rounded-xl border p-3 transition text-center {% if filtro == 'todas' %}border-indigo-300 bg-indigo-50 shadow-sm{% else %}border-gray-200 bg-white hover:border-gray-300{% endif %}">
+      <p class="text-2xl font-bold {% if filtro == 'todas' %}text-indigo-700{% else %}text-slate-800{% endif %}">{{ stats.total }}</p>
+      <p class="text-xs font-medium {% if filtro == 'todas' %}text-indigo-600{% else %}text-gray-500{% endif %}">Todas</p>
+    </a>
+    <a href="?filtro=pendiente"
+       class="rounded-xl border p-3 transition text-center {% if filtro == 'pendiente' %}border-amber-300 bg-amber-50 shadow-sm{% else %}border-gray-200 bg-white hover:border-gray-300{% endif %}">
+      <p class="text-2xl font-bold {% if filtro == 'pendiente' %}text-amber-700{% else %}text-slate-800{% endif %}">{{ stats.pendiente }}</p>
+      <p class="text-xs font-medium {% if filtro == 'pendiente' %}text-amber-600{% else %}text-gray-500{% endif %}">Pendientes</p>
+    </a>
+    <a href="?filtro=aprobada"
+       class="rounded-xl border p-3 transition text-center {% if filtro == 'aprobada' %}border-blue-300 bg-blue-50 shadow-sm{% else %}border-gray-200 bg-white hover:border-gray-300{% endif %}">
+      <p class="text-2xl font-bold {% if filtro == 'aprobada' %}text-blue-700{% else %}text-slate-800{% endif %}">{{ stats.aprobada }}</p>
+      <p class="text-xs font-medium {% if filtro == 'aprobada' %}text-blue-600{% else %}text-gray-500{% endif %}">Aprobadas</p>
+    </a>
+    <a href="?filtro=pagada"
+       class="rounded-xl border p-3 transition text-center {% if filtro == 'pagada' %}border-emerald-300 bg-emerald-50 shadow-sm{% else %}border-gray-200 bg-white hover:border-gray-300{% endif %}">
+      <p class="text-2xl font-bold {% if filtro == 'pagada' %}text-emerald-700{% else %}text-slate-800{% endif %}">{{ stats.pagada }}</p>
+      <p class="text-xs font-medium {% if filtro == 'pagada' %}text-emerald-600{% else %}text-gray-500{% endif %}">Pagadas</p>
+    </a>
+    <a href="?filtro=entregada"
+       class="rounded-xl border p-3 transition text-center {% if filtro == 'entregada' %}border-green-300 bg-green-50 shadow-sm{% else %}border-gray-200 bg-white hover:border-gray-300{% endif %}">
+      <p class="text-2xl font-bold {% if filtro == 'entregada' %}text-green-700{% else %}text-slate-800{% endif %}">{{ stats.entregada }}</p>
+      <p class="text-xs font-medium {% if filtro == 'entregada' %}text-green-600{% else %}text-gray-500{% endif %}">Entregadas</p>
+    </a>
+    <a href="?filtro=rechazada"
+       class="rounded-xl border p-3 transition text-center {% if filtro == 'rechazada' %}border-red-300 bg-red-50 shadow-sm{% else %}border-gray-200 bg-white hover:border-gray-300{% endif %}">
+      <p class="text-2xl font-bold {% if filtro == 'rechazada' %}text-red-700{% else %}text-slate-800{% endif %}">{{ stats.rechazada }}</p>
+      <p class="text-xs font-medium {% if filtro == 'rechazada' %}text-red-600{% else %}text-gray-500{% endif %}">Rechazadas</p>
+    </a>
+  </div>
+
+  <!-- ==================== LISTADO DE SOLICITUDES ==================== -->
+  <div class="space-y-4">
+    {% for solicitud in solicitudes %}
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition">
+      <div class="p-5">
+        <div class="flex flex-col sm:flex-row sm:items-start gap-4">
+
+          <!-- Icono del tipo -->
+          <div class="shrink-0">
+            {% if solicitud.tipo_certificado == 'constancia_estudio' %}
+            <div class="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center">
+              <i class="fas fa-graduation-cap text-blue-600 text-lg"></i>
             </div>
+            {% elif solicitud.tipo_certificado == 'record_notas' %}
+            <div class="w-12 h-12 rounded-xl bg-violet-100 flex items-center justify-center">
+              <i class="fas fa-file-lines text-violet-600 text-lg"></i>
+            </div>
+            {% elif solicitud.tipo_certificado == 'constancia_conducta' %}
+            <div class="w-12 h-12 rounded-xl bg-teal-100 flex items-center justify-center">
+              <i class="fas fa-award text-teal-600 text-lg"></i>
+            </div>
+            {% else %}
+            <div class="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center">
+              <i class="fas fa-file-alt text-gray-500 text-lg"></i>
+            </div>
+            {% endif %}
           </div>
-        {% empty %}
-          <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 text-center text-slate-500">
-            Aún no hay solicitudes de certificados para tus estudiantes.
-          </div>
-        {% endfor %}
-      </div>
 
-      <div>
-        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 sticky top-24">
-          <h2 class="font-semibold text-slate-800 mb-4">Solicitar certificado</h2>
+          <!-- Info principal -->
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 flex-wrap mb-1">
+              <span class="font-bold text-slate-800">{{ solicitud.folio }}</span>
+              <span class="text-xs text-gray-400">·</span>
+              <span class="text-xs text-gray-400">{{ solicitud.created_at|date:"d/m/Y" }}</span>
+              <span class="text-xs text-gray-400">·</span>
+              <span class="text-xs text-gray-400">{{ solicitud.created_at|date:"h:i A" }}</span>
+            </div>
 
-          {% if config %}
-            <p class="text-sm text-slate-500 mb-4">
-              Costo por certificado: <span class="font-semibold">${{ config.precio_certificado|floatformat:2 }}</span>
+            <p class="text-sm text-slate-700 font-medium">
+              {{ solicitud.get_tipo_certificado_display }}
             </p>
-          {% endif %}
 
-          <form method="post" class="space-y-4">
-            {% csrf_token %}
+            <p class="text-xs text-slate-500 mt-1">
+              <i class="fas fa-user-graduate mr-1 text-gray-400"></i>
+              {{ solicitud.estudiante.nombre_completo }}
+              <span class="text-gray-400">({{ solicitud.estudiante.matricula }})</span>
+            </p>
 
-            <div>
-              <label class="block text-sm font-medium text-slate-700 mb-1.5">{{ form.estudiante.label }}</label>
-              {{ form.estudiante }}
-              {% if form.estudiante.errors %}
-                <p class="text-red-500 text-xs mt-1">{{ form.estudiante.errors.0 }}</p>
-              {% endif %}
+            {% if solicitud.motivo %}
+            <p class="text-xs text-slate-500 mt-1.5 italic bg-gray-50 rounded-lg px-3 py-1.5 inline-block">
+              <i class="fas fa-quote-left mr-1 text-gray-300"></i>{{ solicitud.motivo }}
+            </p>
+            {% endif %}
+
+            {% if solicitud.referencia_pago %}
+            <p class="text-xs text-gray-400 mt-1">
+              <i class="fas fa-hashtag mr-1"></i>Ref: {{ solicitud.referencia_pago }}
+            </p>
+            {% endif %}
+          </div>
+
+          <!-- Monto + Estado -->
+          <div class="shrink-0 text-right space-y-2">
+            <p class="text-lg font-bold text-slate-800">RD$ {{ solicitud.monto|dop0 }}</p>
+
+            {% if solicitud.estado == 'pendiente' %}
+              <span class="inline-flex items-center gap-1.5 rounded-full bg-amber-100 text-amber-700 text-xs font-semibold px-3 py-1">
+                <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                Pendiente
+              </span>
+            {% elif solicitud.estado == 'aprobada' %}
+              <span class="inline-flex items-center gap-1.5 rounded-full bg-blue-100 text-blue-700 text-xs font-semibold px-3 py-1">
+                <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                Aprobada
+              </span>
+            {% elif solicitud.estado == 'pagada' %}
+              <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 text-emerald-700 text-xs font-semibold px-3 py-1">
+                <i class="fas fa-check-circle text-[10px]"></i>
+                Pagada
+              </span>
+            {% elif solicitud.estado == 'entregada' %}
+              <span class="inline-flex items-center gap-1.5 rounded-full bg-green-100 text-green-700 text-xs font-semibold px-3 py-1">
+                <i class="fas fa-check-double text-[10px]"></i>
+                Entregada
+              </span>
+            {% elif solicitud.estado == 'rechazada' %}
+              <span class="inline-flex items-center gap-1.5 rounded-full bg-red-100 text-red-700 text-xs font-semibold px-3 py-1">
+                <i class="fas fa-times-circle text-[10px]"></i>
+                Rechazada
+              </span>
+            {% elif solicitud.estado == 'anulada' %}
+              <span class="inline-flex items-center gap-1.5 rounded-full bg-gray-100 text-gray-600 text-xs font-semibold px-3 py-1">
+                <i class="fas fa-ban text-[10px]"></i>
+                Anulada
+              </span>
+            {% else %}
+              <span class="inline-flex items-center gap-1.5 rounded-full bg-gray-100 text-gray-600 text-xs font-semibold px-3 py-1">
+                {{ solicitud.get_estado_display }}
+              </span>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Timeline del proceso -->
+        <div class="mt-4 pt-4 border-t border-gray-100">
+          <div class="flex items-center gap-1 text-[11px] font-medium overflow-x-auto">
+            <!-- Pendiente -->
+            <div class="flex items-center gap-1 shrink-0">
+              <span class="w-6 h-6 rounded-full flex items-center justify-center text-[10px]
+                {% if solicitud.estado == 'pendiente' %}bg-amber-500 text-white
+                {% elif solicitud.estado == 'aprobada' or solicitud.estado == 'pagada' or solicitud.estado == 'entregada' %}bg-emerald-500 text-white
+                {% else %}bg-gray-200 text-gray-400{% endif %}">
+                1
+              </span>
+              <span class="{% if solicitud.estado == 'pendiente' %}text-amber-700 font-semibold{% elif solicitud.estado == 'aprobada' or solicitud.estado == 'pagada' or solicitud.estado == 'entregada' %}text-emerald-700{% else %}text-gray-400{% endif %}">
+                Enviada
+              </span>
             </div>
 
-            <div>
-              <label class="block text-sm font-medium text-slate-700 mb-1.5">{{ form.tipo_certificado.label }}</label>
-              {{ form.tipo_certificado }}
-              {% if form.tipo_certificado.errors %}
-                <p class="text-red-500 text-xs mt-1">{{ form.tipo_certificado.errors.0 }}</p>
-              {% endif %}
+            <div class="w-6 h-px shrink-0 {% if solicitud.estado == 'aprobada' or solicitud.estado == 'pagada' or solicitud.estado == 'entregada' %}bg-emerald-400{% else %}bg-gray-200{% endif %}"></div>
+
+            <!-- Aprobada -->
+            <div class="flex items-center gap-1 shrink-0">
+              <span class="w-6 h-6 rounded-full flex items-center justify-center text-[10px]
+                {% if solicitud.estado == 'aprobada' %}bg-blue-500 text-white
+                {% elif solicitud.estado == 'pagada' or solicitud.estado == 'entregada' %}bg-emerald-500 text-white
+                {% elif solicitud.estado == 'rechazada' %}bg-red-500 text-white
+                {% else %}bg-gray-200 text-gray-400{% endif %}">
+                {% if solicitud.estado == 'rechazada' %}<i class="fas fa-times"></i>{% else %}2{% endif %}
+              </span>
+              <span class="{% if solicitud.estado == 'aprobada' %}text-blue-700 font-semibold{% elif solicitud.estado == 'pagada' or solicitud.estado == 'entregada' %}text-emerald-700{% elif solicitud.estado == 'rechazada' %}text-red-600 font-semibold{% else %}text-gray-400{% endif %}">
+                {% if solicitud.estado == 'rechazada' %}Rechazada{% else %}Aprobada{% endif %}
+              </span>
             </div>
 
-            <div>
-              <label class="block text-sm font-medium text-slate-700 mb-1.5">{{ form.metodo_pago.label }}</label>
-              {{ form.metodo_pago }}
-              {% if form.metodo_pago.errors %}
-                <p class="text-red-500 text-xs mt-1">{{ form.metodo_pago.errors.0 }}</p>
-              {% endif %}
+            {% if solicitud.estado != 'rechazada' %}
+            <div class="w-6 h-px shrink-0 {% if solicitud.estado == 'pagada' or solicitud.estado == 'entregada' %}bg-emerald-400{% else %}bg-gray-200{% endif %}"></div>
+
+            <!-- Pagada -->
+            <div class="flex items-center gap-1 shrink-0">
+              <span class="w-6 h-6 rounded-full flex items-center justify-center text-[10px]
+                {% if solicitud.estado == 'pagada' %}bg-emerald-500 text-white
+                {% elif solicitud.estado == 'entregada' %}bg-emerald-500 text-white
+                {% else %}bg-gray-200 text-gray-400{% endif %}">
+                3
+              </span>
+              <span class="{% if solicitud.estado == 'pagada' %}text-emerald-700 font-semibold{% elif solicitud.estado == 'entregada' %}text-emerald-700{% else %}text-gray-400{% endif %}">
+                Pagada
+              </span>
             </div>
 
-            <div>
-              <label class="block text-sm font-medium text-slate-700 mb-1.5">{{ form.motivo.label }}</label>
-              {{ form.motivo }}
-              {% if form.motivo.errors %}
-                <p class="text-red-500 text-xs mt-1">{{ form.motivo.errors.0 }}</p>
-              {% endif %}
-            </div>
+            <div class="w-6 h-px shrink-0 {% if solicitud.estado == 'entregada' %}bg-emerald-400{% else %}bg-gray-200{% endif %}"></div>
 
-            <button type="submit"
-                    class="w-full rounded-lg bg-indigo-600 text-white text-sm font-semibold py-2.5 hover:bg-indigo-700 transition">
-              Registrar solicitud
-            </button>
-          </form>
+            <!-- Entregada -->
+            <div class="flex items-center gap-1 shrink-0">
+              <span class="w-6 h-6 rounded-full flex items-center justify-center text-[10px]
+                {% if solicitud.estado == 'entregada' %}bg-emerald-500 text-white
+                {% else %}bg-gray-200 text-gray-400{% endif %}">
+                4
+              </span>
+              <span class="{% if solicitud.estado == 'entregada' %}text-emerald-700 font-semibold{% else %}text-gray-400{% endif %}">
+                Entregada
+              </span>
+            </div>
+            {% endif %}
+          </div>
         </div>
       </div>
     </div>
+
+    {% empty %}
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-12 text-center">
+      <div class="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4">
+        <i class="fas fa-scroll text-indigo-400 text-2xl"></i>
+      </div>
+      <h3 class="font-semibold text-slate-700 mb-1">Sin solicitudes</h3>
+      <p class="text-sm text-slate-400 max-w-sm mx-auto">
+        {% if filtro != 'todas' %}
+          No hay solicitudes con estado "{{ filtro }}". 
+          <a href="?filtro=todas" class="text-indigo-600 hover:underline">Ver todas</a>
+        {% else %}
+          Aún no hay solicitudes de certificados para tus estudiantes. 
+          Crea la primera con el botón "Nueva solicitud".
+        {% endif %}
+      </p>
+    </div>
+    {% endfor %}
+  </div>
+
   {% endif %}
 </div>
+
+<!-- ==================== MODAL: NUEVA SOLICITUD ==================== -->
+{% if modulo_activo %}
+<div id="modal-solicitud" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+  <!-- Backdrop -->
+  <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="document.getElementById('modal-solicitud').classList.add('hidden')"></div>
+
+  <!-- Modal content -->
+  <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+
+    <!-- Header -->
+    <div class="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between rounded-t-2xl z-10">
+      <div>
+        <h2 class="font-bold text-slate-800 text-lg">Nueva solicitud</h2>
+        <p class="text-xs text-slate-400 mt-0.5">Completa los datos para solicitar un certificado</p>
+      </div>
+      <button onclick="document.getElementById('modal-solicitud').classList.add('hidden')"
+              class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <!-- Body -->
+    <form method="post" class="p-6 space-y-5">
+      {% csrf_token %}
+
+      <!-- Estudiante -->
+      <div>
+        <label class="flex items-center gap-2 text-sm font-semibold text-slate-700 mb-2">
+          <i class="fas fa-user-graduate text-indigo-400 text-xs"></i>
+          {{ form.estudiante.label }}
+        </label>
+        {{ form.estudiante }}
+        {% if form.estudiante.errors %}
+          <p class="text-red-500 text-xs mt-1.5 flex items-center gap-1">
+            <i class="fas fa-exclamation-circle"></i> {{ form.estudiante.errors.0 }}
+          </p>
+        {% endif %}
+      </div>
+
+      <!-- Tipo de certificado -->
+      <div>
+        <label class="flex items-center gap-2 text-sm font-semibold text-slate-700 mb-2">
+          <i class="fas fa-file-alt text-indigo-400 text-xs"></i>
+          {{ form.tipo_certificado.label }}
+        </label>
+        {{ form.tipo_certificado }}
+        {% if form.tipo_certificado.errors %}
+          <p class="text-red-500 text-xs mt-1.5 flex items-center gap-1">
+            <i class="fas fa-exclamation-circle"></i> {{ form.tipo_certificado.errors.0 }}
+          </p>
+        {% endif %}
+      </div>
+
+      <!-- Método de pago -->
+      <div>
+        <label class="flex items-center gap-2 text-sm font-semibold text-slate-700 mb-2">
+          <i class="fas fa-credit-card text-indigo-400 text-xs"></i>
+          {{ form.metodo_pago.label }}
+        </label>
+        {{ form.metodo_pago }}
+        {% if form.metodo_pago.errors %}
+          <p class="text-red-500 text-xs mt-1.5 flex items-center gap-1">
+            <i class="fas fa-exclamation-circle"></i> {{ form.metodo_pago.errors.0 }}
+          </p>
+        {% endif %}
+      </div>
+
+      <!-- Motivo -->
+      <div>
+        <label class="flex items-center gap-2 text-sm font-semibold text-slate-700 mb-2">
+          <i class="fas fa-comment-dots text-indigo-400 text-xs"></i>
+          {{ form.motivo.label }} <span class="text-gray-400 font-normal">(opcional)</span>
+        </label>
+        {{ form.motivo }}
+        {% if form.motivo.errors %}
+          <p class="text-red-500 text-xs mt-1.5 flex items-center gap-1">
+            <i class="fas fa-exclamation-circle"></i> {{ form.motivo.errors.0 }}
+          </p>
+        {% endif %}
+      </div>
+
+      <!-- Precio -->
+      {% if config and config.precio_certificado %}
+      <div class="bg-indigo-50 rounded-xl p-4 flex items-center justify-between">
+        <span class="text-sm text-indigo-700 font-medium">Costo del certificado</span>
+        <span class="text-lg font-bold text-indigo-800">RD$ {{ config.precio_certificado|dop0 }}</span>
+      </div>
+      {% endif %}
+
+      <!-- Botones -->
+      <div class="flex items-center gap-3 pt-2">
+        <button type="button"
+                onclick="document.getElementById('modal-solicitud').classList.add('hidden')"
+                class="flex-1 rounded-xl border border-gray-200 text-slate-600 text-sm font-semibold py-2.5 hover:bg-gray-50 transition">
+          Cancelar
+        </button>
+        <button type="submit"
+                class="flex-1 rounded-xl bg-indigo-600 text-white text-sm font-semibold py-2.5 hover:bg-indigo-700 transition shadow-sm flex items-center justify-center gap-2">
+          <i class="fas fa-paper-plane"></i> Enviar solicitud
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endif %}
+
 {% endblock %}

@@ -1,0 +1,89 @@
+{% extends "home.html" %}
+{% load formatos %}
+
+{% block title %}Permisos de página — Mi Colegio{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 py-8">
+  <div class="flex items-center justify-between mb-6">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-800">Permisos de Página</h1>
+      <p class="text-sm text-gray-500 mt-1">Controla qué roles y usuarios pueden acceder a cada página del sistema.</p>
+    </div>
+    <a href="{% url 'core:permiso_pagina_create' %}"
+       class="inline-flex items-center gap-2 bg-indigo-600 text-white px-4 py-2.5 rounded-lg text-sm font-semibold hover:bg-indigo-700 transition">
+      <i class="fas fa-plus"></i> Nuevo permiso
+    </a>
+  </div>
+
+  <!-- Búsqueda -->
+  <form method="get" class="mb-4">
+    <div class="flex gap-2">
+      <input type="text" name="q" value="{{ q }}" placeholder="Buscar por URL name..."
+             class="flex-1 rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-800 shadow-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200">
+      <button type="submit" class="bg-gray-100 text-gray-700 px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-200 transition">
+        <i class="fas fa-search"></i> Buscar
+      </button>
+    </div>
+  </form>
+
+  <!-- Tabla -->
+  <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+    <table class="w-full text-sm">
+      <thead class="bg-gray-50 border-b border-gray-200">
+        <tr>
+          <th class="text-left px-4 py-3 font-semibold text-gray-600">URL Name</th>
+          <th class="text-left px-4 py-3 font-semibold text-gray-600">Descripción</th>
+          <th class="text-left px-4 py-3 font-semibold text-gray-600">Roles permitidos</th>
+          <th class="text-left px-4 py-3 font-semibold text-gray-600">Usuarios extra</th>
+          <th class="text-center px-4 py-3 font-semibold text-gray-600">Activo</th>
+          <th class="text-right px-4 py-3 font-semibold text-gray-600">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for permiso in permisos %}
+        <tr class="border-b border-gray-100 hover:bg-gray-50 transition">
+          <td class="px-4 py-3 font-mono text-xs text-indigo-700">{{ permiso.url_name }}</td>
+          <td class="px-4 py-3 text-gray-700">{{ permiso.descripcion|default:"—" }}</td>
+          <td class="px-4 py-3">
+            {% for rol in permiso.roles_permitidos.all %}
+              <span class="inline-block bg-indigo-100 text-indigo-700 text-xs px-2 py-0.5 rounded-full mr-1 mb-1">{{ rol.nombre }}</span>
+            {% empty %}
+              <span class="text-gray-400 text-xs">Ninguno</span>
+            {% endfor %}
+          </td>
+          <td class="px-4 py-3">
+            {% for u in permiso.usuarios_permitidos.all %}
+              <span class="inline-block bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded-full mr-1 mb-1">{{ u.username }}</span>
+            {% empty %}
+              <span class="text-gray-400 text-xs">—</span>
+            {% endfor %}
+          </td>
+          <td class="px-4 py-3 text-center">
+            {% if permiso.activo %}
+              <span class="inline-block bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded-full">Sí</span>
+            {% else %}
+              <span class="inline-block bg-red-100 text-red-700 text-xs px-2 py-0.5 rounded-full">No</span>
+            {% endif %}
+          </td>
+          <td class="px-4 py-3 text-right">
+            <a href="{% url 'core:permiso_pagina_update' permiso.pk %}" class="text-indigo-600 hover:text-indigo-800 text-xs mr-2">
+              <i class="fas fa-edit"></i> Editar
+            </a>
+            <a href="{% url 'core:permiso_pagina_delete' permiso.pk %}" class="text-red-600 hover:text-red-800 text-xs" data-confirm-link="¿Está seguro de eliminar este registro?">
+              <i class="fas fa-trash"></i> Eliminar
+            </a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6" class="px-4 py-8 text-center text-gray-400">
+            No hay permisos registrados. Todas las páginas están abiertas a todos los roles.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

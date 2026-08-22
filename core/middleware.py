@@ -148,3 +148,75 @@ class CentroMiddleware:
             return redirect('core:seleccionar_centro')
 
         return self.get_response(request)
+
+
+class PermisoPaginaMiddleware:
+    """Verifica permisos de página según la configuración de PermisoPagina.
+
+    Solo aplica a URLs que tengan un registro PermisoPagina activo.
+    Los superusers y los URLs sin registro pasan sin restricción.
+    """
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+        self.excluded_paths = (
+            '/',
+            '/usuarios/login/',
+            '/usuarios/logout/',
+            '/usuarios/password/',
+            '/usuarios/verificar-2fa/',
+            '/usuarios/configurar-2fa/',
+            '/admin/',
+            '/media/',
+            '/static/',
+            '/seleccionar-centro/',
+        )
+
+    def __call__(self, request):
+        if (
+            not request.user.is_authenticated
+            or request.path.startswith(self.excluded_paths)
+        ):
+            return self.get_response(request)
+
+        if request.user.is_superuser:
+            return self.get_response(request)
+
+        from django.urls import resolve
+        from django.core.cache import cache
+
+        try:
+            match = resolve(request.path)
+            url_name = match.url_name
+            if match.app_name:
+                url_name = f'{match.app_name}:{url_name}'
+        except Exception:
+            return self.get_response(request)
+
+        cache_key = f'perm_mw:{url_name}'
+        permiso = cache.get(cache_key)
+
+        if permiso is None:
+            from core.models import PermisoPagina
+            permiso = PermisoPagina.objects.filter(
+                url_name=url_name,
+                activo=True,
+            ).first()
+            cache.set(cache_key, permiso, 300)
+
+        if permiso is None:
+            return self.get_response(request)
+
+        user = request.user
+
+        if permiso.roles_permitidos.filter(nombre=user.rol).exists():
+            return self.get_response(request)
+
+        if permiso.usuarios_permitidos.filter(pk=user.pk).exists():
+            return self.get_response(request)
+
+        from django.http import HttpResponseForbidden
+        return HttpResponseForbidden(
+            '<h1>403 — Acceso denegado</h1>'
+            '<p>No tienes permiso para acceder a esta página.</p>'
+        )

@@ -84,8 +84,8 @@ def get_centro_activo(request):
     if not user.is_authenticated:
         return None
 
-    # SUPERADMIN usa sesiÃ³n
-    if user.rol == 'superadmin':
+    # SUPERADMIN / ADMIN usan sesiÃ³n
+    if user.rol in ('superadmin', 'admin'):
         centro_id = request.session.get('centro_id')
         if not centro_id:
             return None

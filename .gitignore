@@ -5,6 +5,8 @@
 # Base de datos
 *.sqlite3
 db.sqlite3
+db.sqlite3-wal
+db.sqlite3-shm
 
 # Archivos subidos / media
 /media/
@@ -28,3 +30,7 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Backups de base de datos
+backups/
+*.dump

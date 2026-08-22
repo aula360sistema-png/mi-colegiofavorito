@@ -97,7 +97,8 @@
                 {% if q %}
                 <button
                     type="button"
-                    onclick="removeFilter('q')"
+                    data-action="remove-filter"
+                    data-param="q"
                     title="Limpiar búsqueda"
                     class="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center rounded-full text-gray-400 hover:text-red-500 hover:bg-red-50 transition">
                     <i class="fas fa-xmark"></i>
@@ -115,7 +116,7 @@
                 <span class="inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 border border-blue-200 px-3 py-1.5 rounded-full text-xs font-medium">
                     <i class="fas fa-search text-[10px]"></i>
                     "{{ q }}"
-                    <button type="button" onclick="removeFilter('q')" class="hover:text-red-500 transition">
+                    <button type="button" data-action="remove-filter" data-param="q" class="hover:text-red-500 transition">
                         <i class="fas fa-xmark"></i>
                     </button>
                 </span>
@@ -133,24 +134,6 @@
 
     </div>
 
-    <script>
-      function removeFilter(param) {
-        const url = new URL(window.location.href)
-        url.searchParams.delete(param)
-        window.location.href = url.toString()
-      }
-
-      document.addEventListener('DOMContentLoaded', function () {
-        const input = document.getElementById('busqueda-input')
-        let timer
-        input.addEventListener('input', function () {
-          clearTimeout(timer)
-          timer = setTimeout(function () {
-            document.getElementById('filtro-form').submit()
-          }, 450)
-        })
-      })
-    </script>
 
     <!-- Tabla -->
     <div class="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">

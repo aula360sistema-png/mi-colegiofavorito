@@ -146,7 +146,7 @@
     <!-- Filtros -->
     <div class="bg-white shadow-sm rounded-xl border border-gray-200 p-4 mb-6">
 
-        <form method="get" id="filtro-form" class="flex flex-col md:flex-row gap-3">
+        <form method="get" id="filtro-form" class="flex flex-col md:flex-row gap-3" data-auto-filter>
 
             <input type="hidden" name="tipo" value="{{ tipo }}">
 
@@ -207,7 +207,7 @@
             <span class="inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 border border-blue-200 px-3 py-1.5 rounded-full text-xs font-medium">
                 <i class="fas fa-search text-[10px]"></i>
                 "{{ q }}"
-                <button type="button" onclick="removeFilter('q')" class="hover:text-red-500 transition">
+                <button type="button" data-action="remove-filter" data-param="q" class="hover:text-red-500 transition">
                     <i class="fas fa-xmark"></i>
                 </button>
             </span>
@@ -217,7 +217,7 @@
             <span class="inline-flex items-center gap-1.5 bg-indigo-50 text-indigo-700 border border-indigo-200 px-3 py-1.5 rounded-full text-xs font-medium">
                 <i class="fas fa-user-check text-[10px]"></i>
                 {{ estado|capfirst }}
-                <button type="button" onclick="removeFilter('estado')" class="hover:text-red-500 transition">
+                <button type="button" data-action="remove-filter" data-param="estado" class="hover:text-red-500 transition">
                     <i class="fas fa-xmark"></i>
                 </button>
             </span>
@@ -233,36 +233,6 @@
         {% endif %}
 
     </div>
-
-    <script>
-      function removeFilter(param) {
-        const url = new URL(window.location.href)
-        url.searchParams.delete(param)
-        url.searchParams.delete('page')
-        window.location.href = url.toString()
-      }
-
-      document.addEventListener('DOMContentLoaded', function () {
-        const form = document.getElementById('filtro-form')
-
-        document.querySelectorAll('select[data-auto-submit]').forEach(function (select) {
-          select.addEventListener('change', function () {
-            form.submit()
-          })
-        })
-
-        const input = document.getElementById('busqueda-input')
-        if (input) {
-          let timer
-          input.addEventListener('input', function () {
-            clearTimeout(timer)
-            timer = setTimeout(function () {
-              form.submit()
-            }, 450)
-          })
-        }
-      })
-    </script>
 
     <!-- ==================== TABLA ADMINISTRATIVOS ==================== -->
     {% if tipo == 'administrativo' %}
@@ -428,7 +398,11 @@
 
                         <td class="px-5 py-3">
                             <div class="flex items-center gap-3">
-                                {% avatar e color='from-indigo-500 to-purple-600' %}
+                                <button type="button" class="persona-card-trigger"
+                                        data-persona-card data-tipo="estudiante" data-id="{{ e.id }}"
+                                        aria-label="{{ e.nombre_completo }}">
+                                    {% avatar e color='from-indigo-500 to-purple-600' %}
+                                </button>
                                 <p class="font-medium text-gray-800">{{ e.nombre_completo }}</p>
                             </div>
                         </td>

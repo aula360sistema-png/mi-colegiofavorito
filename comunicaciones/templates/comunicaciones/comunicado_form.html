@@ -1,0 +1,232 @@
+{% extends "home.html" %}
+
+{% block title %}
+{% if comunicado %}Editar Comunicado{% else %}Nuevo Comunicado{% endif %}
+{% endblock %}
+
+{% block content %}
+
+<div class="max-w-4xl mx-auto">
+
+    <div class="flex items-center justify-between mb-6">
+
+        <div>
+            <a href="{% url 'comunicaciones:comunicado_list' %}"
+               class="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-blue-600 mb-2 transition">
+                <i class="fas fa-arrow-left"></i>
+                Volver a comunicados
+            </a>
+
+            <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                {% if comunicado %}
+                <i class="fas fa-pen text-blue-600"></i>
+                Editar Comunicado
+                {% else %}
+                <i class="fas fa-bullhorn text-blue-600"></i>
+                Nuevo Comunicado
+                {% endif %}
+            </h2>
+
+            <p class="text-sm text-gray-500 mt-1">
+                Anuncios visibles en los portales de estudiantes y tutores.
+            </p>
+        </div>
+
+    </div>
+
+    {% if form.non_field_errors %}
+    <div class="mb-6 bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3">
+        <i class="fas fa-exclamation-triangle text-red-600 mt-0.5"></i>
+        <div>
+            <h4 class="font-semibold text-red-700 mb-1">Corrija los errores indicados:</h4>
+            {% for error in form.non_field_errors %}
+            <p class="text-sm text-red-600">{{ error }}</p>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <form method="post" class="space-y-6" id="form-comunicado">
+
+        {% csrf_token %}
+
+        <!-- CONTENIDO -->
+        <section class="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
+
+            <div class="flex items-center gap-3 px-6 py-4 border-b border-gray-200 bg-gray-50">
+                <div class="w-9 h-9 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center">
+                    <i class="fas fa-file-lines"></i>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-gray-800">Contenido</h3>
+                    <p class="text-xs text-gray-500">Qué se anuncia y para quién</p>
+                </div>
+            </div>
+
+            <div class="p-6 space-y-5">
+
+                <div>
+                    <label for="{{ form.titulo.id_for_label }}"
+                           class="block text-sm font-medium text-gray-600 mb-1.5">
+                        {{ form.titulo.label }} <span class="text-red-500">*</span>
+                    </label>
+                    {{ form.titulo }}
+                    {% if form.titulo.errors %}
+                    <p class="text-xs text-red-600 mt-1">{{ form.titulo.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <label for="{{ form.contenido.id_for_label }}"
+                           class="block text-sm font-medium text-gray-600 mb-1.5">
+                        {{ form.contenido.label }} <span class="text-red-500">*</span>
+                    </label>
+                    {{ form.contenido }}
+                    {% if form.contenido.errors %}
+                    <p class="text-xs text-red-600 mt-1">{{ form.contenido.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+            </div>
+
+        </section>
+
+        <!-- ALCANCE -->
+        <section class="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
+
+            <div class="flex items-center gap-3 px-6 py-4 border-b border-gray-200 bg-gray-50">
+                <div class="w-9 h-9 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center">
+                    <i class="fas fa-users-viewpoint"></i>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-gray-800">Alcance</h3>
+                    <p class="text-xs text-gray-500">Quiénes verán este comunicado</p>
+                </div>
+            </div>
+
+            <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-5">
+
+                <div>
+                    <label for="{{ form.alcance.id_for_label }}"
+                           class="block text-sm font-medium text-gray-600 mb-1.5">
+                        {{ form.alcance.label }}
+                    </label>
+                    {{ form.alcance }}
+                    {% if form.alcance.errors %}
+                    <p class="text-xs text-red-600 mt-1">{{ form.alcance.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <div id="campo-seccion">
+                    <label for="{{ form.seccion.id_for_label }}"
+                           class="block text-sm font-medium text-gray-600 mb-1.5">
+                        {{ form.seccion.label }}
+                    </label>
+                    {{ form.seccion }}
+                    {% if form.seccion.help_text %}
+                    <p class="text-xs text-gray-400 mt-1">{{ form.seccion.help_text }}</p>
+                    {% endif %}
+                    {% if form.seccion.errors %}
+                    <p class="text-xs text-red-600 mt-1">{{ form.seccion.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+            </div>
+
+        </section>
+
+        <!-- PUBLICACION -->
+        <section class="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
+
+            <div class="flex items-center gap-3 px-6 py-4 border-b border-gray-200 bg-gray-50">
+                <div class="w-9 h-9 rounded-lg bg-green-100 text-green-600 flex items-center justify-center">
+                    <i class="fas fa-calendar-check"></i>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-gray-800">Publicación</h3>
+                    <p class="text-xs text-gray-500">Cuándo se publica y cuándo expira</p>
+                </div>
+            </div>
+
+            <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-5">
+
+                <div>
+                    <label for="{{ form.fecha_publicacion.id_for_label }}"
+                           class="block text-sm font-medium text-gray-600 mb-1.5">
+                        {{ form.fecha_publicacion.label }}
+                    </label>
+                    {{ form.fecha_publicacion }}
+                    {% if form.fecha_publicacion.errors %}
+                    <p class="text-xs text-red-600 mt-1">{{ form.fecha_publicacion.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <label for="{{ form.fecha_vencimiento.id_for_label }}"
+                           class="block text-sm font-medium text-gray-600 mb-1.5">
+                        {{ form.fecha_vencimiento.label }}
+                    </label>
+                    {{ form.fecha_vencimiento }}
+                    {% if form.fecha_vencimiento.help_text %}
+                    <p class="text-xs text-gray-400 mt-1">{{ form.fecha_vencimiento.help_text }}</p>
+                    {% endif %}
+                    {% if form.fecha_vencimiento.errors %}
+                    <p class="text-xs text-red-600 mt-1">{{ form.fecha_vencimiento.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <div class="md:col-span-2">
+                    <label class="inline-flex items-center gap-2.5 cursor-pointer select-none">
+                        {{ form.fijado }}
+                        <span class="text-sm font-medium text-gray-700">
+                            {{ form.fijado.label }}
+                        </span>
+                        <span class="text-xs text-gray-400">— aparece primero en los portales</span>
+                    </label>
+                </div>
+
+            </div>
+
+        </section>
+
+        <!-- Acciones -->
+        <div class="flex items-center justify-between gap-3 bg-white shadow-sm rounded-xl border border-gray-200 p-4">
+
+            <a href="{% url 'comunicaciones:comunicado_list' %}"
+               class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 transition">
+                <i class="fas fa-times"></i>
+                Cancelar
+            </a>
+
+            <button type="submit"
+                    class="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-2.5 rounded-lg shadow-sm hover:bg-blue-700 hover:shadow transition text-sm font-semibold">
+                <i class="fas fa-save"></i>
+                {% if comunicado %}Guardar cambios{% else %}Publicar comunicado{% endif %}
+            </button>
+
+        </div>
+
+    </form>
+
+</div>
+
+<script nonce="{{ request.csp_nonce }}">
+    (function () {
+        var alcance = document.getElementById('{{ form.alcance.id_for_label }}');
+        var campoSeccion = document.getElementById('campo-seccion');
+
+        function actualizar() {
+            if (!alcance || !campoSeccion) return;
+            campoSeccion.classList.toggle('opacity-40', alcance.value !== 'seccion');
+            var select = campoSeccion.querySelector('select');
+            if (select) select.disabled = alcance.value !== 'seccion';
+        }
+
+        if (alcance) {
+            alcance.addEventListener('change', actualizar);
+            actualizar();
+        }
+    })();
+</script>
+
+{% endblock %}

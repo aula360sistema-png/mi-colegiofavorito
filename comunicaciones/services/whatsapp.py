@@ -155,6 +155,30 @@ def _personalizar(texto, destinatario):
     )
 
 
+def enviar_whatsapp_vencimiento(tutor, estudiante, deuda):
+    """Envía WhatsApp de notificación de pago vencido."""
+    mensaje = (
+        f"*Notificación de Pago Vencido*\n\n"
+        f"Estimado/a {tutor.nombre_completo()},\n\n"
+        f"El estudiante {estudiante.nombre_completo()} "
+        f"(Matrícula {estudiante.matricula}) tiene un saldo vencido de "
+        f"RD$ {deuda['vencida']:,.2f}.\n"
+        f"Saldo total: RD$ {deuda['saldo_total']:,.2f}\n\n"
+        f"Por favor, regularice a la brevedad."
+    )
+
+    telefono = normalizar_telefono(tutor.telefono)
+    if not telefono:
+        raise ValueError("Tutor sin teléfono válido")
+
+    return _enviar_http(
+        tutor.nombre_completo(),
+        telefono,
+        mensaje,
+        centro=tutor.centro if hasattr(tutor, 'centro') else None,
+    )
+
+
 def _mensaje_pago(pago, tutor):
     return (
         f"Hola {tutor.nombre_completo()}, le informamos que se registró un "

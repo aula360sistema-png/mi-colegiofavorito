@@ -1,4 +1,5 @@
 {% extends "home.html" %}
+{% load static %}
 
 {% block title %}Credenciales Generadas{% endblock %}
 
@@ -53,7 +54,8 @@
                                 {{ usuario }}
                             </code>
                             <button type="button"
-                                    onclick="navigator.clipboard.writeText('{{ usuario }}'); this.textContent='✓ Copiado';"
+                                    data-action="copy-clipboard" data-value="{{ usuario }}"
+                                    data-copy-reset="Copiar"
                                     class="copy-btn px-3 py-2 rounded-lg bg-white border border-gray-200 text-xs font-medium text-gray-600 hover:bg-gray-50 transition">
                                 Copiar
                             </button>
@@ -66,7 +68,8 @@
                                 {{ password }}
                             </code>
                             <button type="button"
-                                    onclick="navigator.clipboard.writeText('{{ password }}'); this.textContent='✓ Copiado';"
+                                    data-action="copy-clipboard" data-value="{{ password }}"
+                                    data-copy-reset="Copiar"
                                     class="copy-btn px-3 py-2 rounded-lg bg-white border border-gray-200 text-xs font-medium text-gray-600 hover:bg-gray-50 transition">
                                 Copiar
                             </button>
@@ -100,16 +103,6 @@
 
 </div>
 
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    document.querySelectorAll('.copy-btn').forEach(function (btn) {
-        btn.addEventListener('click', function () {
-            setTimeout(function () {
-                btn.textContent = 'Copiar';
-            }, 2000);
-        });
-    });
-});
-</script>
+<script src="{% static 'js/copy-reset.js' %}"></script>
 
 {% endblock %}

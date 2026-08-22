@@ -203,7 +203,7 @@
                                 </span>
                             {% endif %}
                             <form method="post" action="{% url 'registro_salud_eliminar' registro.pk %}"
-                                  onsubmit="return confirm('¿Eliminar este registro de salud?');">
+                                  data-confirm="¿Eliminar este registro de salud?">
                                 {% csrf_token %}
                                 <button type="submit"
                                         class="text-red-500 hover:text-red-700 text-sm" title="Eliminar">

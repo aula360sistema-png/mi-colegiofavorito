@@ -8,8 +8,7 @@
 
     <!-- ================= HERO ================= -->
     <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-600 shadow-xl">
-        <div class="absolute inset-0 opacity-20"
-             style="background-image: radial-gradient(circle at 20% 30%, white 1px, transparent 1px); background-size: 24px 24px;">
+        <div class="absolute inset-0 opacity-20 hero-bg">
         </div>
         <div class="relative px-8 py-8 flex flex-wrap items-center justify-between gap-6">
             <div>
@@ -39,9 +38,9 @@
                 {% endif %}
 
                 <div class="flex gap-2 mt-2">
-                    <a href="{% url 'estudiante_create' %}"
+                    <a href="{% url 'usuarios:crear_miembro' %}"
                        class="inline-flex items-center gap-2 bg-white text-indigo-700 text-sm font-semibold rounded-lg px-4 py-2 hover:bg-indigo-50 shadow">
-                        <i class="fas fa-user-plus"></i> Nuevo estudiante
+                        <i class="fas fa-user-plus"></i> Crear usuario
                     </a>
                     <a href="{% url 'caja:registrar_pago' %}"
                        class="inline-flex items-center gap-2 bg-white/15 text-white text-sm font-semibold rounded-lg px-4 py-2 hover:bg-white/25 backdrop-blur">

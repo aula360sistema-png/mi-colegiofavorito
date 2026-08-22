@@ -101,7 +101,11 @@
                                 </a>
 
                                 <button
-                                    onclick="confirmarEliminacion('{{ franja.id }}', '{{ franja.nombre }}', '{% url 'franja_delete' franja.id %}')"
+                                    data-action="confirm-delete-fetch"
+                                    data-url="{% url 'franja_delete' franja.id %}"
+                                    data-confirm-title="¿Eliminar franja?"
+                                    data-confirm-text="Se eliminará la franja &quot;{{ franja.nombre }}&quot;"
+                                    data-confirm-btn="Sí, eliminar"
                                     class="inline-flex items-center gap-1.5 bg-red-100 text-red-700 px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-red-200 transition">
                                     <i class="fas fa-trash"></i>
                                     Eliminar
@@ -161,60 +165,5 @@
 
 </div>
 
-
-<script>
-function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let cookie of cookies) {
-            cookie = cookie.trim();
-            if (cookie.startsWith(name + '=')) {
-                cookieValue = decodeURIComponent(
-                    cookie.substring(name.length + 1)
-                );
-                break;
-            }
-        }
-    }
-    return cookieValue;
-}
-</script>
-
-<script>
-function confirmarEliminacion(id, nombre, url) {
-    Swal.fire({
-        title: '¿Eliminar franja?',
-        text: `Se eliminará la franja "${nombre}"`,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#dc2626',
-        cancelButtonColor: '#6b7280',
-        confirmButtonText: 'Sí, eliminar',
-        cancelButtonText: 'Cancelar'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            fetch(url, {
-                method: 'POST',
-                headers: {
-                    'X-CSRFToken': getCookie('csrftoken')
-                }
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    Swal.fire(
-                        'Eliminado',
-                        'La franja fue eliminada correctamente',
-                        'success'
-                    ).then(() => location.reload())
-                } else {
-                    Swal.fire('Error', data.error || 'No se pudo eliminar la franja', 'error')
-                }
-            })
-        }
-    })
-}
-</script>
 
 {% endblock %}

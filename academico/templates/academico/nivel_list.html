@@ -135,7 +135,11 @@
                                 </a>
 
                                 <button
-                                    onclick="eliminarNivel('{{ nivel.id }}', '{{ nivel.nombre }}', '{% url 'nivel_delete' nivel.id %}')"
+                                    data-action="confirm-delete-fetch"
+                                    data-url="{% url 'nivel_delete' nivel.id %}"
+                                    data-confirm-title="¿Eliminar nivel?"
+                                    data-confirm-text="Se eliminará el nivel &quot;{{ nivel.nombre }}&quot;"
+                                    data-confirm-btn="Sí, eliminar"
                                     class="inline-flex items-center gap-1.5 bg-red-100 text-red-700 px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-red-200 transition">
                                     <i class="fas fa-trash"></i>
                                     Eliminar
@@ -182,60 +186,5 @@
 
 </div>
 
-
-<script>
-function eliminarNivel(id, nombre, url) {
-    Swal.fire({
-        title: '¿Eliminar nivel?',
-        text: `Se eliminará el nivel "${nombre}"`,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#dc2626',
-        cancelButtonColor: '#6b7280',
-        confirmButtonText: 'Sí, eliminar',
-        cancelButtonText: 'Cancelar'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            fetch(url, {
-                method: 'POST',
-                headers: {
-                    'X-CSRFToken': getCookie('csrftoken')
-                }
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    Swal.fire(
-                        'Eliminado',
-                        'El nivel fue eliminado correctamente',
-                        'success'
-                    ).then(() => location.reload())
-                } else {
-                    Swal.fire('Error', data.error, 'error')
-                }
-            })
-        }
-    })
-}
-</script>
-
-<script>
-function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let cookie of cookies) {
-            cookie = cookie.trim();
-            if (cookie.startsWith(name + '=')) {
-                cookieValue = decodeURIComponent(
-                    cookie.substring(name.length + 1)
-                );
-                break;
-            }
-        }
-    }
-    return cookieValue;
-}
-</script>
 
 {% endblock %}

@@ -8,7 +8,7 @@ from core.utils.anio import obtener_anio_activo
 from core.utils.session import get_centro_activo
 
 from .models import Factura, TipoComprobante
-from .services import facturas_del_centro, metricas_facturas
+from .services import facturas_del_centro, metricas_facturas, _redondear as redondear
 
 ROLES_FACTURACION = ('director', 'admin', 'superadmin', 'cajero', 'secretaria')
 ROLES_GESTION = ('director', 'admin', 'superadmin', 'secretaria')
@@ -161,3 +161,138 @@ def lista_comprobantes(request):
     })
 
     return render(request, 'facturacion/lista_comprobantes.html', ctx)
+
+
+# =========================
+# CREAR FACTURA MANUAL
+# =========================
+
+@login_required
+@centro_required
+@role_required(*ROLES_GESTION)
+def crear_factura(request):
+    centro = get_centro_activo(request)
+
+    from estudiantes.models import Estudiante
+    from .models import SecuenciaNCF, TASA_ITBIS
+
+    if request.method == 'POST':
+        estudiante_id = request.POST.get('estudiante')
+        tipo_id = request.POST.get('tipo')
+        descripcion = request.POST.get('descripcion', '').strip()
+        cantidad = request.POST.get('cantidad', '1')
+        precio = request.POST.get('precio', '0')
+        aplica_itbis = request.POST.get('aplica_itbis') == 'on'
+
+        estudiante = get_object_or_404(Estudiante, pk=estudiante_id, centro=centro)
+        tipo = get_object_or_404(TipoComprobante, pk=tipo_id, activo=True)
+
+        from decimal import Decimal, ROUND_HALF_UP
+        try:
+            cantidad = int(cantidad)
+            precio = Decimal(precio)
+        except (ValueError, TypeError):
+            from django.contrib import messages
+            messages.error(request, 'Cantidad o precio inválido.')
+            return redirect('facturacion:crear_factura')
+
+        subtotal = redondear(precio * cantidad)
+        itbis = redondear(subtotal * TASA_ITBIS) if aplica_itbis else Decimal('0.00')
+        total = redondear(subtotal + itbis)
+
+        from .services import siguiente_ncf
+        ncf = siguiente_ncf(centro, tipo) if tipo else ''
+
+        from django.db import transaction
+        with transaction.atomic():
+            from .models import FacturaItem
+            factura = Factura.objects.create(
+                centro=centro,
+                ncf=ncf,
+                tipo=tipo,
+                estudiante=estudiante,
+                subtotal=subtotal,
+                itbis=itbis,
+                total=total,
+                aplica_itbis=aplica_itbis,
+                fecha=timezone.localdate(),
+                creado_por=request.user,
+            )
+            FacturaItem.objects.create(
+                factura=factura,
+                descripcion=descripcion or 'Servicio escolar',
+                cantidad=cantidad,
+                precio=precio,
+                subtotal=subtotal,
+            )
+
+        from .services import invalidar_facturas_centro
+        invalidar_facturas_centro(centro.id)
+
+        from django.contrib import messages
+        messages.success(
+            request,
+            f'Factura {ncf} creada por RD$ {total:,.2f}.'
+        )
+        return redirect('facturacion:detalle_factura', factura_id=factura.pk)
+
+    estudiantes = Estudiante.objects.filter(
+        centro=centro, estado='activo'
+    ).order_by('primer_nombre', 'primer_apellido')
+
+    tipos = TipoComprobante.objects.filter(activo=True)
+
+    ctx = _base_ctx(request)
+    ctx.update({
+        'estudiantes': estudiantes,
+        'tipos': tipos,
+    })
+
+    return render(request, 'facturacion/crear_factura.html', ctx)
+
+
+# =========================
+# SECUENCIAS NCF
+# =========================
+
+@login_required
+@centro_required
+@role_required(*ROLES_GESTION)
+def secuencias_ncf(request):
+    centro = get_centro_activo(request)
+
+    from .models import SecuenciaNCF
+
+    secuencias = SecuenciaNCF.objects.filter(
+        centro=centro
+    ).select_related('tipo').order_by('tipo__codigo')
+
+    if request.method == 'POST':
+        tipo_id = request.POST.get('tipo_id')
+        tipo = get_object_or_404(TipoComprobante, pk=tipo_id, activo=True)
+
+        secuencia, created = SecuenciaNCF.objects.get_or_create(
+            centro=centro,
+            tipo=tipo,
+            defaults={'ultimo_numero': 0, 'activo': True},
+        )
+        if not created:
+            secuencia.activo = not secuencia.activo
+            secuencia.save(update_fields=['activo'])
+
+        estado = 'activada' if secuencia.activo else 'desactivada'
+        from django.contrib import messages
+        messages.success(
+            request,
+            f'Secuencia NCF {tipo.codigo} · {tipo.nombre} {estado}.'
+        )
+        return redirect('facturacion:secuencias_ncf')
+
+    from django.contrib import messages
+    ctx = _base_ctx(request)
+    ctx.update({
+        'secuencias': secuencias,
+        'tipos_disponibles': TipoComprobante.objects.filter(activo=True),
+    })
+
+    return render(request, 'facturacion/secuencias_ncf.html', ctx)

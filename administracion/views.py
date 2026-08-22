@@ -543,10 +543,9 @@ def listado_personal(request):
 
 @login_required
 @role_required('director', 'secretaria', 'admin', 'superadmin')
+@centro_required
 def mantenimiento_home(request):
-    user = request.user
-
-    centro = user.administrativo.centro
+    centro = request.centro
 
     from academico.models import (
         AreaCurricular,

@@ -47,6 +47,66 @@ path(
     views.test_correo,
     name='test_correo'
 ),
+
+    # =========================
+    # PERMISOS POR PAGINA
+    # =========================
+
+    path(
+        'permisos/',
+        views.permiso_pagina_list,
+        name='permiso_pagina_list'
+    ),
+    path(
+        'permisos/crear/',
+        views.permiso_pagina_create,
+        name='permiso_pagina_create'
+    ),
+    path(
+        'permisos/<int:pk>/editar/',
+        views.permiso_pagina_update,
+        name='permiso_pagina_update'
+    ),
+    path(
+        'permisos/<int:pk>/eliminar/',
+        views.permiso_pagina_delete,
+        name='permiso_pagina_delete'
+    ),
+
+    # =========================
+    # TEMA / APARIENCIA
+    # =========================
+
+    path(
+        'tema/',
+        views.tema_centro,
+        name='tema_centro'
+    ),
+    path(
+        'tema/preview/',
+        views.tema_centro_preview,
+        name='tema_centro_preview'
+    ),
+
+    # =========================
+    # LOGO DEL CENTRO
+    # =========================
+
+path(
+    'logo/',
+    views.logo_centro,
+    name='logo_centro'
+),
+
+    # =========================
+    # MINI TARJETA DE PERSONA (popover al pasar el mouse)
+    # =========================
+
+    path(
+        'ajax/persona-card/',
+        views.persona_card_ajax,
+        name='persona_card_ajax'
+    ),
 ]
 
 

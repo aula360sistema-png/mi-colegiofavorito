@@ -1,5 +1,5 @@
 from django import forms
-from .models import CentroEducativo, ConfiguracionCentro
+from .models import CentroEducativo, ConfiguracionCentro, PermisoPagina, TemaCentro
 from academico.services.estructura_minerd import ESTRUCTURA_MINERD
 
 
@@ -185,3 +185,86 @@ class ConfiguracionCentroForm(forms.ModelForm):
         self.fields['email_puerto'].widget = forms.NumberInput(
             attrs={**TEXTO, 'placeholder': '587', 'min': '1', 'max': '65535'}
         )
+
+
+# =====================================================
+# FORM PERMISO PAGINA
+# =====================================================
+
+class PermisoPaginaForm(forms.ModelForm):
+
+    class Meta:
+        model = PermisoPagina
+        fields = ['url_name', 'descripcion', 'roles_permitidos', 'usuarios_permitidos', 'activo']
+        widgets = {
+            'url_name': forms.TextInput(attrs={
+                'class': (
+                    'w-full rounded-lg border border-gray-300 bg-white '
+                    'px-3.5 py-2.5 text-sm text-gray-800 shadow-sm outline-none '
+                    'transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200'
+                ),
+                'placeholder': 'Ej: estudiante_list, nomina:dashboard',
+            }),
+            'descripcion': forms.TextInput(attrs={
+                'class': (
+                    'w-full rounded-lg border border-gray-300 bg-white '
+                    'px-3.5 py-2.5 text-sm text-gray-800 shadow-sm outline-none '
+                    'transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200'
+                ),
+                'placeholder': 'Listado de estudiantes',
+            }),
+            'roles_permitidos': forms.CheckboxSelectMultiple(),
+            'usuarios_permitidos': forms.CheckboxSelectMultiple(),
+            'activo': CHECKBOX_WIDGET,
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        from core.models import RolCentro
+        from usuarios.models import Usuario
+        self.fields['roles_permitidos'].queryset = RolCentro.objects.all()
+        self.fields['usuarios_permitidos'].queryset = Usuario.objects.filter(is_active=True)
+
+
+# =====================================================
+# FORM TEMA CENTRO
+# =====================================================
+
+class TemaCentroForm(forms.ModelForm):
+
+    class Meta:
+        model = TemaCentro
+        fields = [
+            'nombre',
+            'color_primario', 'color_secundario', 'color_acento',
+            'color_texto', 'color_fondo',
+            'color_fondo_sidebar', 'color_texto_sidebar', 'color_borde',
+            'color_peligro', 'color_exito', 'color_advertencia',
+        ]
+        widgets = {
+            'nombre': forms.TextInput(attrs={
+                'class': (
+                    'w-full rounded-lg border border-gray-300 bg-white '
+                    'px-3.5 py-2.5 text-sm text-gray-800 shadow-sm outline-none '
+                    'transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200'
+                ),
+            }),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        COLOR_ATTR = {
+            'class': 'h-10 w-20 rounded border border-gray-300 cursor-pointer',
+            'type': 'color',
+        }
+        for field_name in self.fields:
+            if field_name.startswith('color_'):
+                self.fields[field_name].widget = forms.TextInput(attrs={
+                    'class': (
+                        'w-full rounded-lg border border-gray-300 bg-white '
+                        'px-3.5 py-2.5 text-sm text-gray-800 shadow-sm outline-none '
+                        'transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200'
+                    ),
+                    'type': 'color',
+                    'style': 'height: 44px; padding: 4px;',
+                })

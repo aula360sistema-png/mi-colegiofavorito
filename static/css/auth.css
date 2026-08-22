@@ -1,0 +1,411 @@
+/* ============================================================
+   auth.css — Estilos premium para páginas de autenticación
+   (login, verificar_2fa, configurar_2fa)
+   ============================================================ */
+
+/* --- Reset & body --- */
+.auth-page * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+.auth-page {
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: linear-gradient(135deg, #1a1c3a 0%, #2d3561 40%, #4b6cb7 100%);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    overflow: hidden;
+    position: relative;
+}
+
+/* --- Subtle background pattern --- */
+.auth-bg-pattern {
+    position: fixed;
+    inset: 0;
+    background-image:
+        radial-gradient(circle at 20% 50%, rgba(75, 108, 183, 0.15) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.05) 0%, transparent 40%),
+        radial-gradient(circle at 60% 80%, rgba(75, 108, 183, 0.1) 0%, transparent 40%);
+    pointer-events: none;
+}
+
+/* --- Fade-in animation --- */
+@keyframes authFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.98);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.auth-fade-in {
+    animation: authFadeIn 0.5s ease-out forwards;
+}
+
+/* --- Login container / card --- */
+.auth-box {
+    background: #ffffff;
+    padding: 40px 44px 32px;
+    border-radius: 16px;
+    box-shadow:
+        0 4px 6px rgba(0, 0, 0, 0.04),
+        0 10px 40px rgba(0, 0, 0, 0.15),
+        0 0 0 1px rgba(255, 255, 255, 0.1);
+    width: 100%;
+    max-width: 420px;
+    text-align: center;
+    position: relative;
+    z-index: 1;
+}
+
+/* --- Logo --- */
+.auth-logo {
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 72px;
+    height: 72px;
+    margin-left: auto;
+    margin-right: auto;
+    background: linear-gradient(135deg, #eef1fa 0%, #dce3f5 100%);
+    border-radius: 18px;
+    border: 1px solid rgba(75, 108, 183, 0.12);
+    overflow: hidden;
+}
+
+.auth-logo-img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    padding: 6px;
+}
+
+/* --- Title & subtitle --- */
+.auth-box h2 {
+    margin-bottom: 6px;
+    color: #1a1c3a;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+}
+
+.auth-subtitle {
+    color: #7c83a1;
+    font-size: 13px;
+    font-weight: 400;
+    margin-bottom: 28px;
+    letter-spacing: 0.2px;
+}
+
+/* --- Error message --- */
+.auth-error {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #fef2f2;
+    color: #b91c1c;
+    border: 1px solid #fecaca;
+    border-radius: 10px;
+    padding: 10px 14px;
+    margin-bottom: 20px;
+    font-size: 13px;
+    font-weight: 500;
+    text-align: left;
+}
+
+.auth-error svg {
+    flex-shrink: 0;
+}
+
+/* --- Form fields --- */
+.auth-field {
+    text-align: left;
+    margin-bottom: 18px;
+}
+
+.auth-field label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 600;
+    color: #374151;
+    font-size: 13px;
+    letter-spacing: 0.1px;
+}
+
+.auth-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.auth-input-icon {
+    position: absolute;
+    left: 14px;
+    color: #9ca3af;
+    pointer-events: none;
+    transition: color 0.2s ease;
+    z-index: 1;
+}
+
+.auth-input-wrapper:focus-within .auth-input-icon {
+    color: #4b6cb7;
+}
+
+.auth-input-wrapper input {
+    width: 100%;
+    padding: 12px 14px 12px 42px;
+    border-radius: 10px;
+    border: 1.5px solid #e5e7eb;
+    background: #f9fafb;
+    font-size: 14px;
+    font-family: inherit;
+    color: #1f2937;
+    transition: all 0.2s ease;
+}
+
+.auth-input-wrapper input::placeholder {
+    color: #b0b7c3;
+}
+
+.auth-input-wrapper input:focus {
+    border-color: #4b6cb7;
+    background: #fff;
+    box-shadow: 0 0 0 3.5px rgba(75, 108, 183, 0.12);
+    outline: none;
+}
+
+/* --- OTP input (2FA pages) --- */
+.auth-input-wrapper input.otp-input,
+.auth-box input.otp-input {
+    font-size: 18px;
+    letter-spacing: 4px;
+    text-align: center;
+    padding-left: 14px;
+}
+
+/* --- Toggle password button --- */
+.auth-toggle-pass {
+    position: absolute;
+    right: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border: none;
+    background: transparent;
+    color: #9ca3af;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    padding: 0;
+}
+
+.auth-toggle-pass:hover {
+    color: #4b6cb7;
+    background: #f0f2f8;
+}
+
+.auth-toggle-pass .eye-closed {
+    display: none;
+}
+
+.auth-toggle-pass.showing .eye-open {
+    display: none;
+}
+
+.auth-toggle-pass.showing .eye-closed {
+    display: block;
+}
+
+/* --- Options row (remember me) --- */
+.auth-options {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    margin-top: -2px;
+}
+
+/* --- Custom checkbox --- */
+.auth-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: #6b7280;
+    cursor: pointer;
+    user-select: none;
+    font-weight: 500;
+}
+
+.auth-checkbox input[type="checkbox"] {
+    display: none;
+}
+
+.auth-checkmark {
+    width: 18px;
+    height: 18px;
+    border: 1.5px solid #d1d5db;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    background: #fff;
+    flex-shrink: 0;
+}
+
+.auth-checkmark::after {
+    content: '';
+    width: 5px;
+    height: 9px;
+    border: solid #fff;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg) scale(0);
+    transition: transform 0.15s ease;
+    margin-top: -1px;
+}
+
+.auth-checkbox input:checked + .auth-checkmark {
+    background: #4b6cb7;
+    border-color: #4b6cb7;
+}
+
+.auth-checkbox input:checked + .auth-checkmark::after {
+    transform: rotate(45deg) scale(1);
+}
+
+.auth-checkbox:hover .auth-checkmark {
+    border-color: #4b6cb7;
+}
+
+/* --- Submit button --- */
+.auth-btn {
+    width: 100%;
+    padding: 13px 20px;
+    background: linear-gradient(135deg, #4b6cb7 0%, #3a54a0 100%);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    box-shadow:
+        0 2px 8px rgba(75, 108, 183, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    letter-spacing: 0.2px;
+}
+
+.auth-btn:hover {
+    background: linear-gradient(135deg, #3a54a0 0%, #2d4191 100%);
+    box-shadow:
+        0 4px 16px rgba(75, 108, 183, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    transform: translateY(-1px);
+}
+
+.auth-btn:active {
+    transform: translateY(0);
+    box-shadow:
+        0 1px 4px rgba(75, 108, 183, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+/* --- Back link (2FA pages) --- */
+.auth-box a.back {
+    display: inline-block;
+    margin-top: 15px;
+    color: #9ca3af;
+    font-size: 13px;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s ease;
+}
+
+.auth-box a.back:hover {
+    color: #4b6cb7;
+}
+
+/* --- Footer --- */
+.auth-footer {
+    margin-top: 24px;
+    padding-top: 18px;
+    border-top: 1px solid #f1f3f7;
+    font-size: 12px;
+    color: #b0b7c3;
+    font-weight: 400;
+}
+
+/* --- QR Code (2FA setup) --- */
+#qrcode {
+    margin: 0 auto 20px;
+}
+
+/* --- Secret key display --- */
+.auth-secret {
+    background: #f8f9fc;
+    border: 1px solid #e8ebf0;
+    border-radius: 10px;
+    padding: 14px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 15px;
+    letter-spacing: 2px;
+    margin-bottom: 20px;
+    word-break: break-all;
+    color: #374151;
+}
+
+/* --- Honeypot (hidden field for bots) --- */
+.honeypot {
+    position: absolute;
+    left: -9999px;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+}
+
+/* --- Sub text for 2FA pages --- */
+.auth-box p.sub {
+    color: #7c83a1;
+    margin-bottom: 25px;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+/* --- Responsive --- */
+@media (max-width: 500px) {
+    .auth-box {
+        margin: 16px;
+        padding: 32px 24px 24px;
+    }
+
+    .auth-box h2 {
+        font-size: 20px;
+    }
+
+    .auth-logo {
+        width: 64px;
+        height: 64px;
+        border-radius: 16px;
+        margin-bottom: 16px;
+    }
+
+    .auth-logo svg {
+        width: 44px;
+        height: 44px;
+    }
+}

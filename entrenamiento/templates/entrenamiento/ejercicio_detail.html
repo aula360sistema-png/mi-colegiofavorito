@@ -1,0 +1,159 @@
+{% extends "home.html" %}
+{% load formatos %}
+
+{% block title %}Detalle del Ejercicio - {{ centro }}{% endblock %}
+
+{% block content %}
+
+<div class="max-w-6xl mx-auto">
+
+    <!-- Encabezado -->
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <a href="{% url 'entrenamiento:ejercicio_list' %}"
+               class="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-blue-600 mb-2 transition">
+                <i class="fas fa-arrow-left"></i> Volver al listado
+            </a>
+            <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                <i class="fas fa-file-alt text-orange-600"></i> Ejercicio
+            </h2>
+            <p class="text-sm text-gray-500 mt-1">
+                {{ obj.get_tipo_display }} · {{ obj.get_dificultad_display }}
+            </p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+            <a href="{% url 'entrenamiento:ejercicio_delete' obj.pk %}"
+               class="inline-flex items-center gap-2 bg-gray-200 text-gray-700 px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-300 transition"
+               data-confirm-link="¿Está seguro de eliminar este registro?">
+                <i class="fas fa-pen"></i> Editar
+            </a>
+            <a href="{% url 'entrenamiento:ejercicio_delete' obj.pk %}"
+               class="inline-flex items-center gap-2 bg-red-100 text-red-700 px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-red-200 transition"
+               data-confirm-link="¿Está seguro de eliminar este registro?">
+                <i class="fas fa-trash"></i> Eliminar
+            </a>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+
+        <!-- Enunciado y contenido -->
+        <div class="lg:col-span-2 bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
+            <div class="px-5 py-4 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
+                <h3 class="font-semibold text-gray-800 flex items-center gap-2">
+                    <i class="fas fa-question-circle text-gray-400"></i> Enunciado
+                </h3>
+                <div class="flex items-center gap-2">
+                    {% if obj.activo %}
+                    <span class="inline-flex items-center gap-1 bg-green-100 text-green-700 px-2.5 py-1 rounded-full text-xs font-semibold">
+                        <i class="fas fa-circle text-[8px]"></i> Activo
+                    </span>
+                    {% else %}
+                    <span class="inline-flex items-center gap-1 bg-red-100 text-red-700 px-2.5 py-1 rounded-full text-xs font-semibold">
+                        <i class="fas fa-circle text-[8px]"></i> Inactivo
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="p-6">
+                <p class="text-sm text-gray-700 whitespace-pre-line">{{ obj.enunciado }}</p>
+
+                {% if obj.texto %}
+                <div class="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Texto / Pasaje</p>
+                    <p class="text-sm text-gray-600 whitespace-pre-line">{{ obj.texto }}</p>
+                </div>
+                {% endif %}
+
+                {% if obj.respuesta_correcta %}
+                <div class="mt-4 p-4 bg-green-50 rounded-lg border border-green-200">
+                    <p class="text-xs font-semibold text-green-600 uppercase tracking-wide mb-2">Respuesta correcta</p>
+                    <p class="text-sm text-green-800">{{ obj.respuesta_correcta }}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Info -->
+        <div class="space-y-4">
+            <div class="bg-white shadow-sm rounded-xl border border-gray-200 p-5">
+                <h4 class="font-semibold text-gray-800 mb-3">Información</h4>
+                <dl class="space-y-3 text-sm">
+                    <div class="flex justify-between">
+                        <dt class="text-gray-500">Unidad</dt>
+                        <dd class="font-medium"><span class="bg-green-100 text-green-700 px-2 py-0.5 rounded-md text-xs font-semibold">U{{ obj.unidad.numero }}</span> {{ obj.unidad.nombre }}</dd>
+                    </div>
+                    <div class="flex justify-between">
+                        <dt class="text-gray-500">Tramo</dt>
+                        <dd class="font-medium">{{ obj.unidad.tramo.nombre }}</dd>
+                    </div>
+                    <div class="flex justify-between">
+                        <dt class="text-gray-500">Destreza</dt>
+                        <dd class="font-medium">{{ obj.destreza.nombre }}</dd>
+                    </div>
+                    <div class="flex justify-between">
+                        <dt class="text-gray-500">Tipo</dt>
+                        <dd class="font-medium">{{ obj.get_tipo_display }}</dd>
+                    </div>
+                    <div class="flex justify-between">
+                        <dt class="text-gray-500">Dificultad</dt>
+                        <dd class="font-medium text-amber-500">
+                            {% for s in "12345" %}{% if forloop.counter <= obj.dificultad %}<i class="fas fa-star"></i>{% else %}<i class="far fa-star text-gray-300"></i>{% endif %}{% endfor %}
+                        </dd>
+                    </div>
+                    <div class="flex justify-between">
+                        <dt class="text-gray-500">Tiempo máx.</dt>
+                        <dd class="font-medium">{{ obj.tiempo_max_seg }}s</dd>
+                    </div>
+                </dl>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Opciones JSON -->
+    {% if obj.opciones %}
+    <div class="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
+        <div class="px-5 py-4 border-b border-gray-200 bg-gray-50">
+            <h3 class="font-semibold text-gray-800 flex items-center gap-2">
+                <i class="fas fa-list-ul text-gray-400"></i> Opciones
+            </h3>
+        </div>
+        <div class="p-6">
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200 text-sm">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">#</th>
+                            <th class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Texto</th>
+                            <th class="px-4 py-2 text-center text-xs font-semibold uppercase tracking-wider text-gray-500">Correcta</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        {% for opcion in obj.opciones %}
+                        <tr>
+                            <td class="px-4 py-2 text-gray-500">{{ forloop.counter }}</td>
+                            <td class="px-4 py-2 text-gray-800">{{ opcion.texto }}</td>
+                            <td class="px-4 py-2 text-center">
+                                {% if opcion.correcta %}
+                                <span class="inline-flex items-center gap-1 bg-green-100 text-green-700 px-2 py-0.5 rounded-full text-xs font-semibold">
+                                    <i class="fas fa-check"></i> Correcta
+                                </span>
+                                {% else %}
+                                <span class="inline-flex items-center gap-1 bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full text-xs font-semibold">
+                                    <i class="fas fa-xmark"></i> Incorrecta
+                                </span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+
+{% endblock %}

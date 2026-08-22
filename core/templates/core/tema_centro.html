@@ -1,0 +1,113 @@
+{% extends "home.html" %}
+{% load formatos %}
+
+{% block title %}Tema / Apariencia — Mi Colegio{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 py-8">
+  <div class="mb-6">
+    <h1 class="text-2xl font-bold text-gray-800">Tema y Apariencia</h1>
+    <p class="text-sm text-gray-500 mt-1">Personaliza los colores de la interfaz para {{ centro.nombre }}.</p>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    <!-- Formulario -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+      <h2 class="text-lg font-bold text-gray-800 mb-4">Colores personalizados</h2>
+      <form method="post">
+        {% csrf_token %}
+
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-1">Nombre del tema</label>
+          {{ form.nombre }}
+        </div>
+
+        <div class="grid grid-cols-2 gap-4 mb-4">
+          {% for field in form %}
+            {% if field.name != 'nombre' %}
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">{{ field.label }}</label>
+              <div class="flex items-center gap-2">
+                {{ field }}
+                <input type="text" value="{{ field.value }}" 
+                       class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800"
+                       readonly>
+              </div>
+            </div>
+            {% endif %}
+          {% endfor %}
+        </div>
+
+        <button type="submit" class="bg-indigo-600 text-white px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-indigo-700 transition">
+          <i class="fas fa-save"></i> Guardar colores
+        </button>
+      </form>
+    </div>
+
+    <!-- Temas predefinidos + Preview -->
+    <div>
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
+        <h2 class="text-lg font-bold text-gray-800 mb-4">Temas predefinidos</h2>
+        <div class="grid grid-cols-2 gap-3">
+          {% for tema in temas_predefinidos %}
+          <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="aplicar_tema" value="1">
+            <input type="hidden" name="tema_nombre" value="{{ tema.nombre }}">
+            <button type="submit" class="w-full text-left p-3 rounded-lg border border-gray-200 hover:border-indigo-400 hover:shadow-md transition group">
+              <div class="flex items-center gap-3 mb-2">
+                <div class="w-8 h-8 rounded-full border-2 border-white shadow" style="background: {{ tema.color_primario }};"></div>
+                <div class="w-6 h-6 rounded-full border-2 border-white shadow" style="background: {{ tema.color_secundario }};"></div>
+                <div class="w-5 h-5 rounded-full border-2 border-white shadow" style="background: {{ tema.color_fondo_sidebar }};"></div>
+              </div>
+              <span class="text-sm font-semibold text-gray-700 group-hover:text-indigo-600">{{ tema.nombre }}</span>
+            </button>
+          </form>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Preview del sidebar -->
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <h2 class="text-lg font-bold text-gray-800 mb-4">Vista previa</h2>
+        <div class="rounded-lg overflow-hidden border border-gray-200" style="height: 300px;">
+          <div class="flex h-full">
+            <div class="w-48 p-4 flex flex-col" style="background: {{ tema.color_fondo_sidebar }};">
+              <div class="flex items-center gap-2 mb-4">
+                <div class="w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-bold" style="background: {{ tema.color_primario }};">MC</div>
+                <span class="text-sm font-semibold" style="color: {{ tema.color_texto_sidebar }};">Mi Colegio</span>
+              </div>
+              <div class="space-y-2">
+                <a class="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium" style="background: {{ tema.color_primario }}; color: white;">
+                  <i class="fas fa-home"></i> Inicio
+                </a>
+                <a class="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium" style="color: {{ tema.color_texto_sidebar }};">
+                  <i class="fas fa-users"></i> Estudiantes
+                </a>
+                <a class="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium" style="color: {{ tema.color_texto_sidebar }};">
+                  <i class="fas fa-chalkboard-teacher"></i> Docentes
+                </a>
+              </div>
+            </div>
+            <div class="flex-1 p-4" style="background: {{ tema.color_fondo }};">
+              <div class="bg-white rounded-lg p-4 shadow-sm border" style="border-color: {{ tema.color_borde }};">
+                <h3 class="text-sm font-bold mb-2" style="color: {{ tema.color_texto }};">Dashboard</h3>
+                <div class="grid grid-cols-2 gap-2">
+                  <div class="p-3 rounded-lg" style="background: {{ tema.color_fondo }};">
+                    <div class="text-lg font-bold" style="color: {{ tema.color_primario }};">150</div>
+                    <div class="text-xs" style="color: {{ tema.color_texto }};">Estudiantes</div>
+                  </div>
+                  <div class="p-3 rounded-lg" style="background: {{ tema.color_fondo }};">
+                    <div class="text-lg font-bold" style="color: {{ tema.color_secundario }};">12</div>
+                    <div class="text-xs" style="color: {{ tema.color_texto }};">Docentes</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

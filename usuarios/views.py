@@ -44,8 +44,15 @@ def _log(request, usuario, accion, modulo, descripcion, riesgo='BAJO'):
     try:
         from auditoria.models import Bitacora
 
+        centro_id = request.session.get('centro_id')
+        centro = None
+        if centro_id:
+            from core.models import CentroEducativo
+            centro = CentroEducativo.objects.filter(id=centro_id).first()
+
         Bitacora.objects.create(
             usuario=usuario,
+            centro=centro,
             accion=accion,
             modulo=modulo,
             descripcion=descripcion,

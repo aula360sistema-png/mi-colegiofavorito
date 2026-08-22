@@ -1,0 +1,82 @@
+{% extends "home.html" %}
+{% load formatos %}
+
+{% block title %}{{ accion }} permiso — Mi Colegio{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto px-4 py-8">
+  <div class="mb-6">
+    <a href="{% url 'core:permiso_pagina_list' %}" class="text-indigo-600 hover:text-indigo-800 text-sm">
+      <i class="fas fa-arrow-left"></i> Volver a permisos
+    </a>
+  </div>
+
+  <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+    <h1 class="text-xl font-bold text-gray-800 mb-6">{{ accion }} permiso de página</h1>
+
+    <form method="post">
+      {% csrf_token %}
+
+      <!-- URL Name -->
+      <div class="mb-4">
+        <label for="id_url_name" class="block text-sm font-medium text-gray-700 mb-1">URL Name *</label>
+        {{ form.url_name }}
+        {% if form.url_name.errors %}
+          <p class="text-red-500 text-xs mt-1">{{ form.url_name.errors.0 }}</p>
+        {% endif %}
+        <p class="text-gray-400 text-xs mt-1">Nombre exacto de la URL en Django (ej: estudiante_list, nomina:dashboard)</p>
+      </div>
+
+      <!-- Descripción -->
+      <div class="mb-4">
+        <label for="id_descripcion" class="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+        {{ form.descripcion }}
+      </div>
+
+      <!-- Roles -->
+      <div class="mb-4">
+        <label class="block text-sm font-medium text-gray-700 mb-2">Roles permitidos</label>
+        <div class="grid grid-cols-2 gap-2">
+          {% for checkbox in form.roles_permitidos %}
+          <label class="flex items-center gap-2 p-2 rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer">
+            {{ checkbox }}
+            <span class="text-sm text-gray-700">{{ checkbox.choice_label }}</span>
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Usuarios -->
+      <div class="mb-4">
+        <label class="block text-sm font-medium text-gray-700 mb-2">Usuarios con acceso directo</label>
+        <div class="max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-2">
+          {% for checkbox in form.usuarios_permitidos %}
+          <label class="flex items-center gap-2 p-1.5 hover:bg-gray-50 cursor-pointer">
+            {{ checkbox }}
+            <span class="text-sm text-gray-700">{{ checkbox.choice_label }}</span>
+          </label>
+          {% endfor %}
+        </div>
+        <p class="text-gray-400 text-xs mt-1">Usuarios adicionales con acceso (además de los roles).</p>
+      </div>
+
+      <!-- Activo -->
+      <div class="mb-6">
+        <label class="flex items-center gap-2">
+          {{ form.activo }}
+          <span class="text-sm text-gray-700">Activo</span>
+        </label>
+      </div>
+
+      <div class="flex gap-3">
+        <button type="submit" class="bg-indigo-600 text-white px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-indigo-700 transition">
+          <i class="fas fa-save"></i> Guardar
+        </button>
+        <a href="{% url 'core:permiso_pagina_list' %}" class="bg-gray-100 text-gray-700 px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-200 transition">
+          Cancelar
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

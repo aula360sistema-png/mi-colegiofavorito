@@ -87,7 +87,7 @@
                         <td>
                             <form method="post"
                                   action="{% url 'nomina:ingreso_empleado_delete' configuracion.id ingreso.id %}"
-                                  onsubmit="return confirm('¿Eliminar este ingreso?')">
+                                   data-confirm="¿Eliminar este ingreso?">
                                 {% csrf_token %}
                                 <button type="submit" class="btn-action" title="Eliminar">
                                     <i class="fas fa-trash"></i>
@@ -152,7 +152,7 @@
                         <td>
                             <form method="post"
                                   action="{% url 'nomina:descuento_empleado_delete' configuracion.id descuento.id %}"
-                                  onsubmit="return confirm('¿Eliminar este descuento?')">
+                                   data-confirm="¿Eliminar este descuento?">
                                 {% csrf_token %}
                                 <button type="submit" class="btn-action" title="Eliminar">
                                     <i class="fas fa-trash"></i>

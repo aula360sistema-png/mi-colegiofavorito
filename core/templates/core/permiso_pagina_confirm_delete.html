@@ -1,0 +1,31 @@
+{% extends "home.html" %}
+
+{% block title %}Eliminar permiso — Mi Colegio{% endblock %}
+
+{% block content %}
+<div class="max-w-xl mx-auto px-4 py-8">
+  <div class="bg-white rounded-xl shadow-sm border border-red-200 p-6">
+    <h1 class="text-xl font-bold text-red-700 mb-4">
+      <i class="fas fa-exclamation-triangle"></i> Eliminar permiso
+    </h1>
+    <p class="text-gray-600 mb-6">
+      ¿Estás seguro de que deseas eliminar el permiso para la página
+      <strong class="font-mono text-indigo-700">{{ permiso.url_name }}</strong>?
+      <br><br>
+      Una vez eliminado, cualquier usuario autenticado podrá acceder a esta página.
+    </p>
+
+    <form method="post">
+      {% csrf_token %}
+      <div class="flex gap-3">
+        <button type="submit" class="bg-red-600 text-white px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-red-700 transition">
+          <i class="fas fa-trash"></i> Sí, eliminar
+        </button>
+        <a href="{% url 'core:permiso_pagina_list' %}" class="bg-gray-100 text-gray-700 px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-200 transition">
+          Cancelar
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

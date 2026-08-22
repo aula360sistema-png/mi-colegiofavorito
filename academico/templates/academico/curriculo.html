@@ -83,40 +83,40 @@
 
     <div class="flex border-b overflow-x-auto mb-6">
         <button type="button"
-                onclick="switchTab('areas')"
-                data-tab="areas"
+                id="tab-areas"
+                data-action="switch-tab" data-target="areas"
                 class="tab-btn px-5 py-3 text-sm font-medium whitespace-nowrap border-b-2 border-blue-600 text-blue-700">
             <i class="fas fa-book-open mr-1"></i>
             Áreas
             <span class="ml-1.5 text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">{{ stats.areas }}</span>
         </button>
         <button type="button"
-                onclick="switchTab('asignaturas')"
-                data-tab="asignaturas"
+                id="tab-asignaturas"
+                data-action="switch-tab" data-target="asignaturas"
                 class="tab-btn px-5 py-3 text-sm font-medium whitespace-nowrap border-b-2 border-transparent text-gray-500 hover:text-gray-700">
             <i class="fas fa-book mr-1"></i>
             Asignaturas
             <span class="ml-1.5 text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">{{ stats.asignaturas }}</span>
         </button>
         <button type="button"
-                onclick="switchTab('relaciones')"
-                data-tab="relaciones"
+                id="tab-relaciones"
+                data-action="switch-tab" data-target="relaciones"
                 class="tab-btn px-5 py-3 text-sm font-medium whitespace-nowrap border-b-2 border-transparent text-gray-500 hover:text-gray-700">
             <i class="fas fa-table-cells-large mr-1"></i>
             Asignaturas por Grado
             <span class="ml-1.5 text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">{{ stats.relaciones }}</span>
         </button>
         <button type="button"
-                onclick="switchTab('docentemateria')"
-                data-tab="docentemateria"
+                id="tab-docentemateria"
+                data-action="switch-tab" data-target="docentemateria"
                 class="tab-btn px-5 py-3 text-sm font-medium whitespace-nowrap border-b-2 border-transparent text-gray-500 hover:text-gray-700">
             <i class="fas fa-chalkboard-user mr-1"></i>
             Docente / Materia
             <span class="ml-1.5 text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">{{ stats.docentematerias }}</span>
         </button>
         <button type="button"
-                onclick="switchTab('competencias')"
-                data-tab="competencias"
+                id="tab-competencias"
+                data-action="switch-tab" data-target="competencias"
                 class="tab-btn px-5 py-3 text-sm font-medium whitespace-nowrap border-b-2 border-transparent text-gray-500 hover:text-gray-700">
             <i class="fas fa-bullseye mr-1"></i>
             Competencias
@@ -124,7 +124,7 @@
         </button>
     </div>
 
-    <div id="tab-areas" class="tab-panel">
+    <div id="panel-areas" class="tab-content">
 
         <div class="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
 
@@ -186,7 +186,11 @@
                                     </a>
 
                                     <button
-                                        onclick="confirmarEliminacionPost('{% url 'area_delete' area.id %}', '{{ area.nombre }}')"
+                                        data-action="confirm-delete-post"
+                                        data-url="{% url 'area_delete' area.id %}"
+                                        data-confirm-title="¿Eliminar área?"
+                                        data-confirm-text="Se eliminará el área &quot;{{ area.nombre }}&quot;"
+                                        data-confirm-btn="Sí, eliminar"
                                         class="inline-flex items-center gap-1.5 bg-red-100 text-red-700 px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-red-200 transition">
                                         <i class="fas fa-trash"></i>
                                         Eliminar
@@ -221,7 +225,7 @@
 
     </div>
 
-    <div id="tab-asignaturas" class="tab-panel hidden">
+    <div id="panel-asignaturas" class="tab-content hidden">
 
         <div class="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
 
@@ -291,7 +295,11 @@
                                         Editar
                                     </a>
 
-                                    <button onclick="confirmarEliminacion('{% url 'asignatura_delete' asignatura.id %}', '{{ asignatura.nombre }}')"
+                                    <button data-action="confirm-delete-redirect"
+                                            data-url="{% url 'asignatura_delete' asignatura.id %}"
+                                            data-confirm-title="¿Eliminar?"
+                                            data-confirm-text="Se eliminará &quot;{{ asignatura.nombre }}&quot;"
+                                            data-confirm-btn="Sí, eliminar"
                                             class="inline-flex items-center gap-1.5 bg-red-100 text-red-700 px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-red-200 transition">
                                         <i class="fas fa-trash"></i>
                                         Eliminar
@@ -326,7 +334,7 @@
 
     </div>
 
-    <div id="tab-relaciones" class="tab-panel hidden">
+    <div id="panel-relaciones" class="tab-content hidden">
 
         <div class="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
 
@@ -394,7 +402,11 @@
                                 <div class="flex items-center justify-end gap-2">
 
                                     <button
-                                        onclick="confirmarEliminacion('{% url 'grado_asignatura_delete' r.id %}', '{{ r.grado.nombre }} - {{ r.asignatura.nombre }}')"
+                                        data-action="confirm-delete-redirect"
+                                        data-url="{% url 'grado_asignatura_delete' r.id %}"
+                                        data-confirm-title="¿Eliminar?"
+                                        data-confirm-text="Se eliminará &quot;{{ r.grado.nombre }} - {{ r.asignatura.nombre }}&quot;"
+                                        data-confirm-btn="Sí, eliminar"
                                         class="inline-flex items-center gap-1.5 bg-red-100 text-red-700 px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-red-200 transition">
                                         <i class="fas fa-trash"></i>
                                         Eliminar
@@ -429,7 +441,7 @@
 
     </div>
 
-    <div id="tab-docentemateria" class="tab-panel hidden">
+    <div id="panel-docentemateria" class="tab-content hidden">
 
         <div class="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
 
@@ -517,7 +529,11 @@
                                     </a>
 
                                     <button
-                                        onclick="confirmarEliminacionFetch('{% url 'docentemateria_delete' a.id %}', '{{ a.docente.nombre_completo }}')"
+                                        data-action="confirm-delete-fetch"
+                                        data-url="{% url 'docentemateria_delete' a.id %}"
+                                        data-confirm-title="¿Eliminar asignación?"
+                                        data-confirm-text="Se eliminará la asignación de &quot;{{ a.docente.nombre_completo }}&quot;"
+                                        data-confirm-btn="Sí, eliminar"
                                         class="inline-flex items-center gap-1.5 bg-red-100 text-red-700 px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-red-200 transition">
                                         <i class="fas fa-trash"></i>
                                         Eliminar
@@ -552,7 +568,7 @@
 
     </div>
 
-    <div id="tab-competencias" class="tab-panel hidden">
+    <div id="panel-competencias" class="tab-content hidden">
 
         <div class="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
 
@@ -641,7 +657,11 @@
                                     </a>
 
                                     <button
-                                        onclick="confirmarEliminacion('{% url 'competencia_delete' competencia.id %}', '{{ competencia.nombre }}')"
+                                        data-action="confirm-delete-redirect"
+                                        data-url="{% url 'competencia_delete' competencia.id %}"
+                                        data-confirm-title="¿Eliminar?"
+                                        data-confirm-text="Se eliminará &quot;{{ competencia.nombre }}&quot;"
+                                        data-confirm-btn="Sí, eliminar"
                                         class="inline-flex items-center gap-1.5 bg-red-100 text-red-700 px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-red-200 transition">
                                         <i class="fas fa-trash"></i>
                                         Eliminar
@@ -678,128 +698,5 @@
 
 </div>
 
-
-<script>
-function switchTab(nombre) {
-    document.querySelectorAll('.tab-panel').forEach(function (p) {
-        p.classList.add('hidden');
-    });
-
-    document.getElementById('tab-' + nombre).classList.remove('hidden');
-
-    document.querySelectorAll('.tab-btn').forEach(function (b) {
-        b.classList.remove('border-blue-600', 'text-blue-700');
-        b.classList.add('border-transparent', 'text-gray-500');
-    });
-
-    var btn = document.querySelector('.tab-btn[data-tab="' + nombre + '"]');
-    if (btn) {
-        btn.classList.remove('border-transparent', 'text-gray-500');
-        btn.classList.add('border-blue-600', 'text-blue-700');
-    }
-}
-</script>
-
-<script>
-function confirmarEliminacion(url, nombre) {
-    Swal.fire({
-        title: '¿Eliminar?',
-        text: `Se eliminará "${nombre}"`,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#dc2626',
-        cancelButtonColor: '#6b7280',
-        confirmButtonText: 'Sí, eliminar',
-        cancelButtonText: 'Cancelar'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            window.location.href = url;
-        }
-    });
-}
-</script>
-
-<script>
-function confirmarEliminacionPost(url, nombre) {
-    Swal.fire({
-        title: '¿Eliminar área?',
-        text: `Se eliminará el área "${nombre}"`,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#dc2626',
-        cancelButtonColor: '#6b7280',
-        confirmButtonText: 'Sí, eliminar',
-        cancelButtonText: 'Cancelar'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = url;
-
-            const csrf = document.createElement('input');
-            csrf.type = 'hidden';
-            csrf.name = 'csrfmiddlewaretoken';
-            csrf.value = '{{ csrf_token }}';
-
-            form.appendChild(csrf);
-            document.body.appendChild(form);
-            form.submit();
-        }
-    });
-}
-</script>
-
-<script>
-function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let cookie of cookies) {
-            cookie = cookie.trim();
-            if (cookie.startsWith(name + '=')) {
-                cookieValue = decodeURIComponent(
-                    cookie.substring(name.length + 1)
-                );
-                break;
-            }
-        }
-    }
-    return cookieValue;
-}
-
-function confirmarEliminacionFetch(url, nombre) {
-    Swal.fire({
-        title: '¿Eliminar asignación?',
-        text: `Se eliminará la asignación de "${nombre}"`,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#dc2626',
-        cancelButtonColor: '#6b7280',
-        confirmButtonText: 'Sí, eliminar',
-        cancelButtonText: 'Cancelar'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            fetch(url, {
-                method: 'POST',
-                headers: {
-                    'X-CSRFToken': getCookie('csrftoken')
-                }
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.ok) {
-                    Swal.fire(
-                        'Eliminado',
-                        'La asignación fue eliminada correctamente',
-                        'success'
-                    ).then(() => location.reload())
-                } else {
-                    Swal.fire('Error', 'No se pudo eliminar la asignación', 'error')
-                }
-            })
-        }
-    })
-}
-</script>
 
 {% endblock %}

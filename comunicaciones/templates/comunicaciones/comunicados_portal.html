@@ -1,0 +1,102 @@
+{% extends "home.html" %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+
+<div class="max-w-4xl mx-auto">
+
+    <!-- Encabezado -->
+    <div class="mb-6">
+        <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+            <i class="fas fa-bullhorn text-blue-600"></i>
+            {{ titulo }}
+        </h2>
+        <p class="text-sm text-gray-500 mt-1">
+            Anuncios publicados por el colegio{% if request.user.rol == 'tutor' %} para las secciones de tus hijos{% endif %}.
+        </p>
+    </div>
+
+    {% if not comunicados %}
+
+    <div class="bg-white shadow-sm rounded-xl border border-gray-200 p-16 text-center">
+        <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-blue-50 text-blue-500 flex items-center justify-center">
+            <i class="fas fa-bell-slash text-2xl"></i>
+        </div>
+        <h3 class="text-lg font-semibold text-gray-800">No hay comunicados por ahora</h3>
+        <p class="text-sm text-gray-500 mt-1 max-w-md mx-auto">
+            Cuando el colegio publique anuncios, aparecerán aquí.
+        </p>
+    </div>
+
+    {% else %}
+
+    <div class="space-y-4">
+
+        {% for c in comunicados %}
+
+        <article class="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden {% if c.fijado %}ring-2 ring-amber-200{% endif %}">
+
+            <div class="px-5 py-4 border-b border-gray-100 bg-gray-50 flex items-center justify-between gap-3 flex-wrap">
+                <div class="flex items-center gap-2 flex-wrap">
+                    {% if c.fijado %}
+                    <span class="inline-flex items-center gap-1 bg-amber-100 text-amber-700 px-2 py-0.5 rounded-md text-xs font-semibold">
+                        <i class="fas fa-thumbtack text-[10px]"></i> Fijado
+                    </span>
+                    {% endif %}
+
+                    {% if c.alcance == 'todos' %}
+                    <span class="inline-flex items-center gap-1 bg-green-100 text-green-700 px-2 py-0.5 rounded-md text-xs font-semibold">
+                        <i class="fas fa-school text-[10px]"></i> Todo el centro
+                    </span>
+                    {% else %}
+                    <span class="inline-flex items-center gap-1 bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-md text-xs font-semibold">
+                        <i class="fas fa-users-rectangle text-[10px]"></i> Sección {{ c.seccion.nombre }}
+                    </span>
+                    {% endif %}
+                </div>
+
+                <p class="text-xs text-gray-400">
+                    {{ c.fecha_publicacion|date:"d/m/Y H:i" }}
+                </p>
+            </div>
+
+            <div class="px-5 py-4">
+                <h3 class="font-semibold text-gray-800">{{ c.titulo }}</h3>
+                <p class="text-sm text-gray-600 mt-2 whitespace-pre-line">{{ c.contenido }}</p>
+
+                {% if c.fecha_vencimiento %}
+                <p class="text-xs text-gray-400 mt-3">
+                    <i class="fas fa-hourglass-half mr-1"></i>Vigente hasta el {{ c.fecha_vencimiento|date:"d/m/Y" }}
+                </p>
+                {% endif %}
+            </div>
+
+        </article>
+
+        {% endfor %}
+
+        <!-- Paginación -->
+        {% if page_obj.paginator.num_pages > 1 %}
+        <div class="flex items-center justify-center gap-2 px-5 py-3">
+            {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}" class="w-9 h-9 flex items-center justify-center rounded-lg text-sm text-gray-500 hover:bg-gray-100 transition" title="Página anterior">
+                <i class="fas fa-chevron-left text-xs"></i>
+            </a>
+            {% endif %}
+            <span class="text-sm text-gray-600">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+            {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}" class="w-9 h-9 flex items-center justify-center rounded-lg text-sm text-gray-500 hover:bg-gray-100 transition" title="Página siguiente">
+                <i class="fas fa-chevron-right text-xs"></i>
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
+
+    </div>
+
+    {% endif %}
+
+</div>
+
+{% endblock %}

@@ -89,11 +89,13 @@ INSTALLED_APPS = [
     'comunicaciones.apps.ComunicacionesConfig',
     'entrenamiento',
     'orientacion',
+    'seguridad',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
+    'csp.middleware.CSPMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -104,6 +106,7 @@ MIDDLEWARE = [
     'core.middleware.PasswordExpiryMiddleware',
     'core.middleware.SecurityHeadersMiddleware',
     'core.middleware.CentroMiddleware',
+    'core.middleware.PermisoPaginaMiddleware',
     'auditoria.middleware.AuditoriaMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -133,22 +136,30 @@ WSGI_APPLICATION = 'mycolegiofavorito.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
-# SQLite para desarrollo local (Windows). En producción usa PostgreSQL
-# definiendo DB_ENGINE/DB_NAME/DB_USER/DB_PASSWORD/DB_HOST/DB_PORT en el .env.
+# Motor seleccionable por .env: DB_ENGINE=sqlite (default, desarrollo) o
+# DB_ENGINE=postgresql (producción). El resto del código no cambia: Django
+# abstrae el motor. Para pasar de uno a otro ver docs/MIGRACION_POSTGRES.md.
 
-_DB_ENGINE = os.getenv('DB_ENGINE', 'sqlite')
+_DB_ENGINE = os.getenv('DB_ENGINE', 'sqlite').strip().lower()
 
 if _DB_ENGINE == 'postgresql':
+    _db_options = {}
+    # sslmode=require es lo esperado si DB_SSLMODE se define (ej. detrás de
+    # un proveedor administrado). Valores: disable/allow/prefer/require/verify-full.
+    if os.getenv('DB_SSLMODE'):
+        _db_options['sslmode'] = os.getenv('DB_SSLMODE')
+
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
             'NAME': os.getenv('DB_NAME', 'mycolegiofavorito'),
-            'USER': os.getenv('DB_USER', ''),
+            'USER': os.getenv('DB_USER', 'mcf_user'),
             'PASSWORD': os.getenv('DB_PASSWORD', ''),
             'HOST': os.getenv('DB_HOST', '127.0.0.1'),
             'PORT': os.getenv('DB_PORT', '5432'),
             'CONN_MAX_AGE': int(os.getenv('DB_CONN_MAX_AGE', '60')),
             'CONN_HEALTH_CHECKS': True,
+            'OPTIONS': _db_options,
         }
     }
 else:
@@ -157,6 +168,9 @@ else:
             'ENGINE': 'django.db.backends.sqlite3',
             'NAME': BASE_DIR / 'db.sqlite3',
             'CONN_MAX_AGE': int(os.getenv('DB_CONN_MAX_AGE', '0')),
+            # WAL permite lecturas concurrentes mientras se escribe y hace
+            # los backups en caliente más seguros.
+            'OPTIONS': {'init_command': 'PRAGMA journal_mode=WAL;'},
         }
     }
 
@@ -278,6 +292,7 @@ SECURE_CROSS_ORIGIN_OPENER_POLICY = 'same-origin'
 # CSRF_COOKIE_HTTPONLY se deja en False a propósito: el JS del front lee la
 # cookie csrftoken (getCookie('csrftoken')) en las peticiones fetch.
 SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_AGE = 1800
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 
 # --- Producción: transporte seguro (HTTPS) ---
@@ -349,3 +364,41 @@ LOGGING = {
 }
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# --- Seguridad: cifrado de datos ---
+ENCRYPTION_KEY = os.getenv('ENCRYPTION_KEY', '')
+
+# --- Retención de datos ---
+DATA_RETENTION_YEARS = int(os.getenv('DATA_RETENTION_YEARS', '5'))
+DATA_RETENTION_ANONYMIZE_AFTER_YEARS = int(os.getenv('DATA_RETENTION_ANONYMIZE_AFTER_YEARS', '2'))
+
+# --- Content Security Policy (django-csp) ---
+if DEBUG:
+    CONTENT_SECURITY_POLICY = {
+        'DIRECTIVES': {
+            'default-src': ("'self'",),
+            'script-src': ("'self'", "'unsafe-inline'", "'unsafe-eval'"),
+            'style-src': ("'self'", "'unsafe-inline'"),
+            'img-src': ("'self'", "data:",),
+            'font-src': ("'self'",),
+            'connect-src': ("'self'",),
+        }
+    }
+else:
+    CONTENT_SECURITY_POLICY = {
+        'DIRECTIVES': {
+            'default-src': ("'self'",),
+            'script-src': ("'self'", "'nonce-{csp_nonce}'"),
+            'style-src': ("'self'", "'unsafe-inline'"),
+            'img-src': ("'self'", "data:",),
+            'font-src': ("'self'",),
+            'connect-src': ("'self'",),
+            'frame-src': ("'none'",),
+            'frame-ancestors': ("'none'",),
+            'form-action': ("'self'",),
+            'base-uri': ("'self'",),
+        }
+    }
+CSP_NONCE_IN_SCRIPT_SRC = True
+CSP_NONCE_IN_STYLE_SRC = True
+CSP_REPORT_URI = os.getenv('CSP_REPORT_URI', '')

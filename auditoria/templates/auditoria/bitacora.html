@@ -1,5 +1,5 @@
 {% extends "home.html" %}
-
+{% load formatos %}
 {% block title %}Bitácora de Auditoría{% endblock %}
 
 {% block content %}
@@ -126,35 +126,6 @@
 
     </div>
 
-    <script>
-      function removeFilter(param) {
-        const url = new URL(window.location.href)
-        url.searchParams.delete(param)
-        url.searchParams.delete('page')
-        window.location.href = url.toString()
-      }
-
-      document.addEventListener('DOMContentLoaded', function () {
-        const form = document.getElementById('filtro-form')
-
-        document.querySelectorAll('select[data-auto-submit]').forEach(function (select) {
-          select.addEventListener('change', function () {
-            form.submit()
-          })
-        })
-
-        const input = document.getElementById('busqueda-input')
-        if (input) {
-          let timer
-          input.addEventListener('input', function () {
-            clearTimeout(timer)
-            timer = setTimeout(function () {
-              form.submit()
-            }, 450)
-          })
-        }
-      })
-    </script>
 
     <!-- Tabla -->
     <div class="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
@@ -198,10 +169,19 @@
 
                         <td class="px-4 py-3 whitespace-nowrap">
                             {% if r.usuario %}
-                            <p class="font-medium text-gray-800">
-                                {{ r.usuario.get_full_name|default:r.usuario.username }}
-                            </p>
-                            <p class="text-xs text-gray-400">@{{ r.usuario.username }}</p>
+                            <div class="flex items-center gap-2.5">
+                                <button type="button" class="persona-card-trigger"
+                                        data-persona-card data-tipo="usuario" data-id="{{ r.usuario.id }}"
+                                        aria-label="{{ r.usuario.get_full_name|default:r.usuario.username }}">
+                                    {% avatar r.usuario size='w-8 h-8' %}
+                                </button>
+                                <div>
+                                    <p class="font-medium text-gray-800">
+                                        {{ r.usuario.get_full_name|default:r.usuario.username }}
+                                    </p>
+                                    <p class="text-xs text-gray-400">@{{ r.usuario.username }}</p>
+                                </div>
+                            </div>
                             {% else %}
                             <p class="font-medium text-gray-800">Sistema</p>
                             <p class="text-xs text-gray-400">Sin usuario identificado</p>

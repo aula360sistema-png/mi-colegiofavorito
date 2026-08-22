@@ -1,4 +1,5 @@
 {% extends "home.html" %}
+{% load static %}
 
 {% block title %}Dashboard Docente{% endblock %}
 
@@ -8,7 +9,7 @@
     <!-- ================= HERO ================= -->
     <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 shadow-xl">
         <div class="absolute inset-0 opacity-20"
-             style="background-image: radial-gradient(circle at 20% 30%, white 1px, transparent 1px); background-size: 24px 24px;">
+             class="absolute inset-0 opacity-20 hero-bg">
         </div>
         <div class="relative px-8 py-8 flex flex-wrap items-center justify-between gap-6">
             <div>
@@ -200,14 +201,5 @@
 
 </div>
 
-<script>
-    // ================= SALUDO Y FECHA =================
-    const hoy = new Date();
-    const hora = hoy.getHours();
-    const saludo = hora < 12 ? 'Buenos días' : hora < 19 ? 'Buenas tardes' : 'Buenas noches';
-    document.getElementById('saludo').textContent = saludo;
-    document.getElementById('fecha-hoy').textContent = hoy.toLocaleDateString('es-DO', {
-        weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
-    });
-</script>
+<script src="{% static 'js/docente-dashboard.js' %}"></script>
 {% endblock %}

@@ -170,7 +170,11 @@
                                 </a>
 
                                 <button
-                                    onclick="confirmarCierre('{{ a.id }}', '{{ a.nombre }}', '{% url 'cerrar_anio_escolar' a.id %}')"
+                                    data-action="confirm-delete-redirect"
+                                    data-url="{% url 'cerrar_anio_escolar' a.id %}"
+                                    data-confirm-title="¿Cerrar año escolar?"
+                                    data-confirm-text="Se cerrará el año escolar &quot;{{ a.nombre }}&quot;. Esta acción no se puede deshacer."
+                                    data-confirm-btn="Sí, cerrar"
                                     class="inline-flex items-center gap-1.5 bg-red-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-red-700 transition">
                                     <i class="fas fa-lock"></i>
                                     Cerrar
@@ -217,25 +221,5 @@
     </div>
 
 </div>
-
-
-<script>
-function confirmarCierre(id, nombre, url) {
-    Swal.fire({
-        title: '¿Cerrar año escolar?',
-        text: `Se cerrará el año escolar "${nombre}". Esta acción no se puede deshacer.`,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#dc2626',
-        cancelButtonColor: '#6b7280',
-        confirmButtonText: 'Sí, cerrar',
-        cancelButtonText: 'Cancelar'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            window.location.href = url;
-        }
-    });
-}
-</script>
 
 {% endblock %}

@@ -45,7 +45,7 @@ def _estudiantes_del_centro_sql(centro, anio_escolar):
         .filter(centro=centro)
         .prefetch_related(
             Prefetch(
-                'inscripcion_set',
+                'inscripciones',
                 queryset=(
                     Inscripcion.objects
                     .filter(anio_escolar=anio_escolar)
@@ -113,7 +113,7 @@ def _observaciones_del_centro_sql(centro):
         .select_related('estudiante', 'anio_escolar')
         .prefetch_related(
             Prefetch(
-                'estudiante__inscripcion_set',
+                'estudiante__inscripciones',
                 queryset=Inscripcion.objects.filter(centro=centro),
                 to_attr='inscripciones_centro',
             )

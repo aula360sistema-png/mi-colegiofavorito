@@ -132,7 +132,11 @@
                                 </a>
 
                                 <button
-                                    onclick="confirmarEliminacion('{{ competencia.id }}', '{{ competencia.nombre }}', '{% url 'competencia_delete' competencia.id %}')"
+                                    data-action="confirm-delete-redirect"
+                                    data-url="{% url 'competencia_delete' competencia.id %}"
+                                    data-confirm-title="¿Eliminar competencia?"
+                                    data-confirm-text="Se eliminará &quot;{{ competencia.nombre }}&quot;"
+                                    data-confirm-btn="Sí, eliminar"
                                     class="inline-flex items-center gap-1.5 bg-red-100 text-red-700 px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-red-200 transition">
                                     <i class="fas fa-trash"></i>
                                     Eliminar
@@ -175,24 +179,5 @@
 
 </div>
 
-
-<script>
-function confirmarEliminacion(id, nombre, url) {
-    Swal.fire({
-        title: '¿Eliminar competencia?',
-        text: `Se eliminará "${nombre}"`,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#dc2626',
-        cancelButtonColor: '#6b7280',
-        confirmButtonText: 'Sí, eliminar',
-        cancelButtonText: 'Cancelar'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            window.location.href = url;
-        }
-    });
-}
-</script>
 
 {% endblock %}

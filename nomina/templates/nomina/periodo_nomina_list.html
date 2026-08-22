@@ -16,7 +16,7 @@
     </div>
 
     <form method="get" class="search-form">
-        <select name="anio" onchange="this.form.submit()">
+        <select name="anio" data-auto-submit>
             <option value="">Todos los años</option>
             {% for a in anios_disponibles %}
                 <option value="{{ a }}" {% if a|stringformat:"s" == anio_seleccionado %}selected{% endif %}>
@@ -115,7 +115,7 @@
                             <button
                                 class="btn-action btn-action-green"
                                 id="btn-{{ periodo.id }}"
-                                onclick="generarNomina({{ periodo.id }})"
+                                data-action="generar-nomina" data-periodo-id="{{ periodo.id }}"
                                 title="Generar nómina"
                             >
                                 <i class="fas fa-play"></i>
@@ -158,7 +158,7 @@
 </div>
 
 
-<script>
+<script nonce="{{ request.csp_nonce }}">
 
 function generarNomina(periodoId) {
 
@@ -273,6 +273,12 @@ function generarNomina(periodoId) {
         }
     });
 }
+
+/* Event delegation for data-action */
+document.addEventListener('click', function (e) {
+    var target = e.target.closest('[data-action="generar-nomina"]');
+    if (target) generarNomina(parseInt(target.dataset.periodoId));
+});
 
 </script>
 

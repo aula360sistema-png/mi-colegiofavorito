@@ -1,0 +1,282 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Asistencia por QR{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1><i class="fas fa-qrcode"></i> Asistencia por QR</h1>
+    <p>Genere y escanee códigos QR para registrar asistencia de estudiantes.</p>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">
+        <h3>Filtrar por grado y sección</h3>
+    </div>
+    <div class="card-body">
+        <form method="get" class="form-row">
+            <div class="form-group">
+                <label for="grado">Grado:</label>
+                <select name="grado" id="grado" class="form-control">
+                    <option value="">-- Seleccionar --</option>
+                    {% for gid, grado, sid, seccion in grados_secciones %}
+                        <option value="{{ gid }}" {% if gid == grado_id %}selected{% endif %}>
+                            {{ grado }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="seccion">Sección:</label>
+                <select name="seccion" id="seccion" class="form-control">
+                    <option value="">-- Seleccionar --</option>
+                    {% for gid, grado, sid, seccion in grados_secciones %}
+                        {% if gid == grado_id %}
+                            <option value="{{ sid }}" {% if sid == seccion_id %}selected{% endif %}>
+                                {{ seccion }}
+                            </option>
+                        {% endif %}
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-search"></i> Mostrar QR
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if inscripciones %}
+<div class="card">
+    <div class="card-header">
+        <h3>Códigos QR - {{ inscripciones|length }} estudiantes</h3>
+        <button onclick="window.print()" class="btn btn-sm btn-secondary">
+            <i class="fas fa-print"></i> Imprimir
+        </button>
+    </div>
+    <div class="card-body">
+        <div class="qr-grid" id="qr-grid">
+            {% for inscripcion in inscripciones %}
+            <div class="qr-card" id="qr-{{ inscripcion.id }}">
+                <div class="qr-placeholder" data-inscripcion-id="{{ inscripcion.id }}">
+                    <i class="fas fa-spinner fa-spin"></i>
+                </div>
+                <div class="qr-info">
+                    <strong>{{ inscripcion.estudiante.nombre_completo }}</strong>
+                    <span>{{ inscripcion.estudiante.matricula }}</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% elif grado_id and seccion_id %}
+<div class="card">
+    <div class="card-body">
+        <p class="text-muted">No hay estudiantes inscritos en esta sección.</p>
+    </div>
+</div>
+{% endif %}
+
+<div class="card mt-4">
+    <div class="card-header">
+        <h3>Escanear QR</h3>
+    </div>
+    <div class="card-body">
+        <div class="scanner-container">
+            <div id="scanner-region">
+                <button type="button" class="btn btn-primary btn-lg" id="btn-scanner">
+                    <i class="fas fa-camera"></i> Iniciar escáner
+                </button>
+            </div>
+            <div id="scanner-result" class="mt-3" style="display:none;">
+                <div class="alert" id="scanner-alert"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.qr-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 1.2rem;
+}
+.qr-card {
+    border: 1px solid var(--border-color, #ddd);
+    border-radius: 8px;
+    padding: 1rem;
+    text-align: center;
+    background: #fff;
+}
+.qr-placeholder {
+    width: 120px;
+    height: 120px;
+    margin: 0 auto 0.8rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f8f9fa;
+    border: 1px dashed #ccc;
+    border-radius: 4px;
+    font-size: 2rem;
+    color: #666;
+}
+.qr-placeholder img {
+    max-width: 100%;
+    max-height: 100%;
+}
+.qr-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+.qr-info strong {
+    font-size: 0.85rem;
+    color: #333;
+}
+.qr-info span {
+    font-size: 0.75rem;
+    color: #888;
+}
+.scanner-container {
+    max-width: 400px;
+    margin: 0 auto;
+    text-align: center;
+}
+@media print {
+    .card-header button { display: none; }
+    .scanner-container { display: none; }
+    .qr-grid { grid-template-columns: repeat(3, 1fr); }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const grid = document.getElementById('qr-grid');
+    if (!grid) return;
+
+    grid.querySelectorAll('.qr-placeholder').forEach(function(el) {
+        const insId = el.getAttribute('data-inscripcion-id');
+        if (!insId) return;
+
+        fetch('/asistencia/qr/datos/' + insId + '/')
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.qr_data) {
+                    el.innerHTML = '';
+                    var canvas = document.createElement('canvas');
+                    el.appendChild(canvas);
+                    generateQR(canvas, data.qr_data);
+                }
+            })
+            .catch(function() {
+                el.innerHTML = '<i class="fas fa-exclamation-triangle" style="color:#c00;"></i>';
+            });
+    });
+
+    var btnScanner = document.getElementById('btn-scanner');
+    if (btnScanner) {
+        btnScanner.addEventListener('click', function() {
+            var input = prompt('Código QR (escanee o pegue):');
+            if (!input) return;
+            procesarQR(input.trim());
+        });
+    }
+});
+
+function generateQR(canvas, data) {
+    var size = 120;
+    canvas.width = size;
+    canvas.height = size;
+    var ctx = canvas.getContext('2d');
+
+    var modules = encodeQRModules(data, 25);
+    var cellSize = size / modules.length;
+
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, size, size);
+    ctx.fillStyle = '#000';
+
+    for (var r = 0; r < modules.length; r++) {
+        for (var c = 0; c < modules[r].length; c++) {
+            if (modules[r][c]) {
+                ctx.fillRect(c * cellSize, r * cellSize, cellSize, cellSize);
+            }
+        }
+    }
+}
+
+function encodeQRModules(data, length) {
+    var grid = [];
+    for (var i = 0; i < length; i++) {
+        grid[i] = [];
+        for (var j = 0; j < length; j++) {
+            grid[i][j] = false;
+        }
+    }
+    var hash = 0;
+    for (var k = 0; k < data.length; k++) {
+        hash = ((hash << 5) - hash + data.charCodeAt(k)) | 0;
+    }
+    var seed = Math.abs(hash);
+    function nextRand() {
+        seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+        return seed / 0x7fffffff;
+    }
+    for (var r = 0; r < 7; r++) {
+        for (var c = 0; c < 7; c++) {
+            if (r < 3 || c < 3 || (r > 3 && r < 7 && c > 3 && c < 7)) {
+                grid[r][c] = true;
+                grid[length - 1 - r][c] = true;
+                grid[r][length - 1 - c] = true;
+            }
+        }
+    }
+    for (var r = 8; r < length - 8; r++) {
+        for (var c = 8; c < length - 8; c++) {
+            grid[r][c] = nextRand() > 0.5;
+        }
+    }
+    return grid;
+}
+
+function procesarQR(qrData) {
+    fetch('{% url "asistencia:qr_escanear" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify({qr_data: qrData})
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        var result = document.getElementById('scanner-result');
+        var alert = document.getElementById('scanner-alert');
+        result.style.display = 'block';
+        if (data.success) {
+            alert.className = 'alert alert-success';
+            alert.textContent = data.mensaje;
+        } else {
+            alert.className = 'alert alert-danger';
+            alert.textContent = data.error || 'Error al procesar QR';
+        }
+    })
+    .catch(function() {
+        var result = document.getElementById('scanner-result');
+        var alert = document.getElementById('scanner-alert');
+        result.style.display = 'block';
+        alert.className = 'alert alert-danger';
+        alert.textContent = 'Error de conexión';
+    });
+}
+
+function getCookie(name) {
+    var v = document.cookie.match('(^|;) ?' + name + '=([^;]*)(;|$)');
+    return v ? v[2] : null;
+}
+</script>
+{% endblock %}

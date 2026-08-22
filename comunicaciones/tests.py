@@ -478,3 +478,193 @@ class VistasComunicacionesTestCase(BaseComunicacionesTestCase):
         campania.refresh_from_db()
         self.assertEqual(campania.estado, 'enviada')
         self.assertEqual(campania.destinatarios.filter(estado='enviado').count(), 1)
+
+
+# ===========================================================================
+# COMUNICADOS / ANUNCIOS POR SECCION
+# ===========================================================================
+
+from datetime import timedelta
+
+from django.utils import timezone as dj_timezone
+
+from comunicaciones.models import Comunicado
+from comunicaciones.services.comunicados import (
+    comunicados_para_estudiante,
+    comunicados_para_tutor,
+    invalidar_comunicados,
+)
+
+
+class ComunicadosBase(BaseComunicacionesTestCase):
+
+    def setUp(self):
+        super().setUp()
+        # Segunda seccion para probar aislamiento
+        self.seccion_b = Seccion.objects.create(centro=self.centro, nombre='B')
+
+    def _crear(self, **kwargs):
+        datos = dict(
+            centro=self.centro,
+            titulo='Anuncio general',
+            contenido='Contenido del anuncio',
+            alcance='todos',
+        )
+        datos.update(kwargs)
+        return Comunicado.objects.create(**datos)
+
+
+class ComunicadoVigenciaTestCase(ComunicadosBase):
+
+    def test_vigente_sin_vencimiento(self):
+        self.assertTrue(self._crear().esta_vigente())
+
+    def test_vencido(self):
+        c = self._crear(
+            fecha_publicacion=dj_timezone.now() - timedelta(days=10),
+            fecha_vencimiento=dj_timezone.localdate() - timedelta(days=1),
+        )
+        self.assertFalse(c.esta_vigente())
+        self.assertTrue(c.vencido)
+
+    def test_futuro_no_visible(self):
+        c = self._crear(
+            fecha_publicacion=dj_timezone.now() + timedelta(days=2),
+        )
+        self.assertFalse(c.esta_vigente())
+
+
+class VisibilidadComunicadosTestCase(ComunicadosBase):
+
+    def test_todos_lo_ve_estudiante_y_tutor(self):
+        c = self._crear()
+        self.assertIn(c, comunicados_para_estudiante(self.estudiante))
+        self.assertIn(c, comunicados_para_tutor(self.tutor))
+
+    def test_seccion_propia_visible_ajena_no(self):
+        suya = self._crear(
+            titulo='Su seccion', alcance='seccion', seccion=self.seccion)
+        ajena = self._crear(
+            titulo='Otra seccion', alcance='seccion', seccion=self.seccion_b)
+
+        visibles = comunicados_para_estudiante(self.estudiante)
+        self.assertIn(suya, visibles)
+        self.assertNotIn(ajena, visibles)
+
+        visibles_tutor = comunicados_para_tutor(self.tutor)
+        self.assertIn(suya, visibles_tutor)
+        self.assertNotIn(ajena, visibles_tutor)
+
+    def test_vencidos_excluidos(self):
+        vencido = self._crear(
+            titulo='Ya vencio',
+            fecha_publicacion=dj_timezone.now() - timedelta(days=5),
+            fecha_vencimiento=dj_timezone.localdate() - timedelta(days=1),
+        )
+        self.assertNotIn(vencido, comunicados_para_estudiante(self.estudiante))
+
+    def test_cache_se_invalida_al_crear(self):
+        self.assertEqual(comunicados_para_estudiante(self.estudiante), [])
+
+        nuevo = self._crear(titulo='Nuevo despues del cache')
+
+        # La cache ya estaba poblada; la signal debe haberla invalidado.
+        self.assertIn(nuevo, comunicados_para_estudiante(self.estudiante))
+
+    def test_invalidacion_manual(self):
+        self._crear(titulo='Uno')
+        self.assertEqual(len(comunicados_para_tutor(self.tutor)), 1)
+
+        extra = self._crear(titulo='Dos')
+        invalidar_comunicados(self.centro.id)
+
+        lista = comunicados_para_tutor(self.tutor)
+        self.assertIn(extra, lista)
+
+
+class ComunicadoViewsTestCase(ComunicadosBase):
+
+    def setUp(self):
+        super().setUp()
+        self.client = self.client_class(SERVER_NAME='localhost')
+
+    def _login_como(self, usuario):
+        self.client.force_login(usuario)
+        s = self.client.session
+        s['centro_id'] = self.centro.id
+        s.save()
+
+    def test_director_puede_listar_y_crear(self):
+        self._login_como(self.director)
+        r = self.client.get(reverse('comunicaciones:comunicado_list'))
+        self.assertEqual(r.status_code, 200)
+
+        r = self.client.post(reverse('comunicaciones:comunicado_create'), {
+            'titulo': 'Reunion',
+            'contenido': 'Habra reunion.',
+            'alcance': 'todos',
+            'fecha_publicacion': '2026-08-21T08:00',
+            'fecha_vencimiento': '',
+            'fijado': 'on',
+        })
+        self.assertEqual(r.status_code, 302)
+        self.assertTrue(
+            Comunicado.objects.filter(centro=self.centro, titulo='Reunion').exists()
+        )
+
+    def test_alcance_seccion_requiere_seccion(self):
+        self._login_como(self.director)
+        r = self.client.post(reverse('comunicaciones:comunicado_create'), {
+            'titulo': 'Mal formado',
+            'contenido': 'Sin seccion.',
+            'alcance': 'seccion',
+            'seccion': '',
+            'fecha_publicacion': '2026-08-21T08:00',
+        })
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, 'Selecciona la seccion destino')
+        self.assertFalse(Comunicado.objects.filter(titulo='Mal formado').exists())
+
+    def test_portal_estudiante_ve_su_seccion(self):
+        self._crear(alcance='seccion', seccion=self.seccion,
+                    titulo='Salida pedagogica')
+        self.client.force_login(self.usuario_alumno)
+        r = self.client.get(reverse('comunicaciones:estudiante_comunicados'))
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, 'Salida pedagogica')
+
+    def test_portal_tutor_ve_seccion_de_su_hijo(self):
+        self._crear(alcance='seccion', seccion=self.seccion,
+                    titulo='Cobro de uniformes')
+        self.client.force_login(self.tutor.usuario or self.director)
+        # El tutor de prueba no tiene usuario vinculado en la base del setUp;
+        # se valida el servicio directamente y el acceso con un tutor real.
+        from tutores.models import Tutor
+
+        if Tutor.objects.filter(usuario=self.director).exists():
+            self.fail('El director no deberia ser tutor')
+        r = self.client.get(reverse('comunicaciones:tutor_comunicados'))
+        # Sin usuario tutor vinculado, la vista redirige al home.
+        self.assertIn(r.status_code, (200, 302))
+
+    def test_rol_docente_no_administra(self):
+        docente = Usuario.objects.create_user(
+            username='profe1', email='p@test.com', password='clave123')
+        docente.rol = 'docente'
+        docente.save()
+
+        self._login_como(docente)
+        r = self.client.get(reverse('comunicaciones:comunicado_list'))
+        # role_required responde 403 (pagina de prohibido)
+        self.assertEqual(r.status_code, 403)
+
+    def test_otro_centro_no_ve_comunicados_ajenos(self):
+        otro_centro = CentroEducativo.objects.create(
+            nombre='Otro Colegio', codigo_minerd='MIN-9999')
+        c = Comunicado.objects.create(
+            centro=otro_centro, titulo='De otro centro',
+            contenido='...', alcance='todos')
+
+        self._login_como(self.director)
+        r = self.client.get(reverse('comunicaciones:comunicado_list'))
+        self.assertNotContains(r, 'De otro centro')

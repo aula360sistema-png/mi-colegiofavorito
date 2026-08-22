@@ -4,7 +4,7 @@ from datetime import date, datetime, timedelta
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.forms import formset_factory
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.shortcuts import redirect, render
 
 from academico.models import DocenteMateria
@@ -419,3 +419,314 @@ def estado_asistencia(request):
             return JsonResponse({'pendiente': True})
 
     return JsonResponse({'pendiente': False})
+
+
+# ==========================================
+# ASISTENCIA POR QR
+# ==========================================
+
+@login_required
+@role_required(*ROLES_ACCESO)
+def asistencia_qr_generar(request):
+    """Genera códigos QR para los estudiantes de una sección."""
+    centro = _obtener_centro(request)
+    if not centro:
+        messages.error(request, 'Debe seleccionar un centro educativo.')
+        return redirect('core:seleccionar_centro')
+
+    anio = _anio_activo(centro)
+    if not anio:
+        messages.error(request, 'No hay un año escolar activo.')
+        return redirect('core:home')
+
+    config = getattr(centro, 'configuracioncentro', None)
+    if not config or not config.permitir_qr_asistencia:
+        messages.error(
+            request, 'El módulo de asistencia por QR no está habilitado.'
+        )
+        return redirect('asistencia:tomar_asistencia')
+
+    grado_id = request.GET.get('grado')
+    seccion_id = request.GET.get('seccion')
+
+    inscripciones = []
+    if grado_id and seccion_id:
+        inscripciones = _inscripciones_de_seccion(anio, grado_id, seccion_id)
+
+    grados_secciones = _grados_secciones(request, centro, anio)
+
+    return render(request, 'asistencia/asistencia_qr.html', {
+        'anio': anio,
+        'grados_secciones': grados_secciones,
+        'grado_id': int(grado_id) if grado_id else None,
+        'seccion_id': int(seccion_id) if seccion_id else None,
+        'inscripciones': inscripciones,
+    })
+
+
+@login_required
+def qr_estudiante_data(request, inscripcion_id):
+    """Genera el contenido firmado QR para un estudiante."""
+    import hashlib
+    import hmac
+    import json
+    import time
+
+    inscripcion = Inscripcion.objects.select_related(
+        'estudiante', 'grado', 'seccion'
+    ).filter(pk=inscripcion_id).first()
+
+    if not inscripcion:
+        return JsonResponse({'error': 'Inscripción no encontrada'}, status=404)
+
+    from django.conf import settings
+    secret = settings.SECRET_KEY[:32]
+
+    payload = {
+        'i': inscripcion.id,
+        'n': inscripcion.estudiante.nombre_completo,
+        'm': inscripcion.estudiante.matricula,
+        'g': inscripcion.grado.nombre,
+        's': inscripcion.seccion.nombre,
+        't': int(time.time()),
+    }
+
+    payload_json = json.dumps(payload, separators=(',', ':'))
+    signature = hmac.new(
+        secret.encode(), payload_json.encode(), hashlib.sha256
+    ).hexdigest()[:16]
+
+    return JsonResponse({
+        'qr_data': f'MCE|{payload_json}|{signature}',
+        'estudiante': inscripcion.estudiante.nombre_completo,
+        'matricula': inscripcion.estudiante.matricula,
+    })
+
+
+@login_required
+@role_required(*ROLES_ACCESO)
+def qr_escanear(request):
+    """Procesa un escaneo QR y registra asistencia."""
+    import json
+    import hmac
+    import hashlib
+
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+    try:
+        data = json.loads(request.body)
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({'error': 'Datos inválidos'}, status=400)
+
+    qr_payload = data.get('qr_data', '')
+
+    if not qr_payload or not qr_payload.startswith('MCE|'):
+        return JsonResponse({'error': 'Código QR inválido'}, status=400)
+
+    try:
+        _, payload_json, signature = qr_payload.split('|', 2)
+    except ValueError:
+        return JsonResponse({'error': 'Formato QR inválido'}, status=400)
+
+    from django.conf import settings
+    secret = settings.SECRET_KEY[:32]
+
+    expected_sig = hmac.new(
+        secret.encode(), payload_json.encode(), hashlib.sha256
+    ).hexdigest()[:16]
+
+    if not hmac.compare_digest(signature, expected_sig):
+        return JsonResponse({'error': 'Firma QR inválida'}, status=400)
+
+    payload = json.loads(payload_json)
+    inscripcion_id = payload.get('i')
+
+    if not inscripcion_id:
+        return JsonResponse({'error': 'Datos incompletos en QR'}, status=400)
+
+    centro = _obtener_centro(request)
+    anio = _anio_activo(centro) if centro else None
+
+    inscripcion = Inscripcion.objects.select_related(
+        'estudiante', 'anio_escolar'
+    ).filter(pk=inscripcion_id).first()
+
+    if not inscripcion:
+        return JsonResponse({'error': 'Inscripción no encontrada'}, status=404)
+
+    hoy = date.today()
+
+    if anio and not es_dia_lectivo(anio, hoy):
+        return JsonResponse({'error': 'Hoy no es día lectivo'}, status=400)
+
+    asistencia, created = AsistenciaEstudiante.objects.update_or_create(
+        inscripcion_id=inscripcion_id,
+        fecha=hoy,
+        defaults={
+            'estado': 'presente',
+            'registrada_por': request.user,
+        },
+    )
+
+    estado = 'registrada' if created else 'actualizada'
+
+    return JsonResponse({
+        'success': True,
+        'mensaje': (
+            f'Asistencia {estado} para '
+            f'{inscripcion.estudiante.nombre_completo}'
+        ),
+        'estudiante': inscripcion.estudiante.nombre_completo,
+        'estado': asistencia.estado,
+        'fecha': hoy.isoformat(),
+    })
+
+
+# ==========================================
+# ASISTENCIA POR BIOMETRICO
+# ==========================================
+
+@login_required
+@role_required(*ROLES_ACCESO)
+def asistencia_biometrico(request):
+    """Panel de asistencia biométrica.
+
+    Preparado para integración con dispositivos biométricos
+    (ZKTeco, Suprema, etc.). Funciona como simulador que permite
+    marcar asistencia por código de estudiante (matrícula).
+    """
+    centro = _obtener_centro(request)
+    if not centro:
+        messages.error(request, 'Debe seleccionar un centro educativo.')
+        return redirect('core:seleccionar_centro')
+
+    anio = _anio_activo(centro)
+    if not anio:
+        messages.error(request, 'No hay un año escolar activo.')
+        return redirect('core:home')
+
+    config = getattr(centro, 'configuracioncentro', None)
+    if not config or not config.usar_biometrico:
+        messages.error(
+            request, 'El módulo biométrico no está habilitado.'
+        )
+        return redirect('asistencia:tomar_asistencia')
+
+    hoy = date.today()
+
+    if request.method == 'POST':
+        codigo = request.POST.get('codigo', '').strip()
+        if codigo:
+            inscripcion = Inscripcion.objects.filter(
+                anio_escolar=anio,
+                estudiante__matricula=codigo,
+                estudiante__estado='activo',
+            ).select_related('estudiante').first()
+
+            if inscripcion:
+                if es_dia_lectivo(anio, hoy):
+                    asistencia, created = (
+                        AsistenciaEstudiante.objects.update_or_create(
+                            inscripcion=inscripcion,
+                            fecha=hoy,
+                            defaults={
+                                'estado': 'presente',
+                                'registrada_por': request.user,
+                            },
+                        )
+                    )
+                    msg = (
+                        f'Asistencia '
+                        f'{"registrada" if created else "actualizada"} '
+                        f'para {inscripcion.estudiante.nombre_completo}'
+                    )
+                    messages.success(request, msg)
+                else:
+                    messages.error(request, 'Hoy no es día lectivo.')
+            else:
+                messages.error(
+                    request,
+                    f'No se encontró estudiante con código: {codigo}',
+                )
+
+    ultimas_asistencias = AsistenciaEstudiante.objects.filter(
+        fecha=hoy,
+        inscripcion__anio_escolar=anio,
+    ).select_related(
+        'inscripcion__estudiante',
+        'registrada_por',
+    ).order_by('-created_at')[:20]
+
+    return render(request, 'asistencia/asistencia_biometrico.html', {
+        'anio': anio,
+        'hoy': hoy,
+        'ultimas_asistencias': ultimas_asistencias,
+    })
+
+
+@login_required
+@role_required(*ROLES_ACCESO)
+def asistencia_biometrico_api(request):
+    """API endpoint para dispositivos biométricos externos.
+
+    POST con JSON: {"matricula": "00123"}
+    Registra asistencia y retorna resultado.
+    """
+    import json
+
+    if request.method != 'POST':
+        return JsonResponse(
+            {'error': 'Método no permitido'}, status=405
+        )
+
+    try:
+        data = json.loads(request.body)
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({'error': 'JSON inválido'}, status=400)
+
+    matricula = data.get('matricula', '').strip()
+    if not matricula:
+        return JsonResponse({'error': 'Matrícula requerida'}, status=400)
+
+    centro = _obtener_centro(request)
+    anio = _anio_activo(centro) if centro else None
+
+    if not anio:
+        return JsonResponse(
+            {'error': 'No hay año escolar activo'}, status=400
+        )
+
+    hoy = date.today()
+
+    if not es_dia_lectivo(anio, hoy):
+        return JsonResponse({'error': 'No es día lectivo'}, status=400)
+
+    inscripcion = Inscripcion.objects.filter(
+        anio_escolar=anio,
+        estudiante__matricula=matricula,
+        estudiante__estado='activo',
+    ).select_related('estudiante').first()
+
+    if not inscripcion:
+        return JsonResponse(
+            {'error': 'Estudiante no encontrado'}, status=404
+        )
+
+    asistencia, created = AsistenciaEstudiante.objects.update_or_create(
+        inscripcion=inscripcion,
+        fecha=hoy,
+        defaults={
+            'estado': 'presente',
+            'registrada_por': request.user,
+        },
+    )
+
+    return JsonResponse({
+        'success': True,
+        'estudiante': inscripcion.estudiante.nombre_completo,
+        'matricula': matricula,
+        'estado': asistencia.estado,
+        'registrada': created,
+        'fecha': hoy.isoformat(),
+    })

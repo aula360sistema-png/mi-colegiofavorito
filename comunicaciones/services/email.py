@@ -148,6 +148,32 @@ def _mensaje_pago(pago, tutor):
     )
 
 
+def enviar_email_vencimiento(centro, tutor, estudiante, deuda):
+    """Envía correo de notificación de pago vencido."""
+    asunto = f"Pago vencido - {estudiante.nombre_completo()}"
+    mensaje = (
+        f"Estimado/a {tutor.nombre_completo()}:\n\n"
+        f"Le informamos que el estudiante {estudiante.nombre_completo()} "
+        f"(Matrícula {estudiante.matricula}) tiene un saldo vencido de "
+        f"RD$ {deuda['vencida']:,.2f}.\n\n"
+        f"Saldo total pendiente: RD$ {deuda['saldo_total']:,.2f}\n"
+        f"Por favor, regularice la situación a la brevedad posible.\n\n"
+        f"Saludos cordiales,\n{centro.nombre}"
+    )
+
+    config = obtener_configuracion_correo(centro)
+
+    send_mail(
+        subject=asunto,
+        message=mensaje,
+        from_email=config.get('from_email', settings.DEFAULT_FROM_EMAIL),
+        recipient_list=[tutor.correo_personal],
+        connection=_conexion(config),
+        fail_silently=False,
+    )
+    return True
+
+
 def _personalizar(texto, destinatario):
     """Reemplaza los tokens {{tutor}} y {{estudiante}} con datos reales."""
     tutor = destinatario.tutor

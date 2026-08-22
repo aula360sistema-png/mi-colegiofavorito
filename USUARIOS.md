@@ -30,6 +30,8 @@ activarlo/desactivarlo en **Mi seguridad** (menú lateral) o en `POST /usuarios/
 | docente    | docente123  | Docente        | Carlos Méndez      |
 | docente2   | docente123  | Docente        | Laura Fernández    |
 | docente3   | docente123  | Docente        | Felipe Rojas       |
+| cajero1    | test1234    | Cajero         | María Elena Rodríguez |
+| tutor1     | test1234    | Tutor          | Carlos Alberto Méndez |
 
 ## Estudiantes (usuario = matrícula)
 
@@ -44,4 +46,3 @@ activarlo/desactivarlo en **Mi seguridad** (menú lateral) o en `POST /usuarios/
 | 20230001| estudiante123  | María Fernanda Gómez    |
 | 20240001| estudiante123  | Rosa Amelia Guzmán      |
 | 20240002| estudiante123  | Miguel Ángel Peña       |
-  tt1       DemoColegio2025

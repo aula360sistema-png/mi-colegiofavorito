@@ -1,4 +1,5 @@
 {% extends "home.html" %}
+{% load static %}
 
 {% block title %}
 {% if campania %}Editar Campaña{% else %}Nueva Campaña{% endif %}
@@ -184,23 +185,6 @@
 
 </div>
 
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        var selectAlcance = document.getElementById('{{ form.alcance.id_for_label }}');
-        var campoGrado = document.getElementById('campo-grado');
-        var campoTutores = document.getElementById('campo-tutores');
-
-        if (!selectAlcance) return;
-
-        function actualizarCampos() {
-            var valor = selectAlcance.value;
-            campoGrado.classList.toggle('hidden', valor !== 'grado');
-            campoTutores.classList.toggle('hidden', valor !== 'seleccion');
-        }
-
-        selectAlcance.addEventListener('change', actualizarCampos);
-        actualizarCampos();
-    });
-</script>
+<script src="{% static 'js/campania-form.js' %}"></script>
 
 {% endblock %}

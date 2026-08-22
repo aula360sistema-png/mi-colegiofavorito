@@ -55,7 +55,7 @@
     <!-- Filtros -->
     <div class="bg-white shadow-sm rounded-xl border border-gray-200 p-4 mb-6">
 
-        <form method="get" id="filtro-form" class="flex flex-col md:flex-row gap-3">
+        <form method="get" id="filtro-form" data-auto-filter class="flex flex-col md:flex-row gap-3">
 
             <div class="flex-1 relative">
                 <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
@@ -91,7 +91,7 @@
             <span class="inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 border border-blue-200 px-3 py-1.5 rounded-full text-xs font-medium">
                 <i class="fas fa-search text-[10px]"></i>
                 "{{ q }}"
-                <button type="button" onclick="removeFilter('q')" class="hover:text-red-500 transition">
+                <button type="button" data-action="remove-filter" data-param="q" class="hover:text-red-500 transition">
                     <i class="fas fa-xmark"></i>
                 </button>
             </span>
@@ -104,29 +104,6 @@
         {% endif %}
 
     </div>
-
-    <script>
-      function removeFilter(param) {
-        const url = new URL(window.location.href)
-        url.searchParams.delete(param)
-        url.searchParams.delete('page')
-        window.location.href = url.toString()
-      }
-
-      document.addEventListener('DOMContentLoaded', function () {
-        const form = document.getElementById('filtro-form')
-        const input = document.getElementById('busqueda-input')
-        if (input) {
-          let timer
-          input.addEventListener('input', function () {
-            clearTimeout(timer)
-            timer = setTimeout(function () {
-              form.submit()
-            }, 450)
-          })
-        }
-      })
-    </script>
 
     <!-- Tabla -->
     <div class="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
@@ -189,7 +166,11 @@
                                     Editar
                                 </a>
 
-                                <button onclick="confirmDelete('{{ asignatura.id }}', '{{ asignatura.nombre }}', '{% url 'asignatura_delete' asignatura.id %}')"
+                                <button data-action="confirm-delete-redirect"
+                                        data-url="{% url 'asignatura_delete' asignatura.id %}"
+                                        data-confirm-title="¿Eliminar asignatura?"
+                                        data-confirm-text="Se eliminará &quot;{{ asignatura.nombre }}&quot;"
+                                        data-confirm-btn="Sí, eliminar"
                                         class="inline-flex items-center gap-1.5 bg-red-100 text-red-700 px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-red-200 transition">
                                     <i class="fas fa-trash"></i>
                                     Eliminar
@@ -233,24 +214,5 @@
 
 </div>
 
-
-<script>
-function confirmDelete(id, nombre, url) {
-    Swal.fire({
-        title: '¿Eliminar asignatura?',
-        text: `Se eliminará "${nombre}"`,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#dc2626',
-        cancelButtonColor: '#6b7280',
-        confirmButtonText: 'Sí, eliminar',
-        cancelButtonText: 'Cancelar'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            window.location.href = url;
-        }
-    });
-}
-</script>
 
 {% endblock %}

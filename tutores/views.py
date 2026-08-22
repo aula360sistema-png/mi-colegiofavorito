@@ -56,6 +56,26 @@ def tutor_inicio(request):
 
     deuda_total['tiene_deuda'] = deuda_total['saldo_total'] > 0
 
+    from caja.models import Pago
+    from caja.services import balance_por_concepto
+    from core.models import AnioEscolar
+
+    anio_activo = AnioEscolar.objects.filter(centro=tutor.centro, activo=True).first()
+
+    for item in estudiantes:
+        est = item['estudiante']
+        if anio_activo:
+            item['pagos_recientes'] = Pago.objects.filter(
+                estudiante=est,
+                centro=tutor.centro,
+                fecha__gte=anio_activo.fecha_inicio,
+                fecha__lte=anio_activo.fecha_fin,
+            ).select_related('concepto').order_by('-fecha')[:5]
+            item['balance_conceptos'] = balance_por_concepto(tutor.centro, est, anio_activo)
+        else:
+            item['pagos_recientes'] = []
+            item['balance_conceptos'] = []
+
     return render(request, 'tutores/tutor_inicio.html', {
         'tutor': tutor,
         'estudiantes': estudiantes,
@@ -278,16 +298,34 @@ def tutor_solicitudes(request):
         'primer_apellido', 'primer_nombre'
     )
 
-    solicitudes = (
+    solicitudes_qs = (
         SolicitudCertificado.objects
         .filter(estudiante__in=estudiantes)
         .select_related('estudiante', 'solicitante')
         .order_by('-created_at')
     )
 
+    filtro = request.GET.get('filtro', 'todas')
+    filtros_validos = {'todas', 'pendiente', 'aprobada', 'pagada', 'entregada', 'rechazada'}
+    if filtro not in filtros_validos:
+        filtro = 'todas'
+
+    solicitudes = solicitudes_qs
+    if filtro != 'todas':
+        solicitudes = solicitudes.filter(estado=filtro)
+
     config = ConfiguracionCentro.objects.filter(
         centro=tutor.centro
     ).first()
+
+    stats = {
+        'total': solicitudes_qs.count(),
+        'pendiente': solicitudes_qs.filter(estado='pendiente').count(),
+        'aprobada': solicitudes_qs.filter(estado='aprobada').count(),
+        'pagada': solicitudes_qs.filter(estado='pagada').count(),
+        'entregada': solicitudes_qs.filter(estado='entregada').count(),
+        'rechazada': solicitudes_qs.filter(estado='rechazada').count(),
+    }
 
     if request.method == 'POST':
         form = SolicitudCertificadoTutorForm(
@@ -341,6 +379,8 @@ def tutor_solicitudes(request):
             'form': form,
             'config': config,
             'modulo_activo': bool(config and config.modulo_certificados),
+            'stats': stats,
+            'filtro': filtro,
         }
     )
 

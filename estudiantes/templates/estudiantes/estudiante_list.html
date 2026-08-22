@@ -88,10 +88,10 @@
                 class="md:w-52 border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                 <option value="">Todos los estados</option>
                 <option value="matriculado" {% if estado == 'matriculado' %}selected{% endif %}>
-                    ✓ Matriculados
+                    <i class="fa-solid fa-check text-green-600"></i> Matriculados
                 </option>
                 <option value="sin_matricula" {% if estado == 'sin_matricula' %}selected{% endif %}>
-                    ✗ Sin matrícula
+                    <i class="fa-solid fa-xmark text-red-600"></i> Sin matrícula
                 </option>
             </select>
 
@@ -158,7 +158,11 @@
 
                         <td class="px-5 py-3">
                             <div class="flex items-center gap-3">
-                                {% avatar e %}
+                                <button type="button" class="persona-card-trigger"
+                                        data-persona-card data-tipo="estudiante" data-id="{{ e.id }}"
+                                        aria-label="{{ e.nombre_completo }}">
+                                    {% avatar e %}
+                                </button>
                                 <div>
                                     <p class="font-medium text-gray-800">{{ e.nombre_completo }}</p>
                                     <p class="text-xs text-gray-400">{{ e.get_sexo_display }}</p>

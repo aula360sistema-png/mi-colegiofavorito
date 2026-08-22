@@ -30,7 +30,8 @@
         <button
             type="button"
             class="year-header"
-            onclick="toggleAccordion('year-{{ anio }}')"
+            data-action="toggle-accordion"
+            data-target="year-{{ anio }}"
         >
 
             <div class="left-section">
@@ -59,7 +60,8 @@
                 <button
                     type="button"
                     class="month-header"
-                    onclick="toggleAccordion('month-{{ anio }}-{{ forloop.counter }}')"
+                    data-action="toggle-accordion"
+                    data-target="month-{{ anio }}-{{ forloop.counter }}"
                 >
 
                     <div class="left-section">
@@ -139,25 +141,5 @@
 
 </div>
 
-<script>
-
-function toggleAccordion(id){
-
-    const element = document.getElementById(id);
-
-    if(!element){
-        return;
-    }
-
-    const currentDisplay = window.getComputedStyle(element).display;
-
-    if(currentDisplay === 'none'){
-        element.style.display = 'block';
-    }else{
-        element.style.display = 'none';
-    }
-}
-
-</script>
 
 {% endblock %}

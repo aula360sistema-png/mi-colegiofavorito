@@ -1,11 +1,11 @@
-from django.db.models.signals import post_save
+from django.db.models.signals import post_delete, post_save
 
 
 def notificar_pago_creado(sender, instance, created, **kwargs):
-    """Envía la notificación de pago a los tutores cuando se registra un pago.
+    """Envia la notificacion de pago a los tutores cuando se registra un pago.
 
-    Solo se dispara en la creación; al editar un pago existente no se
-    re-notifica. La notificación nunca debe romper el registro de la caja,
+    Solo se dispara en la creacion; al editar un pago existente no se
+    re-notifica. La notificacion nunca debe romper el registro de la caja,
     por eso el servicio captura y registra los errores.
     """
     if not created:
@@ -24,6 +24,13 @@ def notificar_pago_creado(sender, instance, created, **kwargs):
         )
 
 
+def comunicado_guardado(sender, instance, **kwargs):
+    """Invalida el cache de comunicados del centro al crear/editar/borrar."""
+    from comunicaciones.services.comunicados import invalidar_comunicados
+
+    invalidar_comunicados(instance.centro_id)
+
+
 def conectar_signals():
     from django.apps import apps
 
@@ -33,4 +40,17 @@ def conectar_signals():
         notificar_pago_creado,
         sender=Pago,
         dispatch_uid='comunicaciones.pago.save',
+    )
+
+    Comunicado = apps.get_model('comunicaciones', 'Comunicado')
+
+    post_save.connect(
+        comunicado_guardado,
+        sender=Comunicado,
+        dispatch_uid='comunicaciones.comunicado.save',
+    )
+    post_delete.connect(
+        comunicado_guardado,
+        sender=Comunicado,
+        dispatch_uid='comunicaciones.comunicado.delete',
     )

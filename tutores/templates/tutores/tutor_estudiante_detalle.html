@@ -14,7 +14,7 @@
     <!-- ==================== CABECERA ==================== -->
     <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-teal-700 via-teal-600 to-cyan-600 shadow-xl">
         <div class="absolute inset-0 opacity-20"
-             style="background-image: radial-gradient(circle at 20% 30%, white 1px, transparent 1px); background-size: 24px 24px;">
+             class="absolute inset-0 opacity-20 hero-bg">
         </div>
 
         <div class="relative p-6 flex items-center gap-6">
@@ -220,9 +220,9 @@
                                                 {% if asig.nota_completivo is not None %}
                                                     {{ asig.nota_completivo }}
                                                     {% if asig.aprueba_completivo %}
-                                                        <span class="text-emerald-600 text-xs">✓</span>
+                                                        <span class="text-emerald-600 text-xs"><i class="fa-solid fa-check text-emerald-600"></i></span>
                                                     {% else %}
-                                                        <span class="text-red-600 text-xs">✗</span>
+                                                        <span class="text-red-600 text-xs"><i class="fa-solid fa-xmark text-red-600"></i></span>
                                                     {% endif %}
                                                 {% else %}
                                                     -

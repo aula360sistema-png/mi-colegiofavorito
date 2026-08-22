@@ -7,12 +7,12 @@
 
     <div class="flex items-center justify-between mb-6">
         <h1 class="text-2xl font-bold">
-            📄 Boletín Oficial de Calificaciones
+            <i class="fa-solid fa-file-lines"></i> Boletín Oficial de Calificaciones
         </h1>
         <a href="{% url 'administracion:imprimir_boletin_acta' acta.id %}"
            target="_blank"
            class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-            🖨️ Imprimir
+            <i class="fa-solid fa-print"></i> Imprimir
         </a>
     </div>
 
@@ -37,19 +37,19 @@
             <strong>Situación final:</strong>
             {% if datos.estado_final == "aprobado" %}
                 <span class="ml-2 px-3 py-1 rounded-full text-white bg-green-600 font-semibold">
-                    ✅ Aprobado
+                    <i class="fa-solid fa-circle-check text-green-600"></i> Aprobado
                 </span>
             {% elif datos.estado_final == "reprobado" %}
                 <span class="ml-2 px-3 py-1 rounded-full text-white bg-red-600 font-semibold">
-                    ❌ Reprobado
+                    <i class="fa-solid fa-xmark text-red-600"></i> Reprobado
                 </span>
             {% elif datos.estado_final == "recuperacion" %}
                 <span class="ml-2 px-3 py-1 rounded-full text-white bg-yellow-500 font-semibold">
-                    ⏳ En recuperación
+                    <i class="fa-solid fa-hourglass-half text-yellow-500"></i> En recuperación
                 </span>
             {% else %}
                 <span class="ml-2 px-3 py-1 rounded-full text-white bg-gray-500 font-semibold">
-                    ⚪ Sin calificaciones
+                    <i class="fa-solid fa-circle text-gray-400"></i> Sin calificaciones
                 </span>
             {% endif %}
         </div>
@@ -69,7 +69,7 @@
             {% if datos.completivo.aprobado %}bg-green-50 border-green-300
             {% else %}bg-red-50 border-red-300{% endif %}">
             <h2 class="font-semibold mb-2">
-                📌 Resultado del completivo:
+                <i class="fa-solid fa-thumbtack"></i> Resultado del completivo:
                 {% if datos.completivo.aprobado %}
                     <span class="text-green-700">Aprobado</span>
                 {% else %}
@@ -95,9 +95,9 @@
                                 <td class="border px-2 py-1 text-center">{{ d.nota_completivo|default:"—" }}</td>
                                 <td class="border px-2 py-1 text-center">
                                     {% if d.aprueba %}
-                                        <span class="text-green-600 font-semibold">✔ Superada</span>
+                                        <span class="text-green-600 font-semibold"><i class="fa-solid fa-check text-green-600"></i> Superada</span>
                                     {% else %}
-                                        <span class="text-red-600 font-semibold">✘ No superada</span>
+                                        <span class="text-red-600 font-semibold"><i class="fa-solid fa-xmark text-red-600"></i> No superada</span>
                                     {% endif %}
                                 </td>
                             </tr>
@@ -115,7 +115,7 @@
         <div class="mb-8 border rounded p-4">
             <div class="flex items-center justify-between mb-3">
                 <h2 class="font-semibold text-lg">
-                    📘 {{ asignatura.asignatura }}
+                    <i class="fa-solid fa-book text-blue-600"></i> {{ asignatura.asignatura }}
                 </h2>
                 <span class="px-3 py-1 rounded-full text-sm font-bold
                     {% if asignatura.pf >= nota_minima %}bg-green-100 text-green-700

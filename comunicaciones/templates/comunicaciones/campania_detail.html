@@ -41,7 +41,7 @@
                 {% csrf_token %}
                 <button type="submit"
                         class="inline-flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-lg shadow-sm hover:bg-blue-700 transition text-sm font-semibold"
-                        onclick="return confirm('¿Enviar ahora la campaña a {{ campania.total_destinatarios }} destinatario(s)?');">
+                        data-confirm="¿Enviar ahora la campaña a {{ campania.total_destinatarios }} destinatario(s)?">
                     <i class="fas fa-paper-plane"></i>
                     {% if campania.estado == "borrador" %}Enviar ahora{% else %}Reintentar envío{% endif %}
                 </button>

@@ -1,13 +1,16 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
+from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 
 from core.decorators import centro_required, role_required
+from estudiantes.models import Estudiante
 from tutores.models import Tutor
 
-from .forms import CampaniaForm
-from .models import Campania
+from .forms import CampaniaForm, ComunicadoForm
+from .models import Campania, Comunicado
 from .services import construir_destinatarios, procesar_campania
 
 ROLES_COMUNICACIONES = ('director', 'secretaria', 'admin', 'superadmin')
@@ -203,3 +206,186 @@ def campania_delete(request, pk):
     return render(request, 'comunicaciones/campania_confirm_delete.html', {
         'campania': campania,
     })
+
+# =========================
+# COMUNICADOS / ANUNCIOS POR SECCION
+# =========================
+
+@login_required
+@centro_required
+@role_required(*ROLES_COMUNICACIONES)
+def comunicado_list(request):
+    centro = request.centro
+
+    comunicados = (
+        Comunicado.objects
+        .filter(centro=centro)
+        .select_related('seccion', 'autor')
+    )
+
+    q = request.GET.get('q', '').strip()
+    if q:
+        comunicados = comunicados.filter(titulo__icontains=q)
+
+    seccion_id = request.GET.get('seccion', '').strip()
+    if seccion_id:
+        comunicados = comunicados.filter(seccion_id=seccion_id)
+
+    estado = request.GET.get('estado', '').strip()
+    hoy = timezone.localdate()
+    if estado == 'vigente':
+        comunicados = comunicados.filter(
+            Q(fecha_vencimiento__isnull=True) | Q(fecha_vencimiento__gte=hoy),
+            fecha_publicacion__date__lte=hoy,
+        )
+    elif estado == 'vencido':
+        comunicados = comunicados.filter(fecha_vencimiento__lt=hoy)
+
+    from academico.models import Seccion
+
+    secciones = Seccion.objects.filter(centro=centro).order_by('nombre')
+
+    paginator = Paginator(comunicados, 10)
+    page_obj = paginator.get_page(request.GET.get('page'))
+
+    return render(request, 'comunicaciones/comunicado_list.html', {
+        'comunicados': page_obj.object_list,
+        'page_obj': page_obj,
+        'secciones': secciones,
+        'q': q,
+        'seccion_sel': seccion_id,
+        'estado': estado,
+    })
+
+
+@login_required
+@centro_required
+@role_required(*ROLES_COMUNICACIONES)
+def comunicado_create(request):
+    centro = request.centro
+
+    if request.method == 'POST':
+        form = ComunicadoForm(request.POST, centro=centro)
+
+        if form.is_valid():
+            comunicado = form.save(commit=False)
+            comunicado.centro = centro
+            comunicado.autor = request.user
+            comunicado.save()
+
+            messages.success(request, 'Comunicado publicado correctamente.')
+            return redirect('comunicaciones:comunicado_list')
+    else:
+        form = ComunicadoForm(centro=centro, initial={
+            'fecha_publicacion': timezone.localtime().strftime('%Y-%m-%dT%H:%M'),
+        })
+
+    return render(request, 'comunicaciones/comunicado_form.html', {
+        'form': form,
+        'accion': 'Publicar',
+        'centro': centro,
+    })
+
+
+@login_required
+@centro_required
+@role_required(*ROLES_COMUNICACIONES)
+def comunicado_update(request, pk):
+    centro = request.centro
+
+    comunicado = get_object_or_404(Comunicado, pk=pk, centro=centro)
+
+    if request.method == 'POST':
+        form = ComunicadoForm(request.POST, instance=comunicado, centro=centro)
+
+        if form.is_valid():
+            comunicado = form.save(commit=False)
+            comunicado.autor = request.user
+            comunicado.save()
+
+            messages.success(request, 'Comunicado actualizado.')
+            return redirect('comunicaciones:comunicado_list')
+    else:
+        inicial = {}
+        if comunicado.fecha_publicacion:
+            inicial['fecha_publicacion'] = timezone.localtime(
+                comunicado.fecha_publicacion
+            ).strftime('%Y-%m-%dT%H:%M')
+        form = ComunicadoForm(
+            instance=comunicado, centro=centro, initial=inicial)
+
+    return render(request, 'comunicaciones/comunicado_form.html', {
+        'form': form,
+        'comunicado': comunicado,
+        'accion': 'Editar',
+        'centro': centro,
+    })
+
+
+@login_required
+@centro_required
+@role_required(*ROLES_COMUNICACIONES)
+def comunicado_delete(request, pk):
+    centro = request.centro
+
+    comunicado = get_object_or_404(Comunicado, pk=pk, centro=centro)
+
+    if request.method == 'POST':
+        comunicado.delete()
+        messages.success(request, 'Comunicado eliminado correctamente.')
+        return redirect('comunicaciones:comunicado_list')
+
+    return render(request, 'comunicaciones/comunicado_confirm_delete.html', {
+        'comunicado': comunicado,
+    })
+
+
+# ---------------------------------------------------------------------------
+# PORTALES (estudiante y tutor): solo lectura
+# ---------------------------------------------------------------------------
+
+def _portal_comunicados(request, lista, titulo):
+    """Render compartido del listado del portal."""
+    hoy = timezone.localdate()
+    visibles = [c for c in lista if c.esta_vigente(hoy)]
+
+    paginator = Paginator(visibles, 10)
+    page_obj = paginator.get_page(request.GET.get('page'))
+
+    return render(request, 'comunicaciones/comunicados_portal.html', {
+        'comunicados': page_obj.object_list,
+        'page_obj': page_obj,
+        'titulo': titulo,
+    })
+
+
+@login_required
+def estudiante_comunicados(request):
+    if request.user.rol != 'estudiante':
+        return redirect('core:home')
+
+    estudiante = get_object_or_404(Estudiante, usuario=request.user)
+
+    from .services.comunicados import comunicados_para_estudiante
+
+    return _portal_comunicados(
+        request,
+        comunicados_para_estudiante(estudiante),
+        'Comunicados del colegio',
+    )
+
+
+@login_required
+def tutor_comunicados(request):
+    if request.user.rol != 'tutor':
+        return redirect('core:home')
+
+    tutor = get_object_or_404(Tutor, usuario=request.user)
+
+    from .services.comunicados import comunicados_para_tutor
+
+    return _portal_comunicados(
+        request,
+        comunicados_para_tutor(tutor),
+        'Comunicados del colegio',
+    )

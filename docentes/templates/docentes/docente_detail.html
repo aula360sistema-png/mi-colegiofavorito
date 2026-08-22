@@ -224,7 +224,7 @@
                 <!-- Cabecera del año -->
                 <button
                     type="button"
-                    onclick="toggleAcordeon(this)"
+                    data-action="toggle-acordeon"
                     class="acordeon-toggle w-full flex items-center justify-between px-6 py-4 text-left hover:bg-blue-50/50 transition {% if forloop.first %}bg-blue-50/30{% endif %}">
 
                     <div class="flex items-center gap-3">
@@ -386,15 +386,5 @@
 
 </div>
 
-<script>
-  function toggleAcordeon(btn) {
-    const item = btn.closest('.acordeon-item')
-    const body = item.querySelector('.acordeon-body')
-    const chevron = item.querySelector('.acordeon-chevron')
-
-    body.classList.toggle('hidden')
-    chevron.classList.toggle('rotate-180')
-  }
-</script>
 
 {% endblock %}

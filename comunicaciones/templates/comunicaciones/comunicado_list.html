@@ -1,0 +1,175 @@
+{% extends "home.html" %}
+{% load formatos %}
+
+{% block title %}Comunicados · Comunicaciones{% endblock %}
+
+{% block content %}
+
+<div class="max-w-7xl mx-auto">
+
+    <!-- Encabezado -->
+    <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6">
+
+        <div>
+            <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                <i class="fas fa-bullhorn text-blue-600"></i>
+                Comunicados y Anuncios
+            </h2>
+            <p class="text-sm text-gray-500 mt-1">
+                Publicaciones visibles en los portales de estudiantes y tutores,
+                para todo el centro o una sección.
+            </p>
+        </div>
+
+        <a href="{% url 'comunicaciones:comunicado_create' %}"
+           class="inline-flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-lg shadow-sm hover:bg-blue-700 hover:shadow transition text-sm font-semibold">
+            <i class="fas fa-plus"></i>
+            Nuevo comunicado
+        </a>
+
+    </div>
+
+    <!-- Filtros -->
+    <form method="get" class="bg-white shadow-sm rounded-xl border border-gray-200 p-4 mb-6 flex flex-col md:flex-row gap-3">
+
+        <div class="relative flex-1">
+            <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+            <input type="text" name="q" value="{{ q }}"
+                   placeholder="Buscar por título..."
+                   class="w-full pl-9 pr-3 py-2.5 rounded-lg border border-gray-300 bg-white text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200">
+        </div>
+
+        <select name="seccion"
+                class="rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200">
+            <option value="">Todas las secciones</option>
+            {% for s in secciones %}
+            <option value="{{ s.id }}" {% if seccion_sel == s.id|stringformat:"s" %}selected{% endif %}>
+                Sección {{ s.nombre }}
+            </option>
+            {% endfor %}
+        </select>
+
+        <select name="estado"
+                class="rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200">
+            <option value="">Vigentes y vencidos</option>
+            <option value="vigente" {% if estado == 'vigente' %}selected{% endif %}>Solo vigentes</option>
+            <option value="vencido" {% if estado == 'vencido' %}selected{% endif %}>Solo vencidos</option>
+        </select>
+
+        <button type="submit"
+                class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-gray-800 text-white text-sm font-semibold hover:bg-gray-900 transition">
+            <i class="fas fa-filter"></i>
+            Filtrar
+        </button>
+
+    </form>
+
+    {% if not comunicados %}
+
+    <div class="bg-white shadow-sm rounded-xl border border-gray-200 p-16 text-center">
+        <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-blue-50 text-blue-500 flex items-center justify-center">
+            <i class="fas fa-bullhorn text-2xl"></i>
+        </div>
+        <h3 class="text-lg font-semibold text-gray-800">No hay comunicados</h3>
+        <p class="text-sm text-gray-500 mt-1 max-w-md mx-auto">
+            Publica anuncios para todo el centro o para una sección específica:
+            reuniones, actividades, recordatorios y más.
+        </p>
+        <a href="{% url 'comunicaciones:comunicado_create' %}"
+           class="inline-flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-lg shadow-sm hover:bg-blue-700 transition text-sm font-semibold mt-6">
+            <i class="fas fa-plus"></i>
+            Crear el primero
+        </a>
+    </div>
+
+    {% else %}
+
+    <div class="space-y-4">
+
+        {% for c in comunicados %}
+
+        <div class="bg-white shadow-sm rounded-xl border border-gray-200 p-5 hover:shadow-md transition">
+
+            <div class="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
+
+                <div class="min-w-0 flex-1">
+                    <div class="flex items-center gap-2 flex-wrap mb-1">
+                        {% if c.fijado %}
+                        <span class="inline-flex items-center gap-1 bg-amber-100 text-amber-700 px-2 py-0.5 rounded-md text-xs font-semibold">
+                            <i class="fas fa-thumbtack text-[10px]"></i> Fijado
+                        </span>
+                        {% endif %}
+
+                        {% if c.alcance == 'todos' %}
+                        <span class="inline-flex items-center gap-1 bg-green-100 text-green-700 px-2 py-0.5 rounded-md text-xs font-semibold">
+                            <i class="fas fa-school text-[10px]"></i> Todo el centro
+                        </span>
+                        {% else %}
+                        <span class="inline-flex items-center gap-1 bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-md text-xs font-semibold">
+                            <i class="fas fa-users-rectangle text-[10px]"></i> Sección {{ c.seccion.nombre }}
+                        </span>
+                        {% endif %}
+
+                        {% if c.vencido %}
+                        <span class="inline-flex items-center gap-1 bg-gray-100 text-gray-500 px-2 py-0.5 rounded-md text-xs font-medium">
+                            <i class="fas fa-clock-rotate-left text-[10px]"></i> Vencido
+                        </span>
+                        {% endif %}
+                    </div>
+
+                    <h4 class="font-semibold text-gray-800">{{ c.titulo }}</h4>
+
+                    <p class="text-sm text-gray-600 mt-1 line-clamp-2 whitespace-pre-line">{{ c.contenido }}</p>
+
+                    <p class="text-xs text-gray-400 mt-2">
+                        <i class="fas fa-calendar-alt mr-1"></i>{{ c.fecha_publicacion|date:"d/m/Y H:i" }}
+                        {% if c.fecha_vencimiento %} · vence {{ c.fecha_vencimiento|date:"d/m/Y" }}{% endif %}
+                        {% if c.autor %} · {{ c.autor.get_full_name|default:c.autor.username }}{% endif %}
+                    </p>
+                </div>
+
+                <div class="flex items-center gap-2 shrink-0">
+                    <a href="{% url 'comunicaciones:comunicado_update' c.id %}"
+                       class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-gray-300 text-xs font-medium text-gray-700 hover:bg-gray-50 transition"
+                       title="Editar">
+                        <i class="fas fa-pen"></i>
+                        Editar
+                    </a>
+                    <a href="{% url 'comunicaciones:comunicado_delete' c.id %}"
+                       class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-red-200 text-xs font-medium text-red-600 hover:bg-red-50 transition"
+                       title="Eliminar">
+                        <i class="fas fa-trash"></i>
+                        Eliminar
+                    </a>
+                </div>
+
+            </div>
+
+        </div>
+
+        {% endfor %}
+
+        <!-- Paginación -->
+        {% if page_obj.paginator.num_pages > 1 %}
+        <div class="flex items-center justify-center gap-2 px-5 py-3">
+            {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}" class="w-9 h-9 flex items-center justify-center rounded-lg text-sm text-gray-500 hover:bg-gray-100 transition" title="Página anterior">
+                <i class="fas fa-chevron-left text-xs"></i>
+            </a>
+            {% endif %}
+            <span class="text-sm text-gray-600">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+            {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}" class="w-9 h-9 flex items-center justify-center rounded-lg text-sm text-gray-500 hover:bg-gray-100 transition" title="Página siguiente">
+                <i class="fas fa-chevron-right text-xs"></i>
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
+
+    </div>
+
+    {% endif %}
+
+</div>
+
+{% endblock %}

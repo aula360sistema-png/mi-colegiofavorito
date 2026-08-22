@@ -34,6 +34,14 @@ class Bitacora(models.Model):
         blank=True
     )
 
+    centro = models.ForeignKey(
+        'core.CentroEducativo',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='bitacora_eventos',
+    )
+
     accion = models.CharField(
         max_length=30,
         choices=ACCIONES

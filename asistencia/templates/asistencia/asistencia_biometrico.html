@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Asistencia Biométrica{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1><i class="fas fa-fingerprint"></i> Asistencia Biométrica</h1>
+    <p>Registro de asistencia por código de estudiante (preparado para dispositivos biométricos).</p>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h3>Registrar asistencia</h3>
+            </div>
+            <div class="card-body">
+                <form method="post" id="form-biometrico">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <label for="codigo">Código / Matrícula del estudiante:</label>
+                        <input type="text" name="codigo" id="codigo"
+                               class="form-control form-control-lg"
+                               placeholder="Ej: 00123"
+                               autofocus autocomplete="off" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-lg btn-block">
+                        <i class="fas fa-fingerprint"></i> Registrar
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h3>Últimos registros ({{ hoy }})</h3>
+            </div>
+            <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+                {% if ultimas_asistencias %}
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Hora</th>
+                            <th>Estudiante</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for a in ultimas_asistencias %}
+                        <tr>
+                            <td>{{ a.created_at|date:"H:i:s" }}</td>
+                            <td>{{ a.inscripcion.estudiante.nombre_completo }}</td>
+                            <td>
+                                <span class="badge badge-{{ a.estado|yesno:'success,danger,warning,info' }}">
+                                    {{ a.get_estado_display }}
+                                </span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p class="text-muted text-center">Sin registros hoy.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mt-4">
+    <div class="card-header">
+        <h3>API para dispositivos externos</h3>
+    </div>
+    <div class="card-body">
+        <p>Endpoint API para integración con dispositivos biométricos:</p>
+        <pre style="background: #f4f4f4; padding: 1rem; border-radius: 4px;">
+POST /asistencia/biometrico/api/
+Content-Type: application/json
+
+{
+    "matricula": "00123"
+}
+
+Respuesta exitosa:
+{
+    "success": true,
+    "estudiante": "Juan Pérez",
+    "matricula": "00123",
+    "estado": "presente",
+    "registrada": true,
+    "fecha": "2026-08-18"
+}
+        </pre>
+    </div>
+</div>
+
+<script>
+document.getElementById('form-biometrico').addEventListener('submit', function(e) {
+    e.preventDefault();
+    var form = this;
+    var input = document.getElementById('codigo');
+
+    fetch(form.action || window.location.href, {
+        method: 'POST',
+        body: new FormData(form),
+    })
+    .then(function(r) { return r.json ? r.text() : r; })
+    .then(function() {
+        location.reload();
+    })
+    .catch(function() {
+        form.submit();
+    });
+});
+
+document.getElementById('codigo').addEventListener('input', function() {
+    if (this.value.length >= 10) {
+        this.closest('form').submit();
+    }
+});
+</script>
+{% endblock %}

@@ -44,27 +44,40 @@ def modulos_sidebar(configuracion, request):
         configuracion.modulo_asistencia
         and (rol in ROLES_ASISTENCIA or request.user.is_superuser)
     ):
+        links = [
+            {
+                'etiqueta': 'Asistencia estudiantes',
+                'href': reverse('asistencia:tomar_asistencia'),
+                'icono': 'fa-user-check',
+            },
+            {
+                'etiqueta': 'Resumen de asistencia',
+                'href': reverse('asistencia:resumen_asistencia'),
+                'icono': 'fa-chart-line',
+            },
+            {
+                'etiqueta': 'Días de no docencia',
+                'href': reverse('asistencia:dias_no_docencia'),
+                'icono': 'fa-calendar-xmark',
+            },
+        ]
+        if configuracion.permitir_qr_asistencia:
+            links.append({
+                'etiqueta': 'Asistencia por QR',
+                'href': reverse('asistencia:asistencia_qr_generar'),
+                'icono': 'fa-qrcode',
+            })
+        if configuracion.usar_biometrico:
+            links.append({
+                'etiqueta': 'Asistencia biométrica',
+                'href': reverse('asistencia:asistencia_biometrico'),
+                'icono': 'fa-fingerprint',
+            })
         modulos.append({
             'nombre': 'Asistencia',
             'id': 'menu-asistencia',
             'icono': 'fa-calendar-check',
-            'links': [
-                {
-                    'etiqueta': 'Asistencia estudiantes',
-                    'href': reverse('asistencia:tomar_asistencia'),
-                    'icono': 'fa-user-check',
-                },
-                {
-                    'etiqueta': 'Resumen de asistencia',
-                    'href': reverse('asistencia:resumen_asistencia'),
-                    'icono': 'fa-chart-line',
-                },
-                {
-                    'etiqueta': 'Días de no docencia',
-                    'href': reverse('asistencia:dias_no_docencia'),
-                    'icono': 'fa-calendar-xmark',
-                },
-            ],
+            'links': links,
         })
 
     if configuracion.modulo_caja and (
@@ -154,9 +167,19 @@ def modulos_sidebar(configuracion, request):
                     'icono': 'fa-house',
                 },
                 {
+                    'etiqueta': 'Crear factura',
+                    'href': reverse('facturacion:crear_factura'),
+                    'icono': 'fa-plus',
+                },
+                {
                     'etiqueta': 'Facturas emitidas',
                     'href': reverse('facturacion:lista_facturas'),
                     'icono': 'fa-file-invoice',
+                },
+                {
+                    'etiqueta': 'Secuencias NCF',
+                    'href': reverse('facturacion:secuencias_ncf'),
+                    'icono': 'fa-hashtag',
                 },
                 {
                     'etiqueta': 'Tipos de comprobante',
@@ -271,6 +294,25 @@ def modulos_sidebar(configuracion, request):
             ],
         })
 
+    if rol in ('director', 'admin', 'superadmin') or request.user.is_superuser:
+        modulos.append({
+            'nombre': 'Apariencia',
+            'id': 'menu-apariencia',
+            'icono': 'fa-palette',
+            'links': [
+                {
+                    'etiqueta': 'Tema del centro',
+                    'href': reverse('core:tema_centro'),
+                    'icono': 'fa-brush',
+                },
+                {
+                    'etiqueta': 'Logo del centro',
+                    'href': reverse('core:logo_centro'),
+                    'icono': 'fa-image',
+                },
+            ],
+        })
+
     return modulos
 
 
@@ -292,6 +334,7 @@ def configuracion_centro(request):
 
             if configuracion is not None:
                 request.session['centro_id'] = centro.id
+                centro_id = centro.id
 
     modulos = []
     if request.user.is_authenticated:
@@ -306,7 +349,23 @@ def configuracion_centro(request):
             timeout=ttl('CACHE_TTL_CORTO'),
         )
 
+    # Tema y logo del centro
+    tema_centro = None
+    centro_logo = None
+    centro_nombre = None
+    if centro_id:
+        from .models import TemaCentro, CentroEducativo
+        centro_obj = CentroEducativo.objects.filter(id=centro_id).first()
+        if centro_obj:
+            centro_nombre = centro_obj.nombre
+            if centro_obj.logo:
+                centro_logo = centro_obj.logo.url
+            tema_centro = TemaCentro.objects.filter(centro_id=centro_id).first()
+
     return {
         'configuracion': configuracion,
         'modulos_sidebar': modulos,
+        'tema_centro': tema_centro,
+        'centro_logo': centro_logo,
+        'centro_nombre': centro_nombre,
     }

@@ -1,0 +1,36 @@
+# ---------------------------------------------------------------------------
+# PostgreSQL para mycolegiofavorito
+#
+# Uso:
+#   docker compose up -d          # levanta la BD
+#   docker compose down           # la detiene (los datos persisten en el volumen)
+#   docker compose down -v        # ¡CUIDADO! además borra los datos
+#
+# Las credenciales coinciden con los valores por defecto del .env.example.
+# Cámbialas aquí Y en tu .env si usas otras.
+# ---------------------------------------------------------------------------
+
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: mcf_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-mycolegiofavorito}
+      POSTGRES_USER: ${DB_USER:-mcf_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-cambia_esta_clave}
+      # Evita que el contenedor se reinicie con datos de otra BD previa
+      POSTGRES_HOST_AUTH_METHOD: scram-sha-256
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-mcf_user} -d ${DB_NAME:-mycolegiofavorito}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+volumes:
+  pgdata:

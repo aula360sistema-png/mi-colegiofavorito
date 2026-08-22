@@ -1,0 +1,152 @@
+{% extends "home.html" %}
+{% load formatos %}
+
+{% block title %}Destrezas Cognitivas - {{ centro }}{% endblock %}
+
+{% block content %}
+
+<div class="max-w-7xl mx-auto">
+
+    <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6">
+        <div>
+            <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                <i class="fas fa-puzzle-piece text-blue-600"></i> Destrezas Cognitivas
+            </h2>
+            <p class="text-sm text-gray-500 mt-1">{{ centro }}</p>
+        </div>
+        <a href="{% url 'entrenamiento:destreza_create' %}"
+           class="inline-flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-lg shadow-sm hover:bg-blue-700 hover:shadow transition text-sm font-semibold">
+            <i class="fas fa-plus"></i> Nueva Destreza
+        </a>
+    </div>
+
+    <!-- Filtros -->
+    <div class="bg-white shadow-sm rounded-xl border border-gray-200 p-4 mb-6">
+        <form method="get" class="flex flex-col md:flex-row gap-3">
+            <div class="flex-1 relative">
+                <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                <input type="text" name="q" value="{{ q }}"
+                       placeholder="Buscar por nombre..."
+                       class="w-full border border-gray-300 rounded-lg pl-10 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            </div>
+            <select name="tramo" data-auto-submit
+                    class="md:w-48 border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                <option value="">Todos los tramos</option>
+                {% for t in tramos %}
+                <option value="{{ t.pk }}" {% if tramo_seleccionado == t.pk|stringformat:"d" %}selected{% endif %}>{{ t.nombre }}</option>
+                {% endfor %}
+            </select>
+            <select name="categoria" data-auto-submit
+                    class="md:w-52 border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                <option value="">Todas las categorías</option>
+                {% for valor, etiqueta in categorias %}
+                <option value="{{ valor }}" {% if categoria_seleccionada == valor %}selected{% endif %}>{{ etiqueta }}</option>
+                {% endfor %}
+            </select>
+            <button type="submit"
+                    class="inline-flex items-center justify-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-lg hover:bg-blue-700 text-sm font-semibold">
+                <i class="fas fa-filter"></i> Filtrar
+            </button>
+            {% if q or tramo_seleccionado or categoria_seleccionada %}
+            <a href="{% url 'entrenamiento:destreza_list' %}"
+               class="inline-flex items-center justify-center gap-2 bg-gray-200 text-gray-700 px-5 py-2.5 rounded-lg hover:bg-gray-300 text-sm font-medium">
+                <i class="fas fa-times"></i> Limpiar
+            </a>
+            {% endif %}
+        </form>
+    </div>
+
+    <!-- Tabla -->
+    <div class="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
+        <div class="flex items-center justify-between px-5 py-4 border-b border-gray-200 bg-gray-50">
+            <h3 class="font-semibold text-gray-800 flex items-center gap-2">
+                <i class="fas fa-list text-gray-400"></i> Listado de destrezas
+            </h3>
+            <span class="text-xs font-medium bg-blue-100 text-blue-700 px-2.5 py-1 rounded-full">
+                Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+            </span>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200 text-sm">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Nombre</th>
+                        <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Tramo</th>
+                        <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Categoría</th>
+                        <th class="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-500">Orden</th>
+                        <th class="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-500">Estado</th>
+                        <th class="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    {% for item in items %}
+                    <tr class="hover:bg-blue-50/50 transition-colors">
+                        <td class="px-5 py-3">
+                            <p class="font-medium text-gray-800">{{ item.nombre }}</p>
+                        </td>
+                        <td class="px-5 py-3">
+                            <span class="bg-purple-100 text-purple-700 px-2 py-0.5 rounded-md text-xs font-semibold">{{ item.tramo.nombre }}</span>
+                        </td>
+                        <td class="px-5 py-3">
+                            <span class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded-md text-xs font-semibold">{{ item.get_categoria_display }}</span>
+                        </td>
+                        <td class="px-5 py-3 text-center text-gray-600">{{ item.orden }}</td>
+                        <td class="px-5 py-3 text-center">
+                            {% if item.activo %}
+                            <span class="inline-flex items-center gap-1 bg-green-100 text-green-700 px-2.5 py-1 rounded-full text-xs font-semibold">
+                                <i class="fas fa-circle text-[8px]"></i> Activo
+                            </span>
+                            {% else %}
+                            <span class="inline-flex items-center gap-1 bg-red-100 text-red-700 px-2.5 py-1 rounded-full text-xs font-semibold">
+                                <i class="fas fa-circle text-[8px]"></i> Inactivo
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-5 py-3">
+                            <div class="flex items-center justify-end gap-2">
+                                <a href="{% url 'entrenamiento:destreza_update' item.pk %}"
+                                   class="inline-flex items-center gap-1.5 bg-gray-200 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-gray-300 transition">
+                                    <i class="fas fa-pen"></i> Editar
+                                </a>
+                                <a href="{% url 'entrenamiento:destreza_delete' item.pk %}"
+                                   class="inline-flex items-center gap-1.5 bg-red-100 text-red-700 px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-red-200 transition"
+                                   data-confirm-link="¿Está seguro de eliminar este registro?">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="px-5 py-12 text-center text-gray-500">
+                            <i class="fas fa-inbox text-3xl mb-3 text-gray-300 block"></i>
+                            No se encontraron registros.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-5 py-3 border-t border-gray-200 bg-gray-50 text-sm text-gray-600">
+            <span>Mostrando <strong>{{ page_obj.start_index }}</strong>–<strong>{{ page_obj.end_index }}</strong> de <strong>{{ page_obj.paginator.count }}</strong> destrezas</span>
+        </div>
+        {% if tramo_seleccionado and categoria_seleccionada %}
+        {% with filtro_extra="tramo="|add:tramo_seleccionado|add:"&categoria="|add:categoria_seleccionada|add:"&" %}
+        {% include "entrenamiento/_paginador.html" with filtro_extra=filtro_extra only %}
+        {% endwith %}
+        {% elif tramo_seleccionado %}
+        {% with filtro_extra="tramo="|add:tramo_seleccionado|add:"&" %}
+        {% include "entrenamiento/_paginador.html" with filtro_extra=filtro_extra only %}
+        {% endwith %}
+        {% elif categoria_seleccionada %}
+        {% with filtro_extra="categoria="|add:categoria_seleccionada|add:"&" %}
+        {% include "entrenamiento/_paginador.html" with filtro_extra=filtro_extra only %}
+        {% endwith %}
+        {% else %}
+        {% include "entrenamiento/_paginador.html" %}
+        {% endif %}
+    </div>
+
+</div>
+
+{% endblock %}

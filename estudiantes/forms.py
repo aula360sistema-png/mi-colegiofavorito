@@ -121,12 +121,23 @@ class ObservacionEstudianteForm(forms.ModelForm):
             })
 
 
+_CERT_WIDGET = (
+    'w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm '
+    'bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 '
+    'focus:border-indigo-500 transition'
+)
+
+
 class SolicitudCertificadoForm(forms.ModelForm):
     class Meta:
         model = SolicitudCertificado
         fields = ('tipo_certificado', 'metodo_pago', 'motivo')
         widgets = {
-            'motivo': forms.Textarea(attrs={'rows': 3}),
+            'motivo': forms.Textarea(attrs={
+                'rows': 3,
+                'placeholder': 'Motivo de la solicitud (opcional)...',
+                'class': _CERT_WIDGET,
+            }),
         }
 
     def __init__(self, *args, **kwargs):
@@ -135,14 +146,9 @@ class SolicitudCertificadoForm(forms.ModelForm):
         self.fields['tipo_certificado'].label = 'Tipo de certificado'
         self.fields['metodo_pago'].label = 'Método de pago'
 
-        for field in self.fields.values():
-            field.widget.attrs.update({
-                'class': (
-                    'w-full border rounded px-3 py-2 '
-                    'focus:outline-none focus:ring-2 '
-                    'focus:ring-blue-500'
-                )
-            })
+        for name, field in self.fields.items():
+            if name != 'motivo':
+                field.widget.attrs['class'] = _CERT_WIDGET
 
 
 class SolicitudCertificadoTutorForm(SolicitudCertificadoForm):
@@ -165,13 +171,7 @@ class SolicitudCertificadoTutorForm(SolicitudCertificadoForm):
                 lambda obj: f"{obj.matricula} — {obj.nombre_completo()}"
             )
 
-        self.fields['estudiante'].widget.attrs.update({
-                'class': (
-                    'w-full border rounded px-3 py-2 '
-                    'focus:outline-none focus:ring-2 '
-                    'focus:ring-blue-500'
-                )
-            })
+        self.fields['estudiante'].widget.attrs['class'] = _CERT_WIDGET
 
 
 class SolicitudRechazoForm(forms.Form):

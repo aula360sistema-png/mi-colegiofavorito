@@ -92,7 +92,7 @@ Días de No Docencia
                         <form
                             method="post"
                             class="inline-form"
-                            onsubmit="return confirm('¿Eliminar este día de no docencia?');"
+                            data-confirm="¿Eliminar este día de no docencia?"
                         >
                             {% csrf_token %}
                             <input type="hidden" name="eliminar" value="1">

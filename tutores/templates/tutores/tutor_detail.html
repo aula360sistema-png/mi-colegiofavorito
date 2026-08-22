@@ -232,7 +232,7 @@
                         </td>
 
                         <td class="px-5 py-3">
-                            {% with i=e.inscripcion_set.all|dictsortreversed:"anio_escolar__fecha_inicio"|first %}
+                            {% with i=e.inscripciones.all|dictsortreversed:"anio_escolar__fecha_inicio"|first %}
                             {% if i %}
                             <div class="flex items-center gap-1.5">
                                 <span class="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-md text-xs font-semibold">

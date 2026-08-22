@@ -90,12 +90,30 @@ def estudiante_inicio(request):
     if inscripcion_actual:
         anio_actual = inscripcion_actual['anio']
 
+    from caja.services import deuda_detalle_estudiante, balance_por_concepto
+    from caja.models import Pago
+
+    deuda = deuda_detalle_estudiante(estudiante.centro, estudiante, anio_actual) if anio_actual else None
+    pagos_recientes = []
+    balance_conceptos = []
+    if anio_actual:
+        pagos_recientes = Pago.objects.filter(
+            estudiante=estudiante,
+            centro=estudiante.centro,
+            fecha__gte=anio_actual.fecha_inicio,
+            fecha__lte=anio_actual.fecha_fin,
+        ).select_related('concepto').order_by('-fecha')[:10]
+        balance_conceptos = balance_por_concepto(estudiante.centro, estudiante, anio_actual)
+
     return render(request, 'estudiantes/estudiante_inicio.html', {
         'estudiante': estudiante,
         'kardex': kardex,
         'inscripcion_actual': inscripcion_actual,
         'anio_actual': anio_actual,
         'total_anios': len(kardex['anios']),
+        'deuda': deuda,
+        'pagos_recientes': pagos_recientes,
+        'balance_conceptos': balance_conceptos,
     })
 
 

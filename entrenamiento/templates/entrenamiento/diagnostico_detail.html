@@ -1,0 +1,98 @@
+{% extends "home.html" %}
+{% load formatos %}
+
+{% block title %}Detalle del Diagnóstico - {{ centro }}{% endblock %}
+
+{% block content %}
+
+<div class="max-w-6xl mx-auto">
+
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <a href="{% url 'entrenamiento:diagnostico_list' %}"
+               class="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-blue-600 mb-2 transition">
+                <i class="fas fa-arrow-left"></i> Volver al listado
+            </a>
+            <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                <i class="fas fa-clipboard-check text-indigo-600"></i> Diagnóstico Cognitivo
+            </h2>
+            <p class="text-sm text-gray-500 mt-1">{{ obj.estudiante }} &mdash; {{ obj.fecha|date:"d/m/Y" }}</p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+            <a href="{% url 'entrenamiento:diagnostico_delete' obj.pk %}"
+               class="inline-flex items-center gap-2 bg-red-100 text-red-700 px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-red-200 transition"
+               data-confirm-link="¿Está seguro de eliminar este registro?">
+                <i class="fas fa-trash"></i> Eliminar
+            </a>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+
+        <!-- Info principal -->
+        <div class="lg:col-span-2 bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
+            <div class="px-5 py-4 border-b border-gray-200 bg-gray-50">
+                <h3 class="font-semibold text-gray-800 flex items-center gap-2">
+                    <i class="fas fa-info-circle text-gray-400"></i> Información del diagnóstico
+                </h3>
+            </div>
+            <div class="p-6">
+                <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 text-sm">
+                    <div>
+                        <dt class="text-xs text-gray-400 uppercase tracking-wide">Estudiante</dt>
+                        <dd class="font-medium text-gray-800 mt-1">{{ obj.estudiante }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-xs text-gray-400 uppercase tracking-wide">Año escolar</dt>
+                        <dd class="font-medium text-gray-800 mt-1">{{ obj.anio_escolar }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-xs text-gray-400 uppercase tracking-wide">Tramo</dt>
+                        <dd class="mt-1"><span class="bg-purple-100 text-purple-700 px-2 py-0.5 rounded-md text-xs font-semibold">{{ obj.tramo.nombre }}</span></dd>
+                    </div>
+                    <div>
+                        <dt class="text-xs text-gray-400 uppercase tracking-wide">Fecha</dt>
+                        <dd class="font-medium text-gray-800 mt-1">{{ obj.fecha|date:"d/m/Y" }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-xs text-gray-400 uppercase tracking-wide">IPD</dt>
+                        <dd class="font-medium text-gray-800 mt-1">
+                            {% if obj.ipd %}
+                            <span class="text-lg font-bold text-indigo-600">{{ obj.ipd }}</span>
+                            {% else %}
+                            <span class="text-gray-400">—</span>
+                            {% endif %}
+                        </dd>
+                    </div>
+                </dl>
+            </div>
+        </div>
+
+        <!-- IPD Card -->
+        <div class="bg-white shadow-sm rounded-xl border border-gray-200 p-5">
+            <div class="w-12 h-12 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center text-xl mb-4">
+                <i class="fas fa-chart-line"></i>
+            </div>
+            <p class="text-xs uppercase tracking-wide text-gray-500 font-semibold">IPD Inicial</p>
+            <p class="text-3xl font-bold text-indigo-600 mt-1">{{ obj.ipd|default:"—" }}</p>
+        </div>
+
+    </div>
+
+    <!-- Resultado JSON -->
+    {% if obj.resultado %}
+    <div class="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
+        <div class="px-5 py-4 border-b border-gray-200 bg-gray-50">
+            <h3 class="font-semibold text-gray-800 flex items-center gap-2">
+                <i class="fas fa-code text-gray-400"></i> Resultado por destreza
+            </h3>
+        </div>
+        <div class="p-6">
+            <pre class="bg-gray-50 border border-gray-200 rounded-lg p-4 text-sm text-gray-700 overflow-x-auto font-mono">{{ obj.resultado|pprint }}</pre>
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+
+{% endblock %}

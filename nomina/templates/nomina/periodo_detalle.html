@@ -29,14 +29,14 @@ Nómina {{ periodo.descripcion }}
 
     <div class="header-actions">
         {% if not periodo.cerrado and not periodo.nomina_generada %}
-            <button class="btn-nomina btn-sm" id="btn-generar" onclick="generarNomina({{ periodo.id }})">
+            <button class="btn-nomina btn-sm" id="btn-generar" data-action="generar-nomina" data-periodo-id="{{ periodo.id }}">
                 <i class="fas fa-play"></i> Generar nómina
             </button>
         {% endif %}
 
         {% if not periodo.cerrado and periodo.nomina_generada %}
             <form method="post" action="{% url 'nomina:periodo_anular' periodo.id %}"
-                  onsubmit="return confirm('¿Anular la nómina de este período? Se eliminarán todos los cálculos y podrás regenerar.')">
+                  data-confirm="¿Anular la nómina de este período? Se eliminarán todos los cálculos y podrás regenerar.">
                 {% csrf_token %}
                 <button type="submit" class="btn-danger btn-sm">
                     <i class="fas fa-rotate-left"></i> Anular y regenerar
@@ -44,7 +44,7 @@ Nómina {{ periodo.descripcion }}
             </form>
 
             <form method="post" action="{% url 'nomina:periodo_cerrar' periodo.id %}"
-                  onsubmit="return confirm('¿Cerrar el período? Ya no se podrán hacer cambios.')">
+                  data-confirm="¿Cerrar el período? Ya no se podrán hacer cambios.">
                 {% csrf_token %}
                 <button type="submit" class="btn-secondary btn-sm">
                     <i class="fas fa-lock"></i> Cerrar período
@@ -53,7 +53,7 @@ Nómina {{ periodo.descripcion }}
         {% endif %}
 
         {% if periodo.nomina_generada %}
-            <button class="btn-secondary btn-sm" onclick="imprimirNomina()">
+            <button class="btn-secondary btn-sm" data-action="imprimir-nomina">
                 <i class="fas fa-print"></i> Imprimir
             </button>
         {% endif %}
@@ -224,7 +224,7 @@ Nómina {{ periodo.descripcion }}
                 <td>
                     <div class="table-actions">
                         <button type="button" class="btn-action" title="Ver desglose"
-                                onclick="alternarDesglose('desglose-{{ nomina.id }}', this)">
+                                data-action="alternar-desglose" data-target="desglose-{{ nomina.id }}">
                             <i class="fas fa-chevron-down"></i>
                         </button>
 
@@ -257,7 +257,7 @@ Nómina {{ periodo.descripcion }}
                                 {% csrf_token %}
                                 <input type="hidden" name="accion" value="pagar">
                                 <button type="submit" class="btn-action btn-action-green" title="Marcar pagada"
-                                        onclick="return confirm('¿Confirmar el pago de {{ nomina.usuario.get_full_name }}?')">
+                                        data-confirm="¿Confirmar el pago de {{ nomina.usuario.get_full_name }}?">
                                     <i class="fas fa-money-bill-wave"></i>
                                 </button>
                             </form>
@@ -266,7 +266,7 @@ Nómina {{ periodo.descripcion }}
                 </td>
             </tr>
 
-            <tr class="desglose-row" id="desglose-{{ nomina.id }}" style="display:none;">
+            <tr class="desglose-row hidden" id="desglose-{{ nomina.id }}">
                 <td colspan="11">
                     <div class="desglose-grid">
                         <div class="desglose-col">
@@ -372,7 +372,7 @@ Nómina {{ periodo.descripcion }}
     <div class="empty-state">
         <i class="fas fa-cash-register"></i>
         <p>Este período aún no tiene nómina generada</p>
-        <button class="btn-nomina" onclick="generarNomina({{ periodo.id }})">
+        <button class="btn-nomina" data-action="generar-nomina" data-periodo-id="{{ periodo.id }}">
             <i class="fas fa-play"></i> Generar nómina ahora
         </button>
     </div>
@@ -382,7 +382,7 @@ Nómina {{ periodo.descripcion }}
 
 {{ datos_impresion|json_script:"datos-impresion" }}
 
-<script>
+<script nonce="{{ request.csp_nonce }}">
 function imprimirNomina() {
     const datos = JSON.parse(document.getElementById('datos-impresion').textContent);
 
@@ -570,13 +570,13 @@ function alternarDesglose(id, btn) {
     const fila = document.getElementById(id);
     if (!fila) return;
 
-    const visible = fila.style.display !== 'none';
-    fila.style.display = visible ? 'none' : '';
+    const visible = fila.classList.contains('hidden');
+    fila.classList.toggle('hidden');
 
     const icono = btn.querySelector('i');
     if (icono) {
-        icono.classList.toggle('fa-chevron-down', visible);
-        icono.classList.toggle('fa-chevron-up', !visible);
+        icono.classList.toggle('fa-chevron-down', !visible);
+        icono.classList.toggle('fa-chevron-up', visible);
     }
 }
 
@@ -596,6 +596,16 @@ function filtrarTabla() {
         }
     });
 }
+
+/* Event delegation for data-action */
+document.addEventListener('click', function (e) {
+    var target = e.target.closest('[data-action]');
+    if (!target) return;
+    var action = target.dataset.action;
+    if (action === 'generar-nomina') generarNomina(parseInt(target.dataset.periodoId));
+    else if (action === 'imprimir-nomina') imprimirNomina();
+    else if (action === 'alternar-desglose') alternarDesglose(target.dataset.target, target);
+});
 </script>
 
 {% endblock %}

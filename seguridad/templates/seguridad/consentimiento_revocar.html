@@ -1,0 +1,55 @@
+{% extends "home.html" %}
+{% load formatos %}
+
+{% block title %}Revocar Consentimiento - {{ obj.estudiante }}{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <div class="mb-6">
+        <a href="{% url 'seguridad:consentimiento_list' %}"
+           class="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-blue-600 mb-2 transition">
+            <i class="fas fa-arrow-left"></i> Volver al listado
+        </a>
+        <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+            <i class="fas fa-ban text-red-600"></i> Revocar Consentimiento
+        </h2>
+    </div>
+
+    <div class="bg-white shadow-sm rounded-2xl border border-gray-200 p-6">
+        <div class="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
+            <div class="flex items-start gap-3">
+                <i class="fas fa-triangle-exclamation text-red-500 mt-0.5"></i>
+                <div>
+                    <p class="text-sm font-medium text-red-800">¿Estás seguro de revocar este consentimiento?</p>
+                    <p class="text-sm text-red-600 mt-1">
+                        Estudiante: <strong>{{ obj.estudiante }}</strong><br>
+                        Tutor: <strong>{{ obj.tutor_nombre }}</strong><br>
+                        Firmado: <strong>{{ obj.fecha_firma|date:"d/m/Y H:i" }}</strong>
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <form method="post" class="space-y-4">
+            {% csrf_token %}
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1.5">Motivo de la revocación</label>
+                <textarea name="motivo" rows="3"
+                          class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                          placeholder="Indica el motivo de la revocación..."></textarea>
+            </div>
+
+            <div class="flex items-center justify-end gap-3 pt-4 border-t border-gray-100">
+                <a href="{% url 'seguridad:consentimiento_list' %}"
+                   class="inline-flex items-center gap-2 bg-gray-100 text-gray-700 px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-200 transition">
+                    <i class="fas fa-xmark"></i> Cancelar
+                </a>
+                <button type="submit"
+                        class="inline-flex items-center gap-2 bg-red-600 text-white px-7 py-2.5 rounded-lg text-sm font-semibold shadow-md shadow-red-200 hover:bg-red-700 transition">
+                    <i class="fas fa-ban"></i> Revocar Consentimiento
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,181 @@
+{% extends "home.html" %}
+{% load formatos %}
+
+{% block title %}Detalle del Plan - {{ centro }}{% endblock %}
+
+{% block content %}
+
+<div class="max-w-6xl mx-auto">
+
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <a href="{% url 'entrenamiento:plan_list' %}"
+               class="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-blue-600 mb-2 transition">
+                <i class="fas fa-arrow-left"></i> Volver al listado
+            </a>
+            <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                <i class="fas fa-tasks text-red-600"></i> Plan de Refuerzo
+            </h2>
+            <p class="text-sm text-gray-500 mt-1">{{ obj.estudiante }} &mdash; {{ obj.fecha_generado|date:"d/m/Y" }}</p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+            <a href="{% url 'entrenamiento:plan_update_estado' obj.pk %}"
+               class="inline-flex items-center gap-2 bg-gray-200 text-gray-700 px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-300 transition">
+                <i class="fas fa-pen"></i> Editar
+            </a>
+            <a href="{% url 'entrenamiento:plan_delete' obj.pk %}"
+               class="inline-flex items-center gap-2 bg-red-100 text-red-700 px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-red-200 transition"
+               data-confirm-link="¿Está seguro de eliminar este registro?">
+                <i class="fas fa-trash"></i> Eliminar
+            </a>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+
+        <!-- Info -->
+        <div class="lg:col-span-2 bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
+            <div class="px-5 py-4 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
+                <h3 class="font-semibold text-gray-800 flex items-center gap-2">
+                    <i class="fas fa-info-circle text-gray-400"></i> Información del plan
+                </h3>
+                {% if obj.estado == 'activo' %}
+                <span class="inline-flex items-center gap-1 bg-green-100 text-green-700 px-2.5 py-1 rounded-full text-xs font-semibold">
+                    <i class="fas fa-circle text-[8px]"></i> Activo
+                </span>
+                {% elif obj.estado == 'completado' %}
+                <span class="inline-flex items-center gap-1 bg-blue-100 text-blue-700 px-2.5 py-1 rounded-full text-xs font-semibold">
+                    <i class="fas fa-circle text-[8px]"></i> Completado
+                </span>
+                {% elif obj.estado == 'cancelado' %}
+                <span class="inline-flex items-center gap-1 bg-red-100 text-red-700 px-2.5 py-1 rounded-full text-xs font-semibold">
+                    <i class="fas fa-circle text-[8px]"></i> Cancelado
+                </span>
+                {% else %}
+                <span class="inline-flex items-center gap-1 bg-amber-100 text-amber-700 px-2.5 py-1 rounded-full text-xs font-semibold">
+                    <i class="fas fa-circle text-[8px]"></i> Pendiente
+                </span>
+                {% endif %}
+            </div>
+            <div class="p-6">
+                <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 text-sm">
+                    <div>
+                        <dt class="text-xs text-gray-400 uppercase tracking-wide">Estudiante</dt>
+                        <dd class="font-medium text-gray-800 mt-1">{{ obj.estudiante }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-xs text-gray-400 uppercase tracking-wide">Año escolar</dt>
+                        <dd class="font-medium text-gray-800 mt-1">{{ obj.anio_escolar }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-xs text-gray-400 uppercase tracking-wide">Unidad</dt>
+                        <dd class="mt-1">
+                            {% if obj.unidad %}
+                            <span class="bg-green-100 text-green-700 px-2 py-0.5 rounded-md text-xs font-semibold">{{ obj.unidad }}</span>
+                            {% else %}
+                            <span class="text-gray-400">—</span>
+                            {% endif %}
+                        </dd>
+                    </div>
+                    <div>
+                        <dt class="text-xs text-gray-400 uppercase tracking-wide">Origen</dt>
+                        <dd class="font-medium text-gray-800 mt-1">{{ obj.get_origen_display }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-xs text-gray-400 uppercase tracking-wide">Generado por</dt>
+                        <dd class="font-medium text-gray-800 mt-1">{{ obj.get_generado_por_display }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-xs text-gray-400 uppercase tracking-wide">Fecha</dt>
+                        <dd class="font-medium text-gray-800 mt-1">{{ obj.fecha_generado|date:"d/m/Y" }}</dd>
+                    </div>
+                    {% if obj.nota %}
+                    <div class="sm:col-span-2">
+                        <dt class="text-xs text-gray-400 uppercase tracking-wide">Nota</dt>
+                        <dd class="font-medium text-gray-800 mt-1 whitespace-pre-line">{{ obj.nota }}</dd>
+                    </div>
+                    {% endif %}
+                </dl>
+            </div>
+        </div>
+
+        <!-- Resumen -->
+        <div class="bg-white shadow-sm rounded-xl border border-gray-200 p-5">
+            <h4 class="font-semibold text-gray-800 mb-3">Resumen</h4>
+            <dl class="space-y-2 text-sm">
+                <div class="flex justify-between">
+                    <dt class="text-gray-500">Total items</dt>
+                    <dd class="font-semibold">{{ items|length }}</dd>
+                </div>
+                <div class="flex justify-between">
+                    <dt class="text-gray-500">Pendientes</dt>
+                    <dd class="font-semibold text-amber-600">{% for i in items %}{% if i.estado == 'pendiente' %}{{ forloop.counter0|add:1 }}{% endif %}{% endfor %}0</dd>
+                </div>
+            </dl>
+        </div>
+
+    </div>
+
+    <!-- Items -->
+    <div class="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
+        <div class="flex items-center justify-between px-5 py-4 border-b border-gray-200 bg-gray-50">
+            <h3 class="font-semibold text-gray-800 flex items-center gap-2">
+                <i class="fas fa-list text-gray-400"></i> Items del plan
+            </h3>
+            <span class="text-xs font-medium bg-blue-100 text-blue-700 px-2.5 py-1 rounded-full">
+                {{ items|length }} ejercicio(s)
+            </span>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200 text-sm">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-500">#</th>
+                        <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Destreza</th>
+                        <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Ejercicio</th>
+                        <th class="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-500">Estado</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    {% for item in items %}
+                    <tr class="hover:bg-blue-50/50 transition-colors">
+                        <td class="px-5 py-3 text-center font-mono font-semibold text-gray-600">{{ item.orden }}</td>
+                        <td class="px-5 py-3">
+                            <span class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded-md text-xs font-semibold">{{ item.destreza.nombre }}</span>
+                        </td>
+                        <td class="px-5 py-3">
+                            <p class="font-medium text-gray-800 truncate max-w-md" title="{{ item.ejercicio.enunciado }}">{{ item.ejercicio.enunciado|truncatewords:10 }}</p>
+                            <p class="text-xs text-gray-400 mt-0.5">{{ item.ejercicio.get_tipo_display }} · {{ item.ejercicio.get_dificultad_display }}</p>
+                        </td>
+                        <td class="px-5 py-3 text-center">
+                            {% if item.estado == 'superado' %}
+                            <span class="inline-flex items-center gap-1 bg-green-100 text-green-700 px-2.5 py-1 rounded-full text-xs font-semibold">
+                                <i class="fas fa-circle text-[8px]"></i> Superado
+                            </span>
+                            {% elif item.estado == 'completado' %}
+                            <span class="inline-flex items-center gap-1 bg-blue-100 text-blue-700 px-2.5 py-1 rounded-full text-xs font-semibold">
+                                <i class="fas fa-circle text-[8px]"></i> Completado
+                            </span>
+                            {% else %}
+                            <span class="inline-flex items-center gap-1 bg-amber-100 text-amber-700 px-2.5 py-1 rounded-full text-xs font-semibold">
+                                <i class="fas fa-circle text-[8px]"></i> Pendiente
+                            </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="px-5 py-12 text-center text-gray-500">
+                            <i class="fas fa-inbox text-3xl mb-3 text-gray-300 block"></i>
+                            Este plan no tiene ejercicios asignados.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}

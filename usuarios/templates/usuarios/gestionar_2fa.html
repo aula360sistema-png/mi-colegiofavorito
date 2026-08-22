@@ -76,11 +76,6 @@
 </div>
 
 <script src="{% static 'vendor/qrcodejs/qrcode.min.js' %}"></script>
-<script>
-    var qr = document.getElementById('qrcode');
-    if (typeof QRCode !== 'undefined' && qr && qr.dataset.uri) {
-        new QRCode(qr, { text: qr.dataset.uri, width: 200, height: 200 });
-    }
-</script>
+<script src="{% static 'js/qr-render.js' %}"></script>
 
 {% endblock %}

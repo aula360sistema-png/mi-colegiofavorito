@@ -1,0 +1,122 @@
+{% extends "home.html" %}
+{% load formatos %}
+
+{% block title %}Detalle del Consentimiento - {{ obj.estudiante }}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <a href="{% url 'seguridad:consentimiento_list' %}"
+               class="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-blue-600 mb-2 transition">
+                <i class="fas fa-arrow-left"></i> Volver al listado
+            </a>
+            <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                <i class="fas fa-file-signature text-green-600"></i> Consentimiento Informado
+            </h2>
+            <p class="text-sm text-gray-500 mt-1">{{ obj.estudiante }} &mdash; {{ obj.fecha_firma|date:"d/m/Y H:i" }}</p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+            {% if obj.activo %}
+            <a href="{% url 'seguridad:consentimiento_revocar' obj.pk %}"
+               class="inline-flex items-center gap-2 bg-red-100 text-red-700 px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-red-200 transition">
+                <i class="fas fa-ban"></i> Revocar
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        <div class="lg:col-span-2 bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
+            <div class="px-5 py-4 border-b border-gray-200 bg-gray-50">
+                <h3 class="font-semibold text-gray-800 flex items-center gap-2">
+                    <i class="fas fa-info-circle text-gray-400"></i> Información del consentimiento
+                </h3>
+            </div>
+            <div class="p-6">
+                <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 text-sm">
+                    <div>
+                        <dt class="text-xs text-gray-400 uppercase tracking-wide">Estudiante</dt>
+                        <dd class="font-medium text-gray-800 mt-1">{{ obj.estudiante }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-xs text-gray-400 uppercase tracking-wide">Estado</dt>
+                        <dd class="mt-1">
+                            {% if obj.activo %}
+                            <span class="bg-green-100 text-green-700 px-2.5 py-1 rounded-full text-xs font-semibold">Activo</span>
+                            {% else %}
+                            <span class="bg-red-100 text-red-700 px-2.5 py-1 rounded-full text-xs font-semibold">Revocado</span>
+                            {% endif %}
+                        </dd>
+                    </div>
+                    <div>
+                        <dt class="text-xs text-gray-400 uppercase tracking-wide">Tutor</dt>
+                        <dd class="font-medium text-gray-800 mt-1">{{ obj.tutor_nombre }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-xs text-gray-400 uppercase tracking-wide">Cédula tutor</dt>
+                        <dd class="font-medium text-gray-800 mt-1">{{ obj.tutor_cedula }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-xs text-gray-400 uppercase tracking-wide">Parentesco</dt>
+                        <dd class="font-medium text-gray-800 mt-1">{{ obj.tutor_parentesco }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-xs text-gray-400 uppercase tracking-wide">Fecha de firma</dt>
+                        <dd class="font-medium text-gray-800 mt-1">{{ obj.fecha_firma|date:"d/m/Y H:i" }}</dd>
+                    </div>
+                </dl>
+            </div>
+        </div>
+
+        <div class="bg-white shadow-sm rounded-xl border border-gray-200 p-5">
+            <h4 class="font-semibold text-gray-800 mb-3">Permisos otorgados</h4>
+            <div class="space-y-2">
+                <div class="flex items-center gap-2">
+                    {% if obj.acepta_datos_personales %}
+                    <i class="fas fa-check-circle text-green-500"></i>
+                    {% else %}
+                    <i class="fas fa-times-circle text-red-400"></i>
+                    {% endif %}
+                    <span class="text-sm">Datos personales</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    {% if obj.acepta_datos_academicos %}
+                    <i class="fas fa-check-circle text-green-500"></i>
+                    {% else %}
+                    <i class="fas fa-times-circle text-red-400"></i>
+                    {% endif %}
+                    <span class="text-sm">Datos académicos</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    {% if obj.acepta_datos_clinicos %}
+                    <i class="fas fa-check-circle text-green-500"></i>
+                    {% else %}
+                    <i class="fas fa-times-circle text-red-400"></i>
+                    {% endif %}
+                    <span class="text-sm">Datos clínicos</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    {% if obj.acepta_comunicaciones %}
+                    <i class="fas fa-check-circle text-green-500"></i>
+                    {% else %}
+                    <i class="fas fa-times-circle text-red-400"></i>
+                    {% endif %}
+                    <span class="text-sm">Comunicaciones</span>
+                </div>
+            </div>
+
+            {% if not obj.activo %}
+            <div class="mt-4 pt-4 border-t border-gray-200">
+                <p class="text-xs text-gray-400 uppercase tracking-wide mb-1">Revocado el</p>
+                <p class="text-sm font-medium text-red-600">{{ obj.fecha_revocacion|date:"d/m/Y H:i" }}</p>
+                {% if obj.motivo_revocacion %}
+                <p class="text-xs text-gray-400 mt-2">Motivo:</p>
+                <p class="text-sm text-gray-600">{{ obj.motivo_revocacion }}</p>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

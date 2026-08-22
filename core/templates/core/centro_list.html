@@ -13,7 +13,7 @@ Centros Educativos
 
         <div>
             <h1 class="text-2xl font-bold text-gray-800">
-                🏫 Centros Educativos
+                <i class="fa-solid fa-school text-blue-600"></i> Centros Educativos
             </h1>
 
             <p class="text-sm text-gray-500">
@@ -104,15 +104,15 @@ Centros Educativos
                         <a href="{% url 'core:centro_update' centro.id %}"
                            class="text-blue-600 hover:underline">
 
-                            ✏️ Editar
+                            <i class="fa-solid fa-pen"></i> Editar
 
                         </a>
 
                         <a href="{% url 'core:centro_delete' centro.id %}"
-                           onclick="return confirm('¿Eliminar este centro?')"
+                           data-confirm-link="¿Eliminar este centro?"
                            class="text-red-600 hover:underline">
 
-                            🗑️ Eliminar
+                            <i class="fa-solid fa-trash text-red-600"></i> Eliminar
 
                         </a>
 

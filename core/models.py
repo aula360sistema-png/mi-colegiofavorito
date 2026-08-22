@@ -1,9 +1,7 @@
 from django.db import models
+from django.core.exceptions import ValidationError
 
-# Create your models here.
-from django.db import models
-from django.core.exceptions import ValidationError
-from django.core.exceptions import ValidationError
+
 class CentroEducativo(models.Model):
     nombre = models.CharField(max_length=255)
     codigo_minerd = models.CharField(max_length=50, unique=True)
@@ -11,6 +9,13 @@ class CentroEducativo(models.Model):
     direccion = models.TextField(blank=True)
     telefono = models.CharField(max_length=20, blank=True)
     email = models.EmailField(blank=True)
+
+    logo = models.ImageField(
+        upload_to='centros/logos/',
+        blank=True,
+        null=True,
+        help_text='Logo del centro educativo (se muestra en sidebar, login, PDFs)'
+    )
 
     activo = models.BooleanField(default=True)
     fecha_creacion = models.DateTimeField(auto_now_add=True)
@@ -265,3 +270,250 @@ class CentroProveedor(models.Model):
 
     class Meta:
         unique_together = ('proveedor', 'centro')
+
+
+# =====================================================
+# PERMISOS POR PAGINA
+# =====================================================
+
+class PermisoPagina(models.Model):
+    """Controla qué roles pueden acceder a cada página (URL name).
+
+    Si no existe un registro para una URL, la página queda abierta a todos
+    los usuarios autenticados (comportamiento actual). Si se crea un
+    registro, solo los roles/usuarios listados pueden acceder.
+    """
+
+    url_name = models.CharField(
+        max_length=150,
+        unique=True,
+        help_text='Nombre de la URL en Django (ej: estudiante_list, nomina:dashboard)'
+    )
+    descripcion = models.CharField(
+        max_length=255,
+        blank=True,
+        default='',
+        help_text='Descripción legible de la página'
+    )
+    roles_permitidos = models.ManyToManyField(
+        RolCentro,
+        blank=True,
+        related_name='permisos_pagina',
+        help_text='Roles que pueden acceder a esta página'
+    )
+    usuarios_permitidos = models.ManyToManyField(
+        'usuarios.Usuario',
+        blank=True,
+        related_name='permisos_pagina_directos',
+        help_text='Usuarios individuales con acceso (además de los roles)'
+    )
+    activo = models.BooleanField(
+        default=True,
+        help_text='Si está inactivo, la regla no se aplica'
+    )
+
+    class Meta:
+        ordering = ['url_name']
+        verbose_name = 'Permiso de página'
+        verbose_name_plural = 'Permisos de página'
+
+    def __str__(self):
+        return f"{self.url_name} → {', '.join(r.nombre for r in self.roles_permitidos.all()) or 'sin roles'}"
+
+
+# =====================================================
+# TEMA / APARIENCIA POR CENTRO
+# =====================================================
+
+class TemaCentro(models.Model):
+    """Colores personalizables del UI para cada centro educativo.
+
+    Se almacenan como hex (#RRGGBB) y se inyectan al CSS vía
+    un style tag en home.html o un context processor.
+    """
+
+    centro = models.OneToOneField(
+        CentroEducativo,
+        on_delete=models.CASCADE,
+        related_name='tema'
+    )
+
+    nombre = models.CharField(
+        max_length=50,
+        default='Por defecto',
+        help_text='Nombre del tema (ej: Azul, Verde, Morado)'
+    )
+
+    color_primario = models.CharField(
+        max_length=7,
+        default='#4f46e5',
+        help_text='Color principal (sidebar, botones, headers)'
+    )
+    color_secundario = models.CharField(
+        max_length=7,
+        default='#6366f1',
+        help_text='Color secundario (hover, acentos)'
+    )
+    color_acento = models.CharField(
+        max_length=7,
+        default='#818cf8',
+        help_text='Color de acento (secciones, badges)'
+    )
+    color_texto = models.CharField(
+        max_length=7,
+        default='#111827',
+        help_text='Color del texto principal'
+    )
+    color_fondo = models.CharField(
+        max_length=7,
+        default='#f5f7fb',
+        help_text='Color de fondo del body'
+    )
+    color_fondo_sidebar = models.CharField(
+        max_length=7,
+        default='#312e81',
+        help_text='Color de fondo del sidebar'
+    )
+    color_texto_sidebar = models.CharField(
+        max_length=7,
+        default='#c7d2fe',
+        help_text='Color del texto en el sidebar'
+    )
+    color_borde = models.CharField(
+        max_length=7,
+        default='#e5e7eb',
+        help_text='Color de bordes y separadores'
+    )
+
+    color_peligro = models.CharField(
+        max_length=7,
+        default='#dc2626',
+        help_text='Color para errores, danger, alertas rojas'
+    )
+    color_exito = models.CharField(
+        max_length=7,
+        default='#16a34a',
+        help_text='Color para éxito, badges verdes, pagos'
+    )
+    color_advertencia = models.CharField(
+        max_length=7,
+        default='#f59e0b',
+        help_text='Color para advertencias, warnings amarillos'
+    )
+
+    class Meta:
+        verbose_name = 'Tema del centro'
+        verbose_name_plural = 'Temas de centros'
+
+    def __str__(self):
+        return f"Tema {self.nombre} — {self.centro.nombre}"
+
+    def to_css_variables(self):
+        """Devuelve el CSS con las variables definidas."""
+        return (
+            f":root {{\n"
+            f"  --color-primary: {self.color_primario};\n"
+            f"  --color-secondary: {self.color_secundario};\n"
+            f"  --color-accent: {self.color_acento};\n"
+            f"  --color-text: {self.color_texto};\n"
+            f"  --color-bg: {self.color_fondo};\n"
+            f"  --color-sidebar-bg: {self.color_fondo_sidebar};\n"
+            f"  --color-sidebar-text: {self.color_texto_sidebar};\n"
+            f"  --color-border: {self.color_borde};\n"
+            f"  --color-danger: {self.color_peligro};\n"
+            f"  --color-success: {self.color_exito};\n"
+            f"  --color-warning: {self.color_advertencia};\n"
+            f"}}"
+        )
+
+
+# =====================================================
+# SEMILLA DE TEMAS PREDEFINIDOS
+# =====================================================
+
+TEMAS_PREDEFINIDOS = [
+    {
+        'nombre': 'Índigo',
+        'color_primario': '#4f46e5',
+        'color_secundario': '#6366f1',
+        'color_acento': '#818cf8',
+        'color_texto': '#111827',
+        'color_fondo': '#f5f7fb',
+        'color_fondo_sidebar': '#312e81',
+        'color_texto_sidebar': '#c7d2fe',
+        'color_borde': '#e5e7eb',
+        'color_peligro': '#dc2626',
+        'color_exito': '#16a34a',
+        'color_advertencia': '#f59e0b',
+    },
+    {
+        'nombre': 'Azul',
+        'color_primario': '#2563eb',
+        'color_secundario': '#3b82f6',
+        'color_acento': '#60a5fa',
+        'color_texto': '#111827',
+        'color_fondo': '#f0f7ff',
+        'color_fondo_sidebar': '#1e3a5f',
+        'color_texto_sidebar': '#bfdbfe',
+        'color_borde': '#dbeafe',
+        'color_peligro': '#dc2626',
+        'color_exito': '#16a34a',
+        'color_advertencia': '#f59e0b',
+    },
+    {
+        'nombre': 'Verde',
+        'color_primario': '#059669',
+        'color_secundario': '#10b981',
+        'color_acento': '#34d399',
+        'color_texto': '#111827',
+        'color_fondo': '#f0fdf4',
+        'color_fondo_sidebar': '#064e3b',
+        'color_texto_sidebar': '#a7f3d0',
+        'color_borde': '#d1fae5',
+        'color_peligro': '#dc2626',
+        'color_exito': '#16a34a',
+        'color_advertencia': '#f59e0b',
+    },
+    {
+        'nombre': 'Morado',
+        'color_primario': '#7c3aed',
+        'color_secundario': '#8b5cf6',
+        'color_acento': '#a78bfa',
+        'color_texto': '#111827',
+        'color_fondo': '#f5f3ff',
+        'color_fondo_sidebar': '#4c1d95',
+        'color_texto_sidebar': '#ddd6fe',
+        'color_borde': '#ede9fe',
+        'color_peligro': '#dc2626',
+        'color_exito': '#16a34a',
+        'color_advertencia': '#f59e0b',
+    },
+    {
+        'nombre': 'Rojo',
+        'color_primario': '#dc2626',
+        'color_secundario': '#ef4444',
+        'color_acento': '#f87171',
+        'color_texto': '#111827',
+        'color_fondo': '#fef2f2',
+        'color_fondo_sidebar': '#7f1d1d',
+        'color_texto_sidebar': '#fecaca',
+        'color_borde': '#fee2e2',
+        'color_peligro': '#b91c1c',
+        'color_exito': '#16a34a',
+        'color_advertencia': '#f59e0b',
+    },
+    {
+        'nombre': 'Naranja',
+        'color_primario': '#ea580c',
+        'color_secundario': '#f97316',
+        'color_acento': '#fb923c',
+        'color_texto': '#111827',
+        'color_fondo': '#fff7ed',
+        'color_fondo_sidebar': '#7c2d12',
+        'color_texto_sidebar': '#fed7aa',
+        'color_borde': '#ffedd5',
+        'color_peligro': '#dc2626',
+        'color_exito': '#16a34a',
+        'color_advertencia': '#f59e0b',
+    },
+]

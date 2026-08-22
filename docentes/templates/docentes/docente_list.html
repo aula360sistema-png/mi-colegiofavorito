@@ -122,7 +122,7 @@
             <span class="inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 border border-blue-200 px-3 py-1.5 rounded-full text-xs font-medium">
                 <i class="fas fa-search text-[10px]"></i>
                 "{{ q }}"
-                <button type="button" onclick="removeFilter('q')" class="hover:text-red-500 transition">
+                <button type="button" data-action="remove-filter" data-param="q" class="hover:text-red-500 transition">
                     <i class="fas fa-xmark"></i>
                 </button>
             </span>
@@ -132,7 +132,7 @@
             <span class="inline-flex items-center gap-1.5 bg-indigo-50 text-indigo-700 border border-indigo-200 px-3 py-1.5 rounded-full text-xs font-medium">
                 <i class="fas fa-user-check text-[10px]"></i>
                 {% if estado == "activo" %}Activos{% else %}Inactivos{% endif %}
-                <button type="button" onclick="removeFilter('estado')" class="hover:text-red-500 transition">
+                <button type="button" data-action="remove-filter" data-param="estado" class="hover:text-red-500 transition">
                     <i class="fas fa-xmark"></i>
                 </button>
             </span>
@@ -149,35 +149,6 @@
 
     </div>
 
-    <script>
-      function removeFilter(param) {
-        const url = new URL(window.location.href)
-        url.searchParams.delete(param)
-        url.searchParams.delete('page')
-        window.location.href = url.toString()
-      }
-
-      document.addEventListener('DOMContentLoaded', function () {
-        const form = document.getElementById('filtro-form')
-
-        document.querySelectorAll('select[data-auto-submit]').forEach(function (select) {
-          select.addEventListener('change', function () {
-            form.submit()
-          })
-        })
-
-        const input = document.getElementById('busqueda-input')
-        if (input) {
-          let timer
-          input.addEventListener('input', function () {
-            clearTimeout(timer)
-            timer = setTimeout(function () {
-              form.submit()
-            }, 450)
-          })
-        }
-      })
-    </script>
 
     <!-- Tabla -->
     <div class="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
@@ -224,7 +195,11 @@
 
                         <td class="px-5 py-3">
                             <div class="flex items-center gap-3">
-                                {% avatar docente %}
+                                <button type="button" class="persona-card-trigger"
+                                        data-persona-card data-tipo="docente" data-id="{{ docente.id }}"
+                                        aria-label="{{ docente.nombre_completo }}">
+                                    {% avatar docente %}
+                                </button>
                                 <div>
                                     <p class="font-medium text-gray-800">{{ docente.nombre_completo }}</p>
                                     <p class="text-xs text-gray-400">
@@ -281,7 +256,8 @@
                                 </a>
 
                                 <a href="{% url 'docente_delete' docente.id %}"
-                                   class="inline-flex items-center gap-1.5 bg-red-100 text-red-700 px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-red-200 transition">
+                                   class="inline-flex items-center gap-1.5 bg-red-100 text-red-700 px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-red-200 transition"
+                                   data-confirm-link="¿Está seguro de eliminar este registro?">
                                     <i class="fas fa-trash"></i>
                                 </a>
 

@@ -383,7 +383,6 @@ import json
 def guardar_notas_ajax(request, asignacion_id):
     if request.method != 'POST':
         return JsonResponse({'ok': False})
-    
 
     logger.debug('Petición AJAX de notas recibida')
     try:
@@ -402,27 +401,31 @@ def guardar_notas_ajax(request, asignacion_id):
         docente__usuario=request.user
     )
 
-    inscripcion = get_object_or_404(
-        Inscripcion,
-        id=data['inscripcion']
-    )
+    estudiantes_data = data.get('estudiantes') or [{
+        'inscripcion': data['inscripcion'],
+        'notas': data['notas']
+    }]
 
-
-
-    for item in data['notas']:
-        if item['nota'] in ('', None):
+    guardadas = 0
+    for est in estudiantes_data:
+        inscripcion = Inscripcion.objects.filter(id=est['inscripcion']).first()
+        if not inscripcion:
             continue
 
-        Calificacion.objects.update_or_create(
-            inscripcion=inscripcion,
-            asignatura=asignacion.asignatura,
-            competencia_id=item['competencia'],
-            periodo_id=item['periodo'],
-            defaults={'nota': item['nota']},
-       
-        )
+        for item in est['notas']:
+            if item.get('nota') in ('', None):
+                continue
 
-    return JsonResponse({'ok': True})
+            Calificacion.objects.update_or_create(
+                inscripcion=inscripcion,
+                asignatura=asignacion.asignatura,
+                competencia_id=item['competencia'],
+                periodo_id=item['periodo'],
+                defaults={'nota': item['nota']},
+            )
+            guardadas += 1
+
+    return JsonResponse({'ok': True, 'guardadas': guardadas})
 
 
 @login_required
