@@ -38,3 +38,12 @@ Thumbs.db
 backups/
 *.dump
 /staticfiles/
+
+# Pruebas HTTP locales
+ck*.txt
+h*.txt
+headers*.txt
+r?.html
+resp.html
+v.html
+elerror*
