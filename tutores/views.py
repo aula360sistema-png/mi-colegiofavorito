@@ -5,8 +5,10 @@ from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.crypto import get_random_string
+from django.utils import timezone
 
 from core.decorators import centro_required, role_required
+from core.services import modulo_activo
 from core.utils.session import get_centro_activo
 from core.models import ConfiguracionCentro
 from estudiantes.models import (
@@ -38,6 +40,8 @@ def tutor_inicio(request):
     from .services import datos_inicio_tutor
     from caja.services import deuda_detalle_estudiante
 
+    caja_activa = modulo_activo(tutor.centro_id, 'caja')
+
     lista = datos_inicio_tutor(tutor)
 
     estudiantes = []
@@ -47,12 +51,15 @@ def tutor_inicio(request):
         'proxima': 0,
         'tiene_deuda': False,
     }
-    for item in lista:
-        deuda = deuda_detalle_estudiante(tutor.centro, item['estudiante'])
-        deuda_total['saldo_total'] += deuda['saldo_total']
-        deuda_total['vencida'] += deuda['vencida']
-        deuda_total['proxima'] += deuda['proxima']
-        estudiantes.append({**item, 'deuda': deuda})
+    if caja_activa:
+        for item in lista:
+            deuda = deuda_detalle_estudiante(tutor.centro, item['estudiante'])
+            deuda_total['saldo_total'] += deuda['saldo_total']
+            deuda_total['vencida'] += deuda['vencida']
+            deuda_total['proxima'] += deuda['proxima']
+            estudiantes.append({**item, 'deuda': deuda})
+    else:
+        estudiantes = [{**item, 'deuda': None} for item in lista]
 
     deuda_total['tiene_deuda'] = deuda_total['saldo_total'] > 0
 
@@ -62,9 +69,9 @@ def tutor_inicio(request):
 
     anio_activo = AnioEscolar.objects.filter(centro=tutor.centro, activo=True).first()
 
-    for item in estudiantes:
-        est = item['estudiante']
-        if anio_activo:
+    if caja_activa and anio_activo:
+        for item in estudiantes:
+            est = item['estudiante']
             item['pagos_recientes'] = Pago.objects.filter(
                 estudiante=est,
                 centro=tutor.centro,
@@ -72,7 +79,8 @@ def tutor_inicio(request):
                 fecha__lte=anio_activo.fecha_fin,
             ).select_related('concepto').order_by('-fecha')[:5]
             item['balance_conceptos'] = balance_por_concepto(tutor.centro, est, anio_activo)
-        else:
+    else:
+        for item in estudiantes:
             item['pagos_recientes'] = []
             item['balance_conceptos'] = []
 
@@ -80,6 +88,7 @@ def tutor_inicio(request):
         'tutor': tutor,
         'estudiantes': estudiantes,
         'deuda_total': deuda_total,
+        'caja_activa': caja_activa,
     })
 
 
@@ -354,17 +363,38 @@ def tutor_solicitudes(request):
             else:
                 solicitud = form.save(commit=False)
                 solicitud.solicitante = request.user
-                solicitud.monto = config.precio_certificado if config else 0
+
+                cobro_habilitado = modulo_activo(tutor.centro_id, 'caja')
+                if not cobro_habilitado:
+                    # Plan sin caja: gratuito y aprobado directo.
+                    solicitud.monto = 0
+                    solicitud.estado = 'aprobada'
+                    solicitud.pagado = True
+                    solicitud.pagado_en = timezone.now()
+                    solicitud.aprobado_por = request.user
+                    solicitud.aprobado_en = timezone.now()
+                else:
+                    solicitud.monto = config.precio_certificado if config else 0
                 solicitud.save()
 
-                messages.success(
-                    request,
-                    (
-                        f"Solicitud {solicitud.folio} registrada para "
-                        f"{solicitud.estudiante.nombre_completo()}. "
-                        f"Estado: {solicitud.get_estado_display()}."
+                if cobro_habilitado:
+                    messages.success(
+                        request,
+                        (
+                            f"Solicitud {solicitud.folio} registrada para "
+                            f"{solicitud.estudiante.nombre_completo()}. "
+                            f"Estado: {solicitud.get_estado_display()}."
+                        )
                     )
-                )
+                else:
+                    messages.success(
+                        request,
+                        (
+                            f"Solicitud {solicitud.folio} registrada para "
+                            f"{solicitud.estudiante.nombre_completo()} y "
+                            "aprobada automáticamente (sin costo)."
+                        )
+                    )
                 return redirect('tutores:tutor_solicitudes')
     else:
         form = SolicitudCertificadoTutorForm(estudiantes=estudiantes)
@@ -379,6 +409,7 @@ def tutor_solicitudes(request):
             'form': form,
             'config': config,
             'modulo_activo': bool(config and config.modulo_certificados),
+            'caja_activa': modulo_activo(tutor.centro_id, 'caja'),
             'stats': stats,
             'filtro': filtro,
         }

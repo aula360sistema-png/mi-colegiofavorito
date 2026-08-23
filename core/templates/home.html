@@ -688,10 +688,13 @@
       </span>
     </div>
 
+    {% has_perm_page 'dashboard_docente' as p_docente_inicio %}
+    {% if p_docente_inicio %}
     <a href="{% url 'dashboard_docente' %}" class="sidebar-link">
       <i class="fas fa-home"></i>
       <span>Inicio</span>
     </a>
+    {% endif %}
   {% endif %}
 
   <!-- ================= ESTUDIANTE ================= -->
@@ -703,25 +706,37 @@
       </span>
     </div>
 
+    {% has_perm_page 'estudiante_inicio' as p_est_inicio %}
+    {% if p_est_inicio %}
     <a href="{% url 'estudiante_inicio' %}" class="sidebar-link">
       <i class="fas fa-home"></i>
       <span>Inicio</span>
     </a>
+    {% endif %}
 
+    {% has_perm_page 'estudiante_solicitudes' as p_est_solic %}
+    {% if p_est_solic %}
     <a href="{% url 'estudiante_solicitudes' %}" class="sidebar-link">
       <i class="fas fa-scroll"></i>
       <span>Certificados</span>
     </a>
+    {% endif %}
 
+    {% has_perm_page 'estudiante_historial_clinico' as p_est_clin %}
+    {% if p_est_clin %}
     <a href="{% url 'estudiante_historial_clinico' %}" class="sidebar-link">
       <i class="fas fa-heartbeat"></i>
       <span>Historial clínico</span>
     </a>
+    {% endif %}
 
+    {% has_perm_page 'comunicaciones:estudiante_comunicados' as p_est_comu %}
+    {% if p_est_comu %}
     <a href="{% url 'comunicaciones:estudiante_comunicados' %}" class="sidebar-link">
       <i class="fas fa-bullhorn"></i>
       <span>Comunicados</span>
     </a>
+    {% endif %}
   {% endif %}
 
   <!-- ================= TUTOR ================= -->
@@ -733,25 +748,37 @@
       </span>
     </div>
 
+    {% has_perm_page 'tutores:tutor_inicio' as p_tut_inicio %}
+    {% if p_tut_inicio %}
     <a href="{% url 'tutores:tutor_inicio' %}" class="sidebar-link">
       <i class="fas fa-home"></i>
       <span>Inicio</span>
     </a>
+    {% endif %}
 
+    {% has_perm_page 'tutores:tutor_solicitudes' as p_tut_solic %}
+    {% if p_tut_solic %}
     <a href="{% url 'tutores:tutor_solicitudes' %}" class="sidebar-link">
       <i class="fas fa-scroll"></i>
       <span>Certificados</span>
     </a>
+    {% endif %}
 
+    {% has_perm_page 'tutores:tutor_historial_clinico' as p_tut_clin %}
+    {% if p_tut_clin %}
     <a href="{% url 'tutores:tutor_historial_clinico' %}" class="sidebar-link">
       <i class="fas fa-heartbeat"></i>
       <span>Historial clínico</span>
     </a>
+    {% endif %}
 
+    {% has_perm_page 'comunicaciones:tutor_comunicados' as p_tut_comu %}
+    {% if p_tut_comu %}
     <a href="{% url 'comunicaciones:tutor_comunicados' %}" class="sidebar-link">
       <i class="fas fa-bullhorn"></i>
       <span>Comunicados</span>
     </a>
+    {% endif %}
   {% endif %}
 
   <!-- ================= SECRETARIA ================= -->
@@ -763,10 +790,13 @@
       </span>
     </div>
 
+    {% has_perm_page 'administracion:dashboard_admin' as p_sec_inicio %}
+    {% if p_sec_inicio %}
     <a href="{% url 'administracion:dashboard_admin' %}" class="sidebar-link">
       <i class="fas fa-home"></i>
       <span>Inicio</span>
     </a>
+    {% endif %}
 
     <!-- ESTUDIANTES -->
     <button type="button" data-action="toggle-menu" data-target="menu-sec-estudiantes" data-menu-toggle="menu-sec-estudiantes" class="menu-toggle">
@@ -779,45 +809,69 @@
     </button>
 
     <div id="menu-sec-estudiantes" class="submenu hidden">
+      {% has_perm_page 'estudiante_list' as p_sec_elist %}
+      {% if p_sec_elist %}
       <a href="{% url 'estudiante_list' %}" class="sidebar-sublink">
         <i class="fas fa-list"></i>
         <span>Listado</span>
       </a>
+      {% endif %}
 
+      {% has_perm_page 'estudiante_create' as p_sec_ecreate %}
+      {% if p_sec_ecreate %}
       <a href="{% url 'estudiante_create' %}" class="sidebar-sublink">
         <i class="fas fa-user-plus"></i>
         <span>Nuevo estudiante</span>
       </a>
+      {% endif %}
 
+      {% has_perm_page 'historial_estudiantes' as p_sec_historial %}
+      {% if p_sec_historial %}
       <a href="{% url 'historial_estudiantes' %}" class="sidebar-sublink">
         <i class="fas fa-file-pen"></i>
         <span>Matrícula</span>
       </a>
+      {% endif %}
 
+      {% has_perm_page 'constancias' as p_sec_const %}
+      {% if p_sec_const %}
       <a href="{% url 'constancias' %}" class="sidebar-sublink">
         <i class="fas fa-scroll"></i>
         <span>Constancias</span>
       </a>
+      {% endif %}
 
+      {% has_perm_page 'disciplina' as p_sec_disc %}
+      {% if p_sec_disc %}
       <a href="{% url 'disciplina' %}" class="sidebar-sublink">
         <i class="fas fa-shield-halved"></i>
         <span>Disciplina</span>
       </a>
+      {% endif %}
 
+      {% has_perm_page 'solicitudes_certificados' as p_sec_solic %}
+      {% if p_sec_solic %}
       <a href="{% url 'solicitudes_certificados' %}" class="sidebar-sublink">
         <i class="fas fa-file-circle-check"></i>
         <span>Solicitudes de certificados</span>
       </a>
+      {% endif %}
 
+      {% has_perm_page 'historial_clinico_list' as p_sec_clin %}
+      {% if p_sec_clin %}
       <a href="{% url 'historial_clinico_list' %}" class="sidebar-sublink">
         <i class="fas fa-heartbeat"></i>
         <span>Historial clínico</span>
       </a>
+      {% endif %}
 
+      {% has_perm_page 'administracion:reportes' as p_sec_rep %}
+      {% if p_sec_rep %}
       <a href="{% url 'administracion:reportes' %}" class="sidebar-sublink">
         <i class="fas fa-chart-bar"></i>
         <span>Reportes</span>
       </a>
+      {% endif %}
     </div>
 
     <!-- DOCENTES -->
@@ -831,36 +885,54 @@
     </button>
 
     <div id="menu-sec-docentes" class="submenu hidden">
+      {% has_perm_page 'docente_list' as p_sec_dlist %}
+      {% if p_sec_dlist %}
       <a href="{% url 'docente_list' %}" class="sidebar-sublink">
         <i class="fas fa-list"></i>
         <span>Listado de docentes</span>
       </a>
+      {% endif %}
 
+      {% has_perm_page 'docente_create' as p_sec_dcreate %}
+      {% if p_sec_dcreate %}
       <a href="{% url 'docente_create' %}" class="sidebar-sublink">
         <i class="fas fa-user-plus"></i>
         <span>Nuevo docente</span>
       </a>
+      {% endif %}
     </div>
 
+    {% has_perm_page 'tutores:tutor_list' as p_sec_tlist %}
+    {% if p_sec_tlist %}
     <a href="{% url 'tutores:tutor_list' %}" class="sidebar-link">
       <i class="fas fa-users"></i>
       <span>Tutores</span>
     </a>
+    {% endif %}
 
+    {% has_perm_page 'administracion:mantenimiento' as p_sec_mant %}
+    {% if p_sec_mant %}
     <a href="{% url 'administracion:mantenimiento' %}" class="sidebar-link">
       <i class="fas fa-tools"></i>
       <span>Mantenimiento</span>
     </a>
+    {% endif %}
 
+    {% has_perm_page 'auditoria:bitacora' as p_sec_bit %}
+    {% if p_sec_bit %}
     <a href="{% url 'auditoria:bitacora' %}" class="sidebar-link">
       <i class="fas fa-book"></i>
       <span>Bitácora</span>
     </a>
+    {% endif %}
 
+    {% has_perm_page 'seguridad:dashboard' as p_sec_seg %}
+    {% if p_sec_seg %}
     <a href="{% url 'seguridad:dashboard' %}" class="sidebar-link">
       <i class="fas fa-shield-alt"></i>
       <span>Seguridad de Datos</span>
     </a>
+    {% endif %}
   {% endif %}
 
   <!-- ================= DIRECTOR ================= -->
@@ -872,10 +944,13 @@
       </span>
     </div>
 
+    {% has_perm_page 'administracion:dashboard_admin' as p_dir_inicio %}
+    {% if p_dir_inicio %}
     <a href="{% url 'administracion:dashboard_admin' %}" class="sidebar-link">
       <i class="fas fa-chart-pie"></i>
       <span>Dashboard</span>
     </a>
+    {% endif %}
 
     <!-- ESTUDIANTES -->
     <button type="button" data-action="toggle-menu" data-target="menu-estudiantes" data-menu-toggle="menu-estudiantes" class="menu-toggle">
@@ -888,45 +963,69 @@
     </button>
 
     <div id="menu-estudiantes" class="submenu hidden">
+      {% has_perm_page 'estudiante_list' as p_dir_elist %}
+      {% if p_dir_elist %}
       <a href="{% url 'estudiante_list' %}" class="sidebar-sublink">
         <i class="fas fa-list"></i>
         <span>Listado</span>
       </a>
+      {% endif %}
 
+      {% has_perm_page 'estudiante_create' as p_dir_ecreate %}
+      {% if p_dir_ecreate %}
       <a href="{% url 'estudiante_create' %}" class="sidebar-sublink">
         <i class="fas fa-user-plus"></i>
         <span>Nuevo estudiante</span>
       </a>
+      {% endif %}
 
+      {% has_perm_page 'tutores:tutor_list' as p_dir_tlist %}
+      {% if p_dir_tlist %}
       <a href="{% url 'tutores:tutor_list' %}" class="sidebar-sublink">
         <i class="fas fa-users"></i>
         <span>Tutores</span>
       </a>
+      {% endif %}
 
+      {% has_perm_page 'constancias' as p_dir_const %}
+      {% if p_dir_const %}
       <a href="{% url 'constancias' %}" class="sidebar-sublink">
         <i class="fas fa-scroll"></i>
         <span>Constancias</span>
       </a>
+      {% endif %}
 
+      {% has_perm_page 'solicitudes_certificados' as p_dir_solic %}
+      {% if p_dir_solic %}
       <a href="{% url 'solicitudes_certificados' %}" class="sidebar-sublink">
         <i class="fas fa-file-circle-check"></i>
         <span>Solicitudes de certificados</span>
       </a>
+      {% endif %}
 
+      {% has_perm_page 'disciplina' as p_dir_disc %}
+      {% if p_dir_disc %}
       <a href="{% url 'disciplina' %}" class="sidebar-sublink">
         <i class="fas fa-shield-halved"></i>
         <span>Disciplina y conducta</span>
       </a>
+      {% endif %}
 
+      {% has_perm_page 'historial_clinico_list' as p_dir_clin %}
+      {% if p_dir_clin %}
       <a href="{% url 'historial_clinico_list' %}" class="sidebar-sublink">
         <i class="fas fa-heartbeat"></i>
         <span>Historial clínico</span>
       </a>
+      {% endif %}
 
+      {% has_perm_page 'administracion:reportes' as p_dir_rep %}
+      {% if p_dir_rep %}
       <a href="{% url 'administracion:reportes' %}" class="sidebar-sublink">
         <i class="fas fa-chart-bar"></i>
         <span>Reportes</span>
       </a>
+      {% endif %}
     </div>
 
     <!-- MATRÍCULA -->
@@ -940,10 +1039,13 @@
     </button>
 
     <div id="menu-matricula" class="submenu hidden">
+      {% has_perm_page 'historial_estudiantes' as p_dir_matr %}
+      {% if p_dir_matr %}
       <a href="{% url 'historial_estudiantes' %}" class="sidebar-sublink">
         <i class="fas fa-history"></i>
         <span>Historial de matrículas</span>
       </a>
+      {% endif %}
     </div>
 
     <!-- DOCENTES -->
@@ -957,10 +1059,13 @@
     </button>
 
     <div id="menu-docentes" class="submenu hidden">
+      {% has_perm_page 'docente_list' as p_dir_dlist %}
+      {% if p_dir_dlist %}
       <a href="{% url 'docente_list' %}" class="sidebar-sublink">
         <i class="fas fa-list"></i>
         <span>Listado de docentes</span>
       </a>
+      {% endif %}
     </div>
 
     <!-- SISTEMA -->
@@ -974,20 +1079,29 @@
     </button>
 
     <div id="menu-sistema" class="submenu hidden">
+      {% has_perm_page 'administracion:mantenimiento' as p_dir_mant %}
+      {% if p_dir_mant %}
       <a href="{% url 'administracion:mantenimiento' %}" class="sidebar-sublink">
         <i class="fas fa-wrench"></i>
         <span>Mantenimiento</span>
       </a>
+      {% endif %}
 
+      {% has_perm_page 'auditoria:bitacora' as p_dir_bit %}
+      {% if p_dir_bit %}
       <a href="{% url 'auditoria:bitacora' %}" class="sidebar-sublink">
         <i class="fas fa-book"></i>
         <span>Bitácora</span>
       </a>
+      {% endif %}
 
+      {% has_perm_page 'seguridad:dashboard' as p_dir_seg %}
+      {% if p_dir_seg %}
       <a href="{% url 'seguridad:dashboard' %}" class="sidebar-sublink">
         <i class="fas fa-shield-halved"></i>
         <span>Seguridad de Datos</span>
       </a>
+      {% endif %}
     </div>
 
     <!-- COMUNICACIONES -->
@@ -1001,25 +1115,37 @@
     </button>
 
     <div id="menu-comunicaciones" class="submenu hidden">
+      {% has_perm_page 'comunicaciones:campania_list' as p_dir_camlist %}
+      {% if p_dir_camlist %}
       <a href="{% url 'comunicaciones:campania_list' %}" class="sidebar-sublink">
         <i class="fas fa-paper-plane"></i>
         <span>Campañas</span>
       </a>
+      {% endif %}
 
+      {% has_perm_page 'comunicaciones:campania_create' as p_dir_camnew %}
+      {% if p_dir_camnew %}
       <a href="{% url 'comunicaciones:campania_create' %}" class="sidebar-sublink">
         <i class="fas fa-plus-circle"></i>
         <span>Nueva campaña</span>
       </a>
+      {% endif %}
 
+      {% has_perm_page 'comunicaciones:comunicado_list' as p_dir_comlist %}
+      {% if p_dir_comlist %}
       <a href="{% url 'comunicaciones:comunicado_list' %}" class="sidebar-sublink">
         <i class="fas fa-bullhorn"></i>
         <span>Comunicados</span>
       </a>
+      {% endif %}
 
+      {% has_perm_page 'comunicaciones:comunicado_create' as p_dir_comnew %}
+      {% if p_dir_comnew %}
       <a href="{% url 'comunicaciones:comunicado_create' %}" class="sidebar-sublink">
         <i class="fas fa-plus-circle"></i>
         <span>Nuevo comunicado</span>
       </a>
+      {% endif %}
     </div>
   {% endif %}
 
@@ -1032,10 +1158,13 @@
       </span>
     </div>
 
+    {% has_perm_page 'core:home' as p_adm_home %}
+    {% if p_adm_home %}
     <a href="{% url 'core:home' %}" class="sidebar-link">
       <i class="fas fa-home"></i>
       <span>Inicio</span>
     </a>
+    {% endif %}
 
     <!-- ESTUDIANTES -->
     <button type="button" data-action="toggle-menu" data-target="menu-admin-estudiantes" data-menu-toggle="menu-admin-estudiantes" class="menu-toggle">
@@ -1048,50 +1177,77 @@
     </button>
 
     <div id="menu-admin-estudiantes" class="submenu hidden">
+      {% has_perm_page 'estudiante_list' as p_adm_elist %}
+      {% if p_adm_elist %}
       <a href="{% url 'estudiante_list' %}" class="sidebar-sublink">
         <i class="fas fa-list"></i>
         <span>Listado</span>
       </a>
+      {% endif %}
 
+      {% has_perm_page 'estudiante_create' as p_adm_ecreate %}
+      {% if p_adm_ecreate %}
       <a href="{% url 'estudiante_create' %}" class="sidebar-sublink">
         <i class="fas fa-user-plus"></i>
         <span>Nuevo estudiante</span>
       </a>
+      {% endif %}
 
+      {% has_perm_page 'tutores:tutor_list' as p_adm_tlist %}
+      {% if p_adm_tlist %}
       <a href="{% url 'tutores:tutor_list' %}" class="sidebar-sublink">
         <i class="fas fa-users"></i>
         <span>Tutores</span>
       </a>
+      {% endif %}
 
+      {% has_perm_page 'historial_estudiantes' as p_adm_matr %}
+      {% if p_adm_matr %}
       <a href="{% url 'historial_estudiantes' %}" class="sidebar-sublink">
         <i class="fas fa-file-pen"></i>
         <span>Matrícula</span>
       </a>
+      {% endif %}
 
+      {% has_perm_page 'constancias' as p_adm_const %}
+      {% if p_adm_const %}
       <a href="{% url 'constancias' %}" class="sidebar-sublink">
         <i class="fas fa-scroll"></i>
         <span>Constancias</span>
       </a>
+      {% endif %}
 
+      {% has_perm_page 'disciplina' as p_adm_disc %}
+      {% if p_adm_disc %}
       <a href="{% url 'disciplina' %}" class="sidebar-sublink">
         <i class="fas fa-shield-halved"></i>
         <span>Disciplina</span>
       </a>
+      {% endif %}
 
+      {% has_perm_page 'solicitudes_certificados' as p_adm_solic %}
+      {% if p_adm_solic %}
       <a href="{% url 'solicitudes_certificados' %}" class="sidebar-sublink">
         <i class="fas fa-file-circle-check"></i>
         <span>Solicitudes de certificados</span>
       </a>
+      {% endif %}
 
+      {% has_perm_page 'historial_clinico_list' as p_adm_clin %}
+      {% if p_adm_clin %}
       <a href="{% url 'historial_clinico_list' %}" class="sidebar-sublink">
         <i class="fas fa-heartbeat"></i>
         <span>Historial clínico</span>
       </a>
+      {% endif %}
 
+      {% has_perm_page 'administracion:reportes' as p_adm_rep %}
+      {% if p_adm_rep %}
       <a href="{% url 'administracion:reportes' %}" class="sidebar-sublink">
         <i class="fas fa-chart-bar"></i>
         <span>Reportes</span>
       </a>
+      {% endif %}
     </div>
 
     <!-- DOCENTES -->
@@ -1105,10 +1261,13 @@
     </button>
 
     <div id="menu-admin-docentes" class="submenu hidden">
+      {% has_perm_page 'docente_list' as p_adm_dlist %}
+      {% if p_adm_dlist %}
       <a href="{% url 'docente_list' %}" class="sidebar-sublink">
         <i class="fas fa-list"></i>
         <span>Listado de docentes</span>
       </a>
+      {% endif %}
     </div>
 
     <!-- PERSONAL -->
@@ -1122,48 +1281,72 @@
     </button>
 
     <div id="menu-admin-personal" class="submenu hidden">
+      {% has_perm_page 'administracion:listado_personal' as p_adm_personal %}
+      {% if p_adm_personal %}
       <a href="{% url 'administracion:listado_personal' %}" class="sidebar-sublink">
         <i class="fas fa-users"></i>
         <span>Personal</span>
       </a>
+      {% endif %}
 
+      {% has_perm_page 'nomina:dashboard' as p_adm_nomina %}
+      {% if p_adm_nomina %}
       <a href="{% url 'nomina:dashboard' %}" class="sidebar-sublink">
         <i class="fas fa-money-check-dollar"></i>
         <span>Nómina</span>
       </a>
+      {% endif %}
     </div>
 
+    {% has_perm_page 'usuarios:crear_miembro' as p_adm_crear %}
+    {% if p_adm_crear %}
     <a href="{% url 'usuarios:crear_miembro' %}" class="sidebar-link">
       <i class="fas fa-user-plus"></i>
       <span>Crear usuario</span>
     </a>
+    {% endif %}
 
+    {% has_perm_page 'core:centro_list' as p_adm_centros %}
+    {% if p_adm_centros %}
     {% if request.user.rol == 'superadmin' or request.user.is_superuser %}
       <a href="{% url 'core:centro_list' %}" class="sidebar-link">
         <i class="fas fa-building"></i>
         <span>Centros educativos</span>
       </a>
     {% endif %}
+    {% endif %}
 
+    {% has_perm_page 'administracion:mantenimiento' as p_adm_mant %}
+    {% if p_adm_mant %}
     <a href="{% url 'administracion:mantenimiento' %}" class="sidebar-link">
       <i class="fas fa-tools"></i>
       <span>Mantenimiento</span>
     </a>
+    {% endif %}
 
+    {% has_perm_page 'auditoria:bitacora' as p_adm_bit %}
+    {% if p_adm_bit %}
     <a href="{% url 'auditoria:bitacora' %}" class="sidebar-link">
       <i class="fas fa-book"></i>
       <span>Bitácora</span>
     </a>
+    {% endif %}
 
+    {% has_perm_page 'seguridad:dashboard' as p_adm_seg %}
+    {% if p_adm_seg %}
     <a href="{% url 'seguridad:dashboard' %}" class="sidebar-link">
       <i class="fas fa-shield-alt"></i>
       <span>Seguridad de Datos</span>
     </a>
+    {% endif %}
 
+    {% has_perm_page 'core:permiso_pagina_list' as p_adm_perms %}
+    {% if p_adm_perms %}
     <a href="{% url 'core:permiso_pagina_list' %}" class="sidebar-link">
       <i class="fas fa-lock"></i>
       <span>Permisos de Página</span>
     </a>
+    {% endif %}
 
     <!-- CONFIGURACION GLOBAL -->
     <button type="button" data-action="toggle-menu" data-target="menu-configuracion" data-menu-toggle="menu-configuracion" class="menu-toggle">
@@ -1182,10 +1365,13 @@
       </a>
 
       {% if request.user.rol == 'admin' or request.user.rol == 'superadmin' or request.user.is_superuser %}
+      {% has_perm_page 'core:configuracion_centro' as p_adm_cfg %}
+      {% if p_adm_cfg %}
       <a href="{% url 'core:configuracion_centro' %}" class="sidebar-sublink">
         <i class="fas fa-sliders"></i>
         <span>Configuración del centro</span>
       </a>
+      {% endif %}
       {% endif %}
 
       <a href="{% url 'admin:index' %}" class="sidebar-sublink">

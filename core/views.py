@@ -68,7 +68,15 @@ def home(request):
 
     # 💵 CAJERO → módulo de caja
     if user.rol == 'cajero':
-        return redirect('caja:caja_inicio')
+        from core.services import modulo_activo
+        if modulo_activo(request.session.get('centro_id'), 'caja'):
+            return redirect('caja:caja_inicio')
+        messages.warning(
+            request,
+            'El módulo de caja no está activo para tu centro. '
+            'Contacta al administrador.'
+        )
+        return redirect('usuarios:logout')
 
     # 🏫 DIRECTOR / SECRETARIA → ya tienen centro
     if user.rol in ['director', 'secretaria']:
@@ -269,8 +277,16 @@ def configuracion_centro(request):
 
         if form.is_valid():
             form.save()
+            messages.success(request, 'Configuración actualizada.')
+            return redirect('core:configuracion_centro')
 
-    return redirect('core:configuracion_centro')
+    else:
+        form = ConfiguracionCentroForm(instance=configuracion)
+
+    return render(request, 'core/configuracion_centro.html', {
+        'centro': centro,
+        'form': form,
+    })
 
 
 # =========================
@@ -323,10 +339,13 @@ def permiso_pagina_update(request, pk):
 
     permiso = get_object_or_404(PermisoPagina, pk=pk)
 
+    # Capturar ANTES de is_valid(): el _post_clean del ModelForm muta la
+    # instancia en memoria y old_url saldría con el valor nuevo.
+    old_url = permiso.url_name
+
     if request.method == 'POST':
         form = PermisoPaginaForm(request.POST, instance=permiso)
         if form.is_valid():
-            old_url = permiso.url_name
             form.save()
             from core.cache_utils import borrar
             borrar(f'perm_mw:{old_url}')

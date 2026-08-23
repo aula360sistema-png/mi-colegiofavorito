@@ -202,6 +202,7 @@ class SolicitudCertificadoTestCase(TestCase):
         self.config = ConfiguracionCentro.objects.create(
             centro=self.centro,
             modulo_certificados=True,
+            modulo_caja=True,
             precio_certificado=500,
             permitir_pago_online=True,
         )
@@ -938,6 +939,7 @@ class SolicitudCertificadoAdminTestCase(TestCase):
         self.config = ConfiguracionCentro.objects.create(
             centro=self.centro,
             modulo_certificados=True,
+            modulo_caja=True,
             precio_certificado=450,
             permitir_pago_online=True,
         )
@@ -1150,6 +1152,7 @@ class DeudaBloqueaCertificadosTests(TestCase):
         self.config = ConfiguracionCentro.objects.create(
             centro=self.centro,
             modulo_certificados=True,
+            modulo_caja=True,
             precio_certificado=450,
         )
 

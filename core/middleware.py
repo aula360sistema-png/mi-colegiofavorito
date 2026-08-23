@@ -159,23 +159,24 @@ class PermisoPaginaMiddleware:
 
     def __init__(self, get_response):
         self.get_response = get_response
-        self.excluded_paths = (
+        self.exact_paths = frozenset((
             '/',
             '/usuarios/login/',
             '/usuarios/logout/',
             '/usuarios/password/',
             '/usuarios/verificar-2fa/',
             '/usuarios/configurar-2fa/',
-            '/admin/',
-            '/media/',
-            '/static/',
             '/seleccionar-centro/',
-        )
+            '/admin/',
+        ))
+        # Prefijos reales de recursos estáticos/media servidos por ruta.
+        self.prefix_paths = ('/media/', '/static/')
 
     def __call__(self, request):
         if (
             not request.user.is_authenticated
-            or request.path.startswith(self.excluded_paths)
+            or request.path in self.exact_paths
+            or request.path.startswith(self.prefix_paths)
         ):
             return self.get_response(request)
 
@@ -220,3 +221,43 @@ class PermisoPaginaMiddleware:
             '<h1>403 — Acceso denegado</h1>'
             '<p>No tienes permiso para acceder a esta página.</p>'
         )
+
+
+class ModuloGateMiddleware:
+    """Bloquea URLs de módulos no contratados por el centro.
+
+    Cada módulo es independiente: si el plan del centro no incluye caja
+    o facturación, sus URLs no responden aunque alguien las escriba a
+    mano. El sidebar ya las oculta; esto protege el acceso directo.
+    """
+
+    REGLAS = (
+        ('/caja/', 'caja', 'El módulo de caja no está activo para este centro.'),
+        (
+            '/facturacion/',
+            'facturacion',
+            'El módulo de facturación no está activo para este centro.',
+        ),
+    )
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        path = request.path
+
+        if request.user.is_authenticated and not path.startswith('/admin/'):
+            for prefijo, modulo, mensaje in self.REGLAS:
+                if not path.startswith(prefijo):
+                    continue
+                from core.services import modulo_activo
+                if not modulo_activo(
+                    request.session.get('centro_id'),
+                    modulo,
+                ):
+                    from django.contrib import messages
+                    messages.warning(request, mensaje)
+                    return redirect('core:home')
+                break
+
+        return self.get_response(request)

@@ -69,16 +69,25 @@
                     <i class="fa-solid fa-bullseye"></i> Matricular
                 </a>
 
+                {% if estudiante_deuda %}
+                <span title="No se puede emitir: el estudiante tiene deuda pendiente"
+                      class="inline-flex items-center gap-2 bg-white/10 text-gray-300 border border-white/20 px-4 py-2 rounded-lg font-medium cursor-not-allowed">
+                    <i class="fa-solid fa-lock"></i> Record (deuda)
+                </span>
+                {% else %}
                 <a href="{% url 'kardex_imprimir' estudiante.id %}"
                    class="bg-white/10 text-white border border-white/30 px-4 py-2 rounded-lg font-medium hover:bg-white/20">
                     <i class="fa-solid fa-print"></i> Record
                 </a>
+                {% endif %}
 
+                {% if caja_activa %}
                 {% if request.user.rol == 'director' or request.user.rol == 'admin' or request.user.rol == 'superadmin' or request.user.is_superuser %}
                 <a href="{% url 'caja:registrar_pago_estudiante' estudiante.id %}"
                    class="bg-emerald-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-emerald-400 shadow">
                     <i class="fa-solid fa-money-bill"></i> Pago
                 </a>
+                {% endif %}
                 {% endif %}
 
             </div>

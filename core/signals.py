@@ -1,12 +1,25 @@
-from django.db.models.signals import post_save, post_delete
+from django.db.models.signals import m2m_changed, post_save, post_delete
 
 from .cache_utils import borrar, invalidar_dominio, ttl
-from .models import AnioEscolar, CentroEducativo, ConfiguracionCentro
+from .models import AnioEscolar, CentroEducativo, ConfiguracionCentro, PermisoPagina
 
 
 def invalidar_config_centro(sender, instance, **kwargs):
     if instance.centro_id:
         borrar(f'config:{instance.centro_id}')
+        # El dashboard depende de flags de módulos (p. ej. caja_activa).
+        invalidar_dominio(f'dashboard:{instance.centro_id}')
+
+
+def invalidar_permiso_pagina(instance):
+    borrar(f'perm_mw:{instance.url_name}')
+    borrar(f'perm_page:{instance.url_name}')
+
+
+def invalidar_m2m_permiso(sender, instance, **kwargs):
+    # Cubre ediciones fuera del CRUD propio (ej. Django admin): los M2M se
+    # guardan después del save del PermisoPagina y no disparan post_save.
+    invalidar_permiso_pagina(instance)
 
 
 def invalidar_estructura_anio(sender, instance, **kwargs):
@@ -53,3 +66,9 @@ def conectar_signals():
         sender=CentroEducativo,
         dispatch_uid='core.centroeducativo_post_delete',
     )
+    for campo in ('roles_permitidos', 'usuarios_permitidos'):
+        m2m_changed.connect(
+            invalidar_m2m_permiso,
+            sender=PermisoPagina._meta.get_field(campo).remote_field.through,
+            dispatch_uid=f'core.permisopagina_m2m_{campo}',
+        )

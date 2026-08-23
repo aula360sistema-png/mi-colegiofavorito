@@ -38,7 +38,12 @@ from django.db.models import Prefetch
 from core.utils.session import get_centro_activo
 from .utils import validar_promocion_estudiante
 from core.utils.anio import obtener_anio_activo
-from caja.services import deuda_detalle_estudiante, tiene_deuda_pendiente
+from caja.services import (
+    balance_por_concepto,
+    deuda_detalle_estudiante,
+    tiene_deuda_pendiente,
+)
+from core.services import modulo_activo
 from django.utils import timezone
 from .forms import DisciplinaForm, ObservacionEstudianteForm
 from .models import (
@@ -90,13 +95,15 @@ def estudiante_inicio(request):
     if inscripcion_actual:
         anio_actual = inscripcion_actual['anio']
 
-    from caja.services import deuda_detalle_estudiante, balance_por_concepto
     from caja.models import Pago
 
-    deuda = deuda_detalle_estudiante(estudiante.centro, estudiante, anio_actual) if anio_actual else None
+    caja_activa = modulo_activo(estudiante.centro_id, 'caja')
+
+    deuda = None
     pagos_recientes = []
     balance_conceptos = []
-    if anio_actual:
+    if caja_activa and anio_actual:
+        deuda = deuda_detalle_estudiante(estudiante.centro, estudiante, anio_actual)
         pagos_recientes = Pago.objects.filter(
             estudiante=estudiante,
             centro=estudiante.centro,
@@ -114,6 +121,7 @@ def estudiante_inicio(request):
         'deuda': deuda,
         'pagos_recientes': pagos_recientes,
         'balance_conceptos': balance_conceptos,
+        'caja_activa': caja_activa,
     })
 
 
@@ -276,6 +284,10 @@ def estudiante_detail(request, pk):
         'promedio_actual': promedio_actual,
         'asistencia_actual': asistencia_actual,
         'total_anios': len(kardex['anios']),
+        'estudiante_deuda': tiene_deuda_pendiente(
+            centro, estudiante, obtener_anio_activo(centro)
+        ),
+        'caja_activa': modulo_activo(centro.id, 'caja'),
         'iniciales': (
             f"{(estudiante.primer_nombre or '')[0:1]}"
             f"{(estudiante.primer_apellido or '')[0:1]}"
@@ -896,6 +908,18 @@ def kardex_imprimir(request, pk):
         centro=centro
     )
 
+    anio_actual = obtener_anio_activo(centro)
+
+    if tiene_deuda_pendiente(centro, estudiante, anio_actual):
+        messages.error(
+            request,
+            (
+                f"No se puede emitir el kardex: "
+                f"{estudiante.nombre_completo()} tiene deuda pendiente."
+            )
+        )
+        return redirect('constancias')
+
     record = construir_record_notas(estudiante, centro)
 
     inscripcion_actual = Inscripcion.objects.filter(
@@ -1213,16 +1237,39 @@ def estudiante_solicitudes(request):
                 solicitud = form.save(commit=False)
                 solicitud.estudiante = estudiante
                 solicitud.solicitante = request.user
-                solicitud.monto = config.precio_certificado if config else 0
+
+                cobro_habilitado = modulo_activo(
+                    estudiante.centro_id, 'caja'
+                )
+                if not cobro_habilitado:
+                    # Plan sin caja: el certificado es gratuito y se
+                    # aprueba directo. Sin deuda, sin paso por caja.
+                    solicitud.monto = 0
+                    solicitud.estado = 'aprobada'
+                    solicitud.pagado = True
+                    solicitud.pagado_en = timezone.now()
+                    solicitud.aprobado_por = request.user
+                    solicitud.aprobado_en = timezone.now()
+                else:
+                    solicitud.monto = config.precio_certificado if config else 0
                 solicitud.save()
 
-                messages.success(
-                    request,
-                    (
-                        f"Solicitud {solicitud.folio} registrada. "
-                        f"Estado: {solicitud.get_estado_display()}."
+                if cobro_habilitado:
+                    messages.success(
+                        request,
+                        (
+                            f"Solicitud {solicitud.folio} registrada. "
+                            f"Estado: {solicitud.get_estado_display()}."
+                        )
                     )
-                )
+                else:
+                    messages.success(
+                        request,
+                        (
+                            f"Solicitud {solicitud.folio} registrada y "
+                            "aprobada automáticamente (sin costo)."
+                        )
+                    )
                 return redirect('estudiante_solicitudes')
     else:
         form = SolicitudCertificadoForm()
@@ -1236,6 +1283,7 @@ def estudiante_solicitudes(request):
             'form': form,
             'config': config,
             'modulo_activo': bool(config and config.modulo_certificados),
+            'caja_activa': modulo_activo(estudiante.centro_id, 'caja'),
         }
     )
 
@@ -1298,12 +1346,12 @@ def historial_clinico_list(request):
 
     if grado_id:
         estudiantes = estudiantes.filter(
-            inscripcion__grado_id=grado_id
+            inscripciones__grado_id=grado_id
         )
 
     if seccion_id:
         estudiantes = estudiantes.filter(
-            inscripcion__seccion_id=seccion_id
+            inscripciones__seccion_id=seccion_id
         )
 
     estudiantes = estudiantes.distinct().order_by(
@@ -1486,6 +1534,16 @@ def estudiante_solicitud_pagar(request, pk):
         estudiante=estudiante
     )
 
+    if not modulo_activo(estudiante.centro_id, 'caja'):
+        messages.warning(
+            request,
+            (
+                f"La solicitud {solicitud.folio} es gratuita: "
+                "no requiere pago."
+            )
+        )
+        return redirect('estudiante_solicitudes')
+
     if solicitud.estado != 'pendiente':
         messages.warning(
             request,
@@ -1566,6 +1624,7 @@ def solicitudes_certificados_list(request):
             'totales': totales,
             'form_rechazo': SolicitudRechazoForm(),
             'form_cobro': SolicitudCobroForm(),
+            'caja_activa': modulo_activo(centro.id, 'caja'),
         }
     )
 
@@ -1667,6 +1726,14 @@ def solicitud_cobrar(request, pk):
     if request.method != 'POST':
         return redirect('solicitudes_certificados')
 
+    if not modulo_activo(centro.id, 'caja'):
+        messages.warning(
+            request,
+            'El módulo de caja no está activo: los certificados '
+            'son gratuitos.'
+        )
+        return redirect('solicitudes_certificados')
+
     if solicitud.estado != 'aprobada':
         messages.warning(
             request,
@@ -1710,10 +1777,17 @@ def solicitud_entregar(request, pk):
     if request.method != 'POST':
         return redirect('solicitudes_certificados')
 
-    if solicitud.estado != 'pagada':
+    lista_para_entregar = solicitud.estado == 'pagada' or (
+        solicitud.estado == 'aprobada' and solicitud.pagado
+    )
+
+    if not lista_para_entregar:
         messages.warning(
             request,
-            f"La solicitud {solicitud.folio} debe estar pagada para entregarse."
+            (
+                f"La solicitud {solicitud.folio} debe estar pagada "
+                "para entregarse."
+            )
         )
         return redirect('solicitudes_certificados')
 

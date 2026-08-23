@@ -24,21 +24,31 @@ function debounce(fn, ms) {
   return function () { clearTimeout(t); t = setTimeout(() => fn.apply(this, arguments), ms); };
 }
 
-/* --- Tab switching --- */
+/* --- Tab switching ---
+   Soporta dos convenciones de markup:
+   A) botones con id="tab-<nombre>" y paneles id="panel-<nombre>" (.tab-content)
+   B) botones con data-tab="<nombre>" y paneles id="tab-<nombre>" (.tab-panel)
+*/
 function switchTab(nombre) {
-  document.querySelectorAll('.tab-content').forEach(function (el) {
+  document.querySelectorAll('.tab-content, .tab-panel').forEach(function (el) {
     el.classList.add('hidden');
   });
-  var btn = document.getElementById('tab-' + nombre);
-  if (btn) {
-    var panel = document.getElementById('panel-' + nombre);
-    if (panel) panel.classList.remove('hidden');
-    document.querySelectorAll('.tab-btn').forEach(function (b) {
-      b.classList.remove('border-blue-600', 'text-blue-600');
-      b.classList.add('border-transparent', 'text-gray-500');
-    });
-    btn.classList.remove('border-transparent', 'text-gray-500');
-    btn.classList.add('border-blue-600', 'text-blue-600');
+
+  var panel = document.getElementById('panel-' + nombre) ||
+              document.getElementById('tab-' + nombre);
+  if (!panel) return;
+  panel.classList.remove('hidden');
+
+  var activo = null;
+  document.querySelectorAll('.tab-btn').forEach(function (b) {
+    if (b.id === 'tab-' + nombre || b.dataset.tab === nombre) activo = b;
+    b.classList.remove('border-blue-600', 'text-blue-600', 'text-blue-700');
+    b.classList.add('border-transparent', 'text-gray-500');
+  });
+
+  if (activo) {
+    activo.classList.remove('border-transparent', 'text-gray-500');
+    activo.classList.add('border-blue-600', 'text-blue-700');
   }
 }
 
@@ -152,6 +162,17 @@ function highlightActiveLink() {
   });
 }
 
+/* --- Oculta submenus cuyos enlaces fueron filtrados por permisos --- */
+function hideEmptySubmenus() {
+  document.querySelectorAll('.submenu').forEach(function (menu) {
+    if (!menu.children.length) return;
+    if (menu.querySelector('.sidebar-sublink')) return;
+    const button = document.querySelector('[data-menu-toggle="' + menu.id + '"]');
+    if (button) button.style.display = 'none';
+    menu.style.display = 'none';
+  });
+}
+
 /* --- DOMContentLoaded --- */
 document.addEventListener('DOMContentLoaded', function () {
   /* --- Init sidebar collapsed state --- */
@@ -162,6 +183,7 @@ document.addEventListener('DOMContentLoaded', function () {
       layout.classList.add('sidebar-collapsed');
       updateToggleIcon(true);
     }
+    hideEmptySubmenus();
     highlightActiveLink();
   }
 

@@ -30,6 +30,7 @@ class BaseCajaCacheTestCase(TestCase):
         )
         self.config = ConfiguracionCentro.objects.create(
             centro=self.centro,
+            modulo_caja=True,
         )
         self.anio = AnioEscolar.objects.create(
             centro=self.centro,
@@ -247,6 +248,11 @@ class DeudaEstudianteTests(TestCase):
         self.centro = CentroEducativo.objects.create(
             nombre='Colegio de Prueba',
             codigo_minerd='MIN-0003'
+        )
+
+        ConfiguracionCentro.objects.create(
+            centro=self.centro,
+            modulo_caja=True,
         )
 
         usuario_alumno = Usuario.objects.create_user(

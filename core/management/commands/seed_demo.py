@@ -385,7 +385,9 @@ class Command(BaseCommand):
             modulo_biblioteca=True, modulo_transporte=True, modulo_reportes=True,
         )
         roles = {}
-        for nombre in ["Administrador", "Director", "Secretaria", "Cajero", "Docente"]:
+        # Claves = códigos de rol de Usuario.rol (los permisos de página
+        # comparan PermisoPagina.roles_permitidos.nombre contra user.rol).
+        for nombre in ["admin", "director", "secretaria", "cajero", "docente"]:
             roles[nombre], _ = RolCentro.objects.get_or_create(nombre=nombre)
 
         proveedores = {}
@@ -481,7 +483,7 @@ class Command(BaseCommand):
         admin.totp_secret = ADMIN_TOTP_SECRET
         admin.totp_activo = True
         admin.save(update_fields=['totp_secret', 'totp_activo'])
-        UsuarioCentro.objects.create(usuario=admin, centro=centro, rol=roles["Administrador"])
+        UsuarioCentro.objects.create(usuario=admin, centro=centro, rol=roles["admin"])
         usuarios_demo = [admin]
 
         docentes = {}
@@ -503,7 +505,7 @@ class Command(BaseCommand):
                 area_especialidad=datos["area"], fecha_ingreso=date(2015, 8, 1),
                 tipo_contrato="nombrado", tanda="matutina",
             )
-            UsuarioCentro.objects.create(usuario=usuario, centro=centro, rol=roles["Docente"])
+            UsuarioCentro.objects.create(usuario=usuario, centro=centro, rol=roles["docente"])
             docentes[datos["username"]] = docente
             usuarios_demo.append(usuario)
 
@@ -529,7 +531,7 @@ class Command(BaseCommand):
                 direccion="Calle Administrativa #3", telefono="809-555-0101",
                 cargo=datos["rol"], fecha_ingreso=datos["fecha_ingreso"],
             )
-            UsuarioCentro.objects.create(usuario=usuario, centro=centro, rol=roles[datos["rol"].title()])
+            UsuarioCentro.objects.create(usuario=usuario, centro=centro, rol=roles[datos["rol"]])
             administrativos[datos["username"]] = adm
             usuarios_demo.append(usuario)
 
@@ -568,30 +570,39 @@ class Command(BaseCommand):
             usuario_demo.save(update_fields=['debe_cambiar_password', 'password_cambiada_en'])
 
         # ===================== NÓMINA: CATÁLOGO Y CONFIGURACIÓN =====================
+        # Catálogos globales (sin FK a centro): get_or_create para que la
+        # semilla sea idempotente aunque ya existan de ejecuciones previas.
         self.stdout.write("Creando nómina (catálogo y configuraciones)...")
-        afp_crecer = AFP.objects.create(nombre="AFP Crecer")
-        afp_popular = AFP.objects.create(nombre="AFP Popular")
-        ars_humano = ARS.objects.create(nombre="ARS Humano")
-        ars_senasa = ARS.objects.create(nombre="ARS Senasa")
+        afp_crecer, _ = AFP.objects.get_or_create(nombre="AFP Crecer")
+        afp_popular, _ = AFP.objects.get_or_create(nombre="AFP Popular")
+        ars_humano, _ = ARS.objects.get_or_create(nombre="ARS Humano")
+        ars_senasa, _ = ARS.objects.get_or_create(nombre="ARS Senasa")
 
-        cargo_director = Cargo.objects.create(nombre="Director")
-        Cargo.objects.create(nombre="Secretaria")
-        Cargo.objects.create(nombre="Cajero")
-        cargo_docente = Cargo.objects.create(nombre="Docente")
-        Cargo.objects.create(nombre="Conserje")
+        cargo_director, _ = Cargo.objects.get_or_create(nombre="Director")
+        Cargo.objects.get_or_create(nombre="Secretaria")
+        Cargo.objects.get_or_create(nombre="Cajero")
+        cargo_docente, _ = Cargo.objects.get_or_create(nombre="Docente")
+        Cargo.objects.get_or_create(nombre="Conserje")
 
-        tipo_sueldo = TipoIngreso.objects.create(nombre="Sueldo", obligatorio=True)
-        tipo_bono = TipoIngreso.objects.create(nombre="Bono transporte")
-        TipoIngreso.objects.create(nombre="Horas extra")
-        TipoIngreso.objects.create(nombre="Incentivo puntualidad")
+        tipo_sueldo, _ = TipoIngreso.objects.get_or_create(
+            nombre="Sueldo", defaults={'obligatorio': True})
+        tipo_bono, _ = TipoIngreso.objects.get_or_create(
+            nombre="Bono transporte")
+        TipoIngreso.objects.get_or_create(nombre="Horas extra")
+        TipoIngreso.objects.get_or_create(nombre="Incentivo puntualidad")
 
-        tipo_afp = TipoDescuento.objects.create(nombre="AFP", porcentaje=Decimal("2.87"),
-                                                obligatorio=True)
-        tipo_ars = TipoDescuento.objects.create(nombre="ARS", porcentaje=Decimal("3.04"),
-                                                obligatorio=True)
-        tipo_isr = TipoDescuento.objects.create(nombre="ISR", porcentaje=Decimal("15.00"))
-        tipo_prestamo = TipoDescuento.objects.create(nombre="Préstamo", es_porcentaje=False)
-        TipoDescuento.objects.create(nombre="Atrasos", es_porcentaje=False)
+        tipo_afp, _ = TipoDescuento.objects.get_or_create(
+            nombre="AFP",
+            defaults={'porcentaje': Decimal("2.87"), 'obligatorio': True})
+        tipo_ars, _ = TipoDescuento.objects.get_or_create(
+            nombre="ARS",
+            defaults={'porcentaje': Decimal("3.04"), 'obligatorio': True})
+        tipo_isr, _ = TipoDescuento.objects.get_or_create(
+            nombre="ISR", defaults={'porcentaje': Decimal("15.00")})
+        tipo_prestamo, _ = TipoDescuento.objects.get_or_create(
+            nombre="Préstamo", defaults={'es_porcentaje': False})
+        TipoDescuento.objects.get_or_create(
+            nombre="Atrasos", defaults={'es_porcentaje': False})
 
         empleados = []
 

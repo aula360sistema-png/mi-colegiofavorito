@@ -251,7 +251,14 @@ def balance_por_concepto(centro, estudiante, anio):
 
     Cacheada por (centro, estudiante, año). Se invalida con el dominio
     `pagos:{centro}` (cambio en pagos, egresos o asignaciones).
+
+    Sin el módulo de caja contratado devuelve [] (modo neutral): ningún
+    flujo externo debe ver deudas que no se pueden cobrar.
     """
+    from core.services import modulo_activo
+    if not modulo_activo(centro.id, 'caja'):
+        return []
+
     clave = (
         f'balance:{centro.id}:{estudiante.id}:{anio.id}:'
         f'{_version_pagos(centro.id)}'
@@ -298,10 +305,25 @@ def deuda_detalle_estudiante(centro, estudiante, anio=None):
       - ``proxima``: cuota del mes en curso que aún no vence.
 
     Reutiliza los balances cacheados por (centro, estudiante, año).
+
+    Sin el módulo de caja contratado devuelve deuda vacía (modo neutral).
     """
     import calendar
 
     from core.models import AnioEscolar
+    from core.services import modulo_activo
+
+    vacia = {
+        'saldo_total': 0,
+        'vencida': 0,
+        'proxima': 0,
+        'vencidas': [],
+        'proximas': [],
+        'tiene_deuda': False,
+    }
+
+    if not modulo_activo(centro.id, 'caja'):
+        return vacia
 
     if anio is None:
         anio = (

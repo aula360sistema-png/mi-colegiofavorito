@@ -1,0 +1,52 @@
+# Render Blueprint — Mi Colegio Favorito
+# Deploy: push a GitHub → dashboard.render.com → New + → Blueprint → elegir repo.
+services:
+  - type: web
+    name: mycolegiofavorito
+    runtime: python
+    plan: free
+    buildCommand: >-
+      pip install -r requirements.txt &&
+      python manage.py collectstatic --noinput &&
+      python manage.py migrate --noinput
+    startCommand: gunicorn mycolegiofavorito.wsgi:application --workers 2 --threads 4 --timeout 60 --bind 0.0.0.0:$PORT
+    healthCheckPath: /login/
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.14.0
+      - key: DEBUG
+        value: "False"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: ALLOWED_HOSTS
+        value: .onrender.com
+      - key: CSRF_TRUSTED_ORIGINS
+        value: https://*.onrender.com
+      - key: DB_ENGINE
+        value: postgresql
+      # Render inyecta la cadena del Postgres enlazado:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: mcf-db
+          property: connectionString
+      # --- Opcional: correo por SendGrid SMTP (módulo comunicaciones) ---
+      # Descomenta y coloca tu API key de SendGrid:
+      # - key: EMAIL_HOST
+      #   value: smtp.sendgrid.net
+      # - key: EMAIL_PORT
+      #   value: "587"
+      # - key: EMAIL_HOST_USER
+      #   value: apikey
+      # - key: EMAIL_HOST_PASSWORD
+      #   sync: false          # pega la API key en el dashboard
+      # - key: DEFAULT_FROM_EMAIL
+      #   value: no-reply@tudominio.com
+
+# Primer deploy → pestaña Shell del servicio web:
+#   python manage.py bootstrap_superuser
+# (define antes DJANGO_SUPERUSER_PASSWORD en Environment, o pásala inline)
+
+databases:
+  - name: mcf-db
+    databaseName: mycolegiofavorito
+    plan: free

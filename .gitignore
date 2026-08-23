@@ -2,6 +2,9 @@
 .env
 .env.local
 
+# Secretos locales (credenciales GitHub, etc.)
+archivodegithub.txt
+
 # Base de datos
 *.sqlite3
 db.sqlite3
@@ -34,3 +37,4 @@ Thumbs.db
 # Backups de base de datos
 backups/
 *.dump
+/staticfiles/

@@ -191,24 +191,47 @@
                                     </form>
 
                                 {% elif s.estado == 'aprobada' %}
-                                    <details class="w-full">
-                                        <summary class="cursor-pointer inline-flex items-center gap-1.5 bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-lg hover:bg-indigo-100 text-xs font-semibold">
-                                            <i class="fas fa-money-bill"></i>
-                                            Cobrar en caja
-                                        </summary>
-                                        <div class="mt-2 text-left bg-indigo-50 border border-indigo-100 rounded-lg p-3 w-64">
-                                            <form method="post" action="{% url 'solicitud_cobrar' s.pk %}">
-                                                {% csrf_token %}
-                                                <input type="text" name="referencia_pago"
-                                                       placeholder="Referencia del comprobante (opcional)"
-                                                       class="w-full border border-indigo-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                                                <button type="submit"
-                                                        class="mt-2 w-full rounded-lg bg-indigo-600 text-white text-xs font-semibold py-1.5 hover:bg-indigo-700">
-                                                    Confirmar cobro de ${{ s.monto|floatformat:2 }}
-                                                </button>
-                                            </form>
-                                        </div>
-                                    </details>
+                                    {% if caja_activa %}
+                                        <details class="w-full">
+                                            <summary class="cursor-pointer inline-flex items-center gap-1.5 bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-lg hover:bg-indigo-100 text-xs font-semibold">
+                                                <i class="fas fa-money-bill"></i>
+                                                Cobrar en caja
+                                            </summary>
+                                            <div class="mt-2 text-left bg-indigo-50 border border-indigo-100 rounded-lg p-3 w-64">
+                                                <form method="post" action="{% url 'solicitud_cobrar' s.pk %}">
+                                                    {% csrf_token %}
+                                                    <input type="text" name="referencia_pago"
+                                                           placeholder="Referencia del comprobante (opcional)"
+                                                           class="w-full border border-indigo-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                                    <button type="submit"
+                                                            class="mt-2 w-full rounded-lg bg-indigo-600 text-white text-xs font-semibold py-1.5 hover:bg-indigo-700">
+                                                        Confirmar cobro de ${{ s.monto|floatformat:2 }}
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </details>
+
+                                    {% endif %}
+
+                                    {% if s.pagado %}
+                                        <span class="inline-block rounded-full bg-emerald-50 text-emerald-600 text-xs font-semibold px-3 py-1">Exenta</span>
+
+                                        <form method="post" action="{% url 'solicitud_entregar' s.pk %}">
+                                            {% csrf_token %}
+                                            <button type="submit"
+                                                    class="inline-flex items-center gap-1.5 bg-green-50 text-green-700 px-3 py-1.5 rounded-lg hover:bg-green-100 text-xs font-semibold">
+                                                <i class="fas fa-hand"></i>
+                                                Entregar
+                                            </button>
+                                        </form>
+
+                                        <a href="{% url 'constancia_estudiante' s.estudiante.pk %}"
+                                           target="_blank"
+                                           class="inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 px-3 py-1.5 rounded-lg hover:bg-blue-100 text-xs font-semibold">
+                                            <i class="fas fa-print"></i>
+                                            Imprimir
+                                        </a>
+                                    {% endif %}
 
                                     <form method="post" action="{% url 'solicitud_anular' s.pk %}"
                                           data-confirm="¿Anular la solicitud {{ s.folio }}?">

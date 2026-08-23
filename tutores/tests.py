@@ -22,6 +22,7 @@ class TutorSolicitudesTestCase(TestCase):
         self.config = ConfiguracionCentro.objects.create(
             centro=self.centro,
             modulo_certificados=True,
+            modulo_caja=True,
             precio_certificado=450,
         )
 
@@ -572,6 +573,7 @@ class DeudaTutorTests(TestCase):
         self.config = ConfiguracionCentro.objects.create(
             centro=self.centro,
             modulo_certificados=True,
+            modulo_caja=True,
             precio_certificado=450,
         )
 

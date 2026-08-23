@@ -1,5 +1,6 @@
 {% extends "home.html" %}
 {% load static %}
+{% load permisos %}
 
 {% block title %}Dashboard Dirección{% endblock %}
 
@@ -125,6 +126,7 @@
             </div>
         </div>
 
+        {% if caja_activa %}
         <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 flex items-center gap-4">
             <div class="shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-fuchsia-500 to-fuchsia-700 text-white flex items-center justify-center shadow-md">
                 <i class="fas fa-money-bill-wave text-lg"></i>
@@ -135,7 +137,20 @@
                 <p class="text-xs text-gray-500 mt-0.5">{{ total_recibos }} recibos emitidos</p>
             </div>
         </div>
+        {% endif %}
     </div>
+
+    <!-- ================= ACCESOS RÁPIDOS ================= -->
+    {% has_perm_page 'solicitudes_certificados' as p_dash_solic %}
+    {% if p_dash_solic %}
+    <div class="flex flex-wrap gap-3">
+        <a href="{% url 'solicitudes_certificados' %}"
+           class="inline-flex items-center gap-2 bg-white border border-indigo-200 text-indigo-700 px-4 py-2.5 rounded-xl text-sm font-semibold shadow-sm hover:bg-indigo-50 transition">
+            <i class="fas fa-file-circle-check"></i>
+            Solicitudes de certificados
+        </a>
+    </div>
+    {% endif %}
 
     <!-- ================= MÉTRICAS EJECUTIVAS ================= -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
@@ -217,6 +232,7 @@
             </div>
         </div>
 
+        {% if caja_activa %}
         <div class="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
             <div class="flex items-center justify-between mb-4">
                 <h3 class="font-semibold text-gray-700 flex items-center gap-2">
@@ -257,6 +273,7 @@
             </div>
             {% endif %}
         </div>
+        {% endif %}
     </div>
 
 </div>

@@ -119,6 +119,11 @@
       test_listado_filtra_por_grado (FieldError inscripcion) y core.tests.
       ConfiguracionCorreoCentralTests.test_formulario_incluye_campos_de_correo
       (302 != 200). Confirmar si son por cambios sin commitear previos.
+      RESUELTO (2026-08-22): FieldError era un typo (inscripcion -> inscripciones,
+      estudiantes/views.py historial_clinico_list). El 302 era la vista
+      configuracion_centro que hacia redirect tambien en GET (bucle infinito);
+      ahora renderiza el form en GET y redirige solo tras POST valido.
+      Suite completa: 310 OK.
 
 ---
 

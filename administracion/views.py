@@ -52,8 +52,9 @@ from core.models import (
     CentroEducativo,
     ConfiguracionCentro
 )
-
 from core.utils.anio import obtener_anio_activo
+from core.services import modulo_activo
+
 from core.utils.session import get_centro_activo
 
 from caja.models import Pago
@@ -166,6 +167,7 @@ def obtener_metricas_dashboard(centro):
     )
 
     # ================= MÉTRICAS ACADÉMICAS DEL AÑO ACTIVO =================
+    caja_activa = modulo_activo(centro.id, 'caja')
     if anio_actual:
         sincronizar_periodos_anio(anio_actual)
         periodos_qs = PeriodoAnio.objects.filter(
@@ -225,19 +227,25 @@ def obtener_metricas_dashboard(centro):
             .annotate(total=Count('id'))
         ]
 
-        pagos_anio = Pago.objects.filter(
-            centro=centro,
-            fecha__range=(anio_actual.fecha_inicio, anio_actual.fecha_fin),
-        )
-        total_recaudado = float(
-            pagos_anio.aggregate(total=Sum('monto'))['total'] or 0
-        )
-        total_recibos = pagos_anio.count()
-        ultimos_pagos = list(
-            pagos_anio
-            .select_related('estudiante', 'concepto')
-            .order_by('-fecha', '-id')[:5]
-        )
+        if caja_activa:
+            pagos_anio = Pago.objects.filter(
+                centro=centro,
+                fecha__range=(anio_actual.fecha_inicio, anio_actual.fecha_fin),
+            )
+            total_recaudado = float(
+                pagos_anio.aggregate(total=Sum('monto'))['total'] or 0
+            )
+            total_recibos = pagos_anio.count()
+            ultimos_pagos = list(
+                pagos_anio
+                .select_related('estudiante', 'concepto')
+                .order_by('-fecha', '-id')[:5]
+            )
+        else:
+            # Plan sin caja: sin recaudo que mostrar.
+            total_recaudado = 0
+            total_recibos = 0
+            ultimos_pagos = []
     else:
         periodos_abiertos = 0
         periodos_cerrados = 0
@@ -276,6 +284,7 @@ def obtener_metricas_dashboard(centro):
         'total_recaudado': total_recaudado,
         'total_recibos': total_recibos,
         'ultimos_pagos': ultimos_pagos,
+        'caja_activa': caja_activa,
     }
 
     cache.set(clave, metricas, timeout=ttl('CACHE_TTL_CORTO'))

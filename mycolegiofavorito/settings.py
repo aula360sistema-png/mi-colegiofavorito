@@ -27,6 +27,13 @@ DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
 ALLOWED_HOSTS = [host.strip() for host in os.getenv('ALLOWED_HOSTS', '').split(',') if host.strip()]
 
+# Orígenes confiables para CSRF en producción (https://app.onrender.com, etc.)
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip()
+    for origin in os.getenv('CSRF_TRUSTED_ORIGINS', '').split(',')
+    if origin.strip()
+]
+
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 
 # ---------------------------------------------------------------------------
@@ -107,6 +114,7 @@ MIDDLEWARE = [
     'core.middleware.SecurityHeadersMiddleware',
     'core.middleware.CentroMiddleware',
     'core.middleware.PermisoPaginaMiddleware',
+    'core.middleware.ModuloGateMiddleware',
     'auditoria.middleware.AuditoriaMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -143,20 +151,46 @@ WSGI_APPLICATION = 'mycolegiofavorito.wsgi.application'
 _DB_ENGINE = os.getenv('DB_ENGINE', 'sqlite').strip().lower()
 
 if _DB_ENGINE == 'postgresql':
+    # Soporte para DATABASE_URL (formato de Render/Railway/Heroku):
+    # postgres://usuario:clave@host:puerto/base[?sslmode=require]
+    _database_url = os.getenv('DATABASE_URL', '').strip()
+    _db_url_parts = {}
+    _db_url_query = {}
+    if _database_url:
+        from urllib.parse import parse_qs, unquote, urlsplit
+
+        if _database_url.startswith('postgres://'):
+            _database_url = 'postgresql://' + _database_url[len('postgres://'):]
+
+        _url = urlsplit(_database_url)
+        _db_url_parts = {
+            'NAME': unquote(_url.path.lstrip('/')),
+            'USER': unquote(_url.username or ''),
+            'PASSWORD': unquote(_url.password or ''),
+            'HOST': _url.hostname or '',
+            'PORT': str(_url.port or 5432),
+        }
+        _db_url_query = {
+            k: v[0] for k, v in parse_qs(_url.query).items()
+        }
+
     _db_options = {}
     # sslmode=require es lo esperado si DB_SSLMODE se define (ej. detrás de
     # un proveedor administrado). Valores: disable/allow/prefer/require/verify-full.
-    if os.getenv('DB_SSLMODE'):
-        _db_options['sslmode'] = os.getenv('DB_SSLMODE')
+    _sslmode = os.getenv('DB_SSLMODE') or _db_url_query.get('sslmode')
+    if _sslmode:
+        _db_options['sslmode'] = _sslmode
 
+    # DATABASE_URL tiene prioridad sobre las variables sueltas
+    # (DB_NAME/DB_USER/...) cuando está definida.
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
-            'NAME': os.getenv('DB_NAME', 'mycolegiofavorito'),
-            'USER': os.getenv('DB_USER', 'mcf_user'),
-            'PASSWORD': os.getenv('DB_PASSWORD', ''),
-            'HOST': os.getenv('DB_HOST', '127.0.0.1'),
-            'PORT': os.getenv('DB_PORT', '5432'),
+            'NAME': _db_url_parts.get('NAME') or os.getenv('DB_NAME', 'mycolegiofavorito'),
+            'USER': _db_url_parts.get('USER') or os.getenv('DB_USER', 'mcf_user'),
+            'PASSWORD': _db_url_parts.get('PASSWORD') or os.getenv('DB_PASSWORD', ''),
+            'HOST': _db_url_parts.get('HOST') or os.getenv('DB_HOST', '127.0.0.1'),
+            'PORT': _db_url_parts.get('PORT') or os.getenv('DB_PORT', '5432'),
             'CONN_MAX_AGE': int(os.getenv('DB_CONN_MAX_AGE', '60')),
             'CONN_HEALTH_CHECKS': True,
             'OPTIONS': _db_options,
