@@ -97,7 +97,7 @@ Respuesta exitosa:
     </div>
 </div>
 
-<script>
+<script nonce="{{ request.csp_nonce }}">
 document.getElementById('form-biometrico').addEventListener('submit', function(e) {
     e.preventDefault();
     var form = this;

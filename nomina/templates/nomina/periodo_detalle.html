@@ -422,7 +422,7 @@ function imprimirNomina() {
 <meta charset="UTF-8">
 <title>${datos.titulo}</title>
 <link rel="stylesheet" href="{% static 'vendor/fontawesome/css/all.min.css' %}">
-<style>
+<style nonce="{{ request.csp_nonce }}">
     @page { size: letter landscape; margin: 12mm; }
     * { box-sizing: border-box; }
     body { font-family: 'Segoe UI', Arial, sans-serif; color: #111; margin: 0; }

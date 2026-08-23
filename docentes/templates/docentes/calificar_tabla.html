@@ -169,14 +169,14 @@
 
 <!-- ===================== SCRIPTS ===================== -->
 
-<script>
+<script nonce="{{ request.csp_nonce }}">
 function getCookie(name) {
     var v = document.cookie.match('(^|;) ?' + name + '=([^;]*)(;|$)');
     return v ? v[2] : null;
 }
 </script>
 
-<script>
+<script nonce="{{ request.csp_nonce }}">
 // GUARDAR POR ESTUDIANTE
 document.querySelectorAll('.btn-guardar-estudiante').forEach(btn => {
     btn.addEventListener('click', () => guardarEstudiante(btn.dataset.inscripcion));
@@ -228,7 +228,7 @@ function guardarEstudiante(inscripcionId) {
 }
 </script>
 
-<script>
+<script nonce="{{ request.csp_nonce }}">
 // GUARDAR TODO — CONFIRMACION + UN SOLO REQUEST
 document.getElementById('btn-guardar-todo').addEventListener('click', function() {
     const btn = this;
@@ -294,7 +294,7 @@ document.getElementById('btn-guardar-todo').addEventListener('click', function()
 });
 </script>
 
-<script>
+<script nonce="{{ request.csp_nonce }}">
 // CÁLCULO EN TIEMPO REAL + VALIDACIÓN 0-100
 document.addEventListener("input", function (e) {
     if (!e.target.classList.contains("nota-input")) return;
@@ -362,7 +362,7 @@ function recalcularPromedios(inscripcionId) {
 }
 </script>
 
-<script>
+<script nonce="{{ request.csp_nonce }}">
 // CALCULAR TODO AL CARGAR
 document.addEventListener("DOMContentLoaded", function () {
     const inscripciones = new Set();

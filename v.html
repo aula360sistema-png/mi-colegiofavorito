@@ -1,0 +1,27 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verificar código</title>
+    <link rel="stylesheet" href="/static/css/auth.710b87453e46.css">
+</head>
+<body class="auth-page">
+    <div class="auth-box">
+        <h2>Verificación</h2>
+        <p class="sub">Ingresa el código de 6 dígitos de tu aplicación autenticadora para <strong>admin</strong>.</p>
+
+        
+
+        <form method="post">
+            <input type="hidden" name="csrfmiddlewaretoken" value="M8d2Rqh5CwjImiRxYKP2Vr1NM5VZrsT4QnleeKTGsuZkf7YdMCLLl6nLaKNogFBD">
+            <label for="codigo">Código</label>
+            <input type="text" name="codigo" id="codigo" class="otp-input" inputmode="numeric" maxlength="6" placeholder="000000" required>
+            <button type="submit">Verificar</button>
+        </form>
+
+        <a class="back" href="/usuarios/login/">Volver al inicio de sesión</a>
+    </div>
+</body>
+</html>

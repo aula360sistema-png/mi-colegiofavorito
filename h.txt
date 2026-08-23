@@ -1,0 +1,23 @@
+HTTP/1.1 302 Found
+Date: Sun, 23 Aug 2026 14:58:29 GMT
+Content-Type: text/html; charset=utf-8
+Transfer-Encoding: chunked
+Connection: keep-alive
+cf-cache-status: DYNAMIC
+content-security-policy: form-action 'self'; default-src 'self'; connect-src 'self'; frame-ancestors 'none'; frame-src 'none'; style-src 'self' 'unsafe-inline'; script-src 'self' 'nonce-{csp_nonce}'; img-src 'self' data:; base-uri 'self'; font-src 'self'
+cross-origin-opener-policy: same-origin
+location: /usuarios/verificar-2fa/
+permissions-policy: geolocation=(), microphone=(), camera=()
+referrer-policy: same-origin
+rndr-id: e1a77594-e31c-4c92
+Server: cloudflare
+Set-Cookie: sessionid=zyt4pigu97wxtut74p3odlkolbjzxl8k; HttpOnly; Path=/; SameSite=Lax; Secure
+strict-transport-security: max-age=31536000; includeSubDomains; preload
+vary: Cookie
+vary: Accept-Encoding
+x-content-type-options: nosniff
+x-frame-options: DENY
+x-render-origin-server: gunicorn
+CF-RAY: a2faf9b8df13c460-ATL
+alt-svc: h3=":443"; ma=86400
+

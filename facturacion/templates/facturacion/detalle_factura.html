@@ -133,7 +133,7 @@
 </div>
 
 {% if request.GET.print %}
-<script>
+<script nonce="{{ request.csp_nonce }}">
     window.addEventListener('load', function () { window.print(); });
 </script>
 {% endif %}

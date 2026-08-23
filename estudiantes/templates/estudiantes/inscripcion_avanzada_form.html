@@ -147,7 +147,7 @@
 </div>
 
 <!-- AJAX Secciones -->
-<script>
+<script nonce="{{ request.csp_nonce }}">
 document.addEventListener('DOMContentLoaded', function () {
 
     const gradoSelect = document.getElementById('id_grado');
@@ -191,7 +191,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
 {% if messages %}
-<script>
+<script nonce="{{ request.csp_nonce }}">
 document.addEventListener('DOMContentLoaded', function () {
 
     {% for message in messages %}

@@ -1,0 +1,7 @@
+ALLOWED_HOSTS=.onrender.com
+CSRF_TRUSTED_ORIGINS=https://*.onrender.com
+DATABASE_URL=postgresql://mycolegiofavorito_3x5n_user:ML4qxNK2sxq55diM7WH7jhvHaAubM1cH@dpg-da5fl7rm8hqs73chilag-a/mycolegiofavorito_3x5n
+DB_ENGINE=postgresql
+DEBUG=False
+DJANGO_SUPERUSER_PASSWORD=test1234
+SECRET_KEY="5ExFbFQLMSn25lQF+4SOPTjWxtNswMjFGvYPb6rFLhE="

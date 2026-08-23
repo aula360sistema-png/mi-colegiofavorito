@@ -279,7 +279,7 @@
 </div>
 
 <script src="{% static 'vendor/chartjs/chart.umd.min.js' %}"></script>
-<script>
+<script nonce="{{ request.csp_nonce }}">
     // ================= SALUDO Y FECHA =================
     const hoy = new Date();
     const hora = hoy.getHours();
