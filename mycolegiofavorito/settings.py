@@ -407,6 +407,8 @@ DATA_RETENTION_YEARS = int(os.getenv('DATA_RETENTION_YEARS', '5'))
 DATA_RETENTION_ANONYMIZE_AFTER_YEARS = int(os.getenv('DATA_RETENTION_ANONYMIZE_AFTER_YEARS', '2'))
 
 # --- Content Security Policy (django-csp) ---
+from csp.constants import NONCE
+
 if DEBUG:
     CONTENT_SECURITY_POLICY = {
         'DIRECTIVES': {
@@ -419,10 +421,12 @@ if DEBUG:
         }
     }
 else:
+    # El sentinel NONCE se reemplaza por 'nonce-<valor>' por request,
+    # siempre que la plantilla acceda a {{ request.csp_nonce }}.
     CONTENT_SECURITY_POLICY = {
         'DIRECTIVES': {
             'default-src': ("'self'",),
-            'script-src': ("'self'", "'nonce-{csp_nonce}'"),
+            'script-src': ("'self'", NONCE),
             'style-src': ("'self'", "'unsafe-inline'"),
             'img-src': ("'self'", "data:",),
             'font-src': ("'self'",),
@@ -433,6 +437,4 @@ else:
             'base-uri': ("'self'",),
         }
     }
-CSP_NONCE_IN_SCRIPT_SRC = True
-CSP_NONCE_IN_STYLE_SRC = True
 CSP_REPORT_URI = os.getenv('CSP_REPORT_URI', '')
