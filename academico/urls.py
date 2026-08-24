@@ -1,7 +1,7 @@
 from django.urls import path
 
 from administracion.views import anio_escolar_create, anio_escolar_list, anio_escolar_update
-from .views import competencia_create, competencia_delete, competencia_list, competencia_update, docentemateria_create, docentemateria_delete, docentemateria_list, docentemateria_update, cerrar_anio_escolar
+from .views import competencia_create, competencia_delete, competencia_list, competencia_update, docentemateria_create, docentemateria_delete, docentemateria_list, docentemateria_update, cerrar_anio_escolar, reabrir_anio_escolar, crear_anio_siguiente, promocion_preview, promocion_ejecutar, respaldo_anio, acta_seccion
 from . import views
 
 
@@ -101,6 +101,12 @@ path('docente-materia/<int:pk>/eliminar/', docentemateria_delete, name='docentem
     path('anio-escolar/crear/', anio_escolar_create, name='anio_escolar_create'),
     path('anio-escolar/<int:pk>/editar/', anio_escolar_update, name='anio_escolar_update'),
     path('anio-escolar/<int:pk>/cerrar/', views.cerrar_anio_escolar, name='cerrar_anio_escolar'),
+path('anio-escolar/<int:pk>/reabrir/', reabrir_anio_escolar, name='reabrir_anio_escolar'),
+path('anio-escolar/<int:pk>/siguiente/', crear_anio_siguiente, name='crear_anio_siguiente'),
+path('anio-escolar/<int:pk>/promocion/', promocion_preview, name='promocion_preview'),
+path('anio-escolar/<int:pk>/promocion/ejecutar/', promocion_ejecutar, name='promocion_ejecutar'),
+path('anio-escolar/<int:pk>/respaldo/', respaldo_anio, name='respaldo_anio'),
+path('acta-seccion/', acta_seccion, name='acta_seccion'),
 
     path('franjas/', views.franja_list, name='franja_list'),
     path('franjas/nueva/', views.franja_create, name='franja_create'),

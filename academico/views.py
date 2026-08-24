@@ -8,6 +8,7 @@ logger = logging.getLogger(__name__)
 # Create your views here.
 from django.shortcuts import render, redirect
 from django.core.paginator import Paginator
+from django.utils import timezone
 from django.db.models import Q
 
 from administracion.views import obtener_centro_del_usuario
@@ -1375,7 +1376,7 @@ def cerrar_anio_escolar(request, pk):
     )
 
     # ====================================
-    # VALIDAR PERÃODOS ABIERTOS
+    # VALIDAR PERIODOS ABIERTOS
     # ====================================
     if PeriodoAnio.objects.filter(
         anio_escolar=anio,
@@ -1384,7 +1385,7 @@ def cerrar_anio_escolar(request, pk):
 
         messages.error(
             request,
-            "No se puede cerrar el aÃ±o escolar. Existen perÃ­odos abiertos."
+            "No se puede cerrar el año escolar. Existen períodos abiertos."
         )
 
         return redirect('anio_escolar_list')
@@ -1394,7 +1395,7 @@ def cerrar_anio_escolar(request, pk):
     # ====================================
     pendientes = Inscripcion.objects.filter(
         anio_escolar=anio,
-        estado_final__in = ['pendiente', 'sin_calificacion']
+        estado_final__in=['pendiente', 'sin_calificacion']
     ).select_related(
         'estudiante',
         'grado'
@@ -1414,15 +1415,38 @@ def cerrar_anio_escolar(request, pk):
 
         messages.error(
             request,
-            f"No se puede cerrar el aÃ±o escolar. Existen {pendientes.count()} estudiantes pendientes."
+            f"No se puede cerrar el año escolar. Existen {pendientes.count()} estudiantes pendientes."
         )
 
         return redirect('anio_escolar_list')
 
     # ====================================
-    # CERRAR AÃ‘O ESCOLAR
+    # CIERRE FINANCIERO (reporte de deudas)
+    # ====================================
+    from .services.cierre import deudores_del_anio, resumen_cierre
+
+    deudores, total_deuda = deudores_del_anio(
+        request.centro,
+        anio,
+    )
+
+    config = getattr(request.centro, 'configuracion', None)
+    if config is not None and getattr(
+            config, 'bloquear_cierre_con_deudas', False):
+        if deudores:
+            messages.error(
+                request,
+                f"No se puede cerrar el año: {len(deudores)} estudiante(s) "
+                f"con deuda (RD$ {total_deuda})."
+            )
+            return redirect('anio_escolar_list')
+
+    # ====================================
+    # CERRAR ANO ESCOLAR
     # ====================================
     try:
+
+        totales = resumen_cierre(anio)
 
         with transaction.atomic():
 
@@ -1432,31 +1456,428 @@ def cerrar_anio_escolar(request, pk):
                 anio_escolar=anio
             ):
 
-                HistorialAcademico.objects.get_or_create(
-                estudiante=inscripcion.estudiante,
-                nivel=inscripcion.grado.nivel,
-                grado=inscripcion.grado,
-                seccion=inscripcion.seccion,
+                HistorialAcademico.objects.update_or_create(
+                    estudiante=inscripcion.estudiante,
+                    nivel=inscripcion.grado.nivel,
+                    grado=inscripcion.grado,
+                    seccion=inscripcion.seccion,
+                    anio_escolar=anio,
+                    defaults={
+                        "estado": inscripcion.estado_final,
+                        "cerrado": True,
+                    }
+                )
+
+            from core.models import CierreAnio
+
+            CierreAnio.objects.update_or_create(
                 anio_escolar=anio,
                 defaults={
-                    "estado": inscripcion.estado_final,
-                    "cerrado": True,
-                }
+                    'usuario': request.user,
+                    'totales': totales,
+                    'deudores': deudores,
+                    'total_deuda': total_deuda,
+                    'reabierto': False,
+                    'motivo_reapertura': '',
+                    'usuario_reapertura': None,
+                    'fecha_reapertura': None,
+                },
+            )
+
+        aviso_deuda = ''
+        if deudores:
+            aviso_deuda = (
+                f" Deuda pendiente registrada: {len(deudores)} "
+                f"estudiante(s), RD$ {total_deuda}."
             )
 
         messages.success(
             request,
-            f"AÃ±o escolar {anio.nombre} cerrado correctamente."
+            f"Año escolar {anio.nombre} cerrado correctamente."
+            f"{aviso_deuda}"
         )
 
     except Exception as e:
 
         messages.error(
             request,
-            f"Error al cerrar el aÃ±o escolar: {e}"
+            f"Error al cerrar el año escolar: {e}"
         )
 
     return redirect('anio_escolar_list')
+
+
+@login_required
+@centro_required
+@role_required('director', 'admin', 'superadmin')
+def reabrir_anio_escolar(request, pk):
+    """Reapertura supervisada: requiere motivo y queda auditada."""
+    anio = get_object_or_404(
+        AnioEscolar,
+        pk=pk,
+        centro=request.centro,
+        cerrado=True,
+    )
+
+    if request.method != 'POST':
+        messages.error(request, 'Solicitud inválida.')
+        return redirect('anio_escolar_list')
+
+    motivo = (request.POST.get('motivo') or '').strip()
+    if len(motivo) < 10:
+        messages.error(
+            request,
+            'Debes indicar un motivo de al menos 10 caracteres.'
+        )
+        return redirect('anio_escolar_list')
+
+    with transaction.atomic():
+        anio.cerrado = False
+        anio.save(update_fields=['cerrado'])
+
+        from core.models import CierreAnio
+
+        CierreAnio.objects.filter(anio_escolar=anio).update(
+            reabierto=True,
+            motivo_reapertura=motivo,
+            usuario_reapertura=request.user,
+            fecha_reapertura=timezone.now(),
+        )
+
+    messages.warning(
+        request,
+        f"Año {anio.nombre} REABIERTO. El historial académico generado se "
+        f"mantendrá; al volver a cerrar se actualizará."
+    )
+    return redirect('anio_escolar_list')
+
+
+@login_required
+@centro_required
+@role_required('director', 'secretaria', 'admin', 'superadmin')
+def crear_anio_siguiente(request, pk):
+    """Paso 1 del asistente: crear el año que sigue a uno cerrado."""
+    origen = get_object_or_404(
+        AnioEscolar,
+        pk=pk,
+        centro=request.centro,
+    )
+
+    import datetime as dt
+
+    nombre_sugerido = f"{origen.fecha_fin.year}-{origen.fecha_fin.year + 1}"
+
+    if request.method == 'POST':
+        nombre = (request.POST.get('nombre') or '').strip()
+        fecha_inicio = request.POST.get('fecha_inicio')
+        fecha_fin = request.POST.get('fecha_fin')
+
+        if not (nombre and fecha_inicio and fecha_fin):
+            messages.error(
+                request,
+                'Nombre y fechas son obligatorios.'
+            )
+            return redirect('crear_anio_siguiente', pk=origen.pk)
+
+        if AnioEscolar.objects.filter(
+                centro=request.centro, nombre=nombre).exists():
+            messages.error(
+                request,
+                f'Ya existe un año "{nombre}" en este centro.'
+            )
+            return redirect('crear_anio_siguiente', pk=origen.pk)
+
+        nuevo = AnioEscolar.objects.create(
+            centro=request.centro,
+            nombre=nombre,
+            fecha_inicio=fecha_inicio,
+            fecha_fin=fecha_fin,
+            activo=False,
+            cerrado=False,
+        )
+
+        sincronizar_periodos_anio(nuevo)
+
+        messages.success(
+            request,
+            f"Año {nombre} creado con sus períodos. "
+            f"Continúa con la promoción masiva."
+        )
+        return redirect('promocion_preview', pk=origen.pk)
+
+    return render(
+        request,
+        'academico/anio_siguiente_form.html',
+        {
+            'origen': origen,
+            'nombre_sugerido': nombre_sugerido,
+            'inicio_sugerido': origen.fecha_fin + dt.timedelta(days=1),
+            'fin_sugerido': (
+                origen.fecha_fin + dt.timedelta(days=365)
+            ),
+        },
+    )
+
+
+@login_required
+@centro_required
+@role_required('director', 'secretaria', 'admin', 'superadmin')
+def promocion_preview(request, pk):
+    """Paso 2 del asistente: plan de promoción masiva.
+
+    Muestra qué hará con cada estudiante y permite elegir la sección
+    destino por cada grado antes de ejecutar.
+    """
+    from .services.cierre import calcular_promociones
+
+    origen = get_object_or_404(
+        AnioEscolar,
+        pk=pk,
+        centro=request.centro,
+    )
+
+    destino = (
+        AnioEscolar.objects
+        .filter(centro=request.centro)
+        .exclude(pk=origen.pk)
+        .filter(fecha_inicio__gt=origen.fecha_inicio)
+        .order_by('fecha_inicio')
+        .first()
+    )
+
+    plan = calcular_promociones(origen)
+
+    resumen = {'promover': 0, 'repetir': 0, 'egresado': 0, 'omitir': 0}
+    for fila in plan:
+        resumen[fila['accion']] += 1
+
+    grados_destino = {}
+    for fila in plan:
+        if fila['destino']:
+            grados_destino[fila['destino'].id] = fila['destino']
+
+    secciones_por_grado = {
+        grado.id: list(
+            Seccion.objects.filter(
+                centro=request.centro,
+                grados=grado,
+            ).order_by('nombre')
+        )
+        for grado in grados_destino.values()
+    }
+
+    return render(
+        request,
+        'academico/promocion_preview.html',
+        {
+            'origen': origen,
+            'destino': destino,
+            'plan': plan,
+            'resumen': resumen,
+            'grados_destino': grados_destino.values(),
+            'secciones_por_grado': secciones_por_grado,
+        },
+    )
+
+
+@login_required
+@centro_required
+@role_required('director', 'secretaria', 'admin', 'superadmin')
+def promocion_ejecutar(request, pk):
+    """Paso 3 del asistente: ejecutar la matrícula masiva."""
+    from .services.cierre import ejecutar_promocion
+
+    origen = get_object_or_404(
+        AnioEscolar,
+        pk=pk,
+        centro=request.centro,
+        cerrado=True,
+    )
+
+    if request.method != 'POST':
+        return redirect('promocion_preview', pk=origen.pk)
+
+    destino_id = request.POST.get('anio_destino')
+    destino = get_object_or_404(
+        AnioEscolar,
+        pk=destino_id,
+        centro=request.centro,
+    )
+
+    secciones_por_grado = {
+        key.replace('seccion_', ''): value
+        for key, value in request.POST.items()
+        if key.startswith('seccion_') and value
+    }
+
+    solo = request.POST.getlist('estudiantes')
+    solo_ids = (
+        {int(x) for x in solo if str(x).isdigit()}
+        if solo else None
+    )
+
+    creadas, omitidas = ejecutar_promocion(
+        origen,
+        destino,
+        request.user,
+        secciones_por_grado,
+        solo_estudiantes=solo_ids,
+    )
+
+    messages.success(
+        request,
+        f"Promoción completada: {creadas} inscripción(es) creada(s) en "
+        f"{destino.nombre}. Omitidas: {omitidas}."
+    )
+    return redirect('anio_escolar_list')
+
+
+@login_required
+@centro_required
+@role_required('director', 'admin', 'superadmin')
+def respaldo_anio(request, pk):
+    """Descarga JSON con los datos académicos/financieros del año."""
+    from django.http import JsonResponse
+
+    anio = get_object_or_404(
+        AnioEscolar,
+        pk=pk,
+        centro=request.centro,
+    )
+
+    inscripciones = (
+        Inscripcion.objects
+        .filter(anio_escolar=anio)
+        .select_related('estudiante', 'grado', 'seccion')
+    )
+
+    datos_inscripciones = []
+    for i in inscripciones:
+        datos_inscripciones.append({
+            'matricula': i.estudiante.matricula,
+            'estudiante': i.estudiante.nombre_completo(),
+            'sexo': i.estudiante.sexo,
+            'fecha_nacimiento': str(i.estudiante.fecha_nacimiento),
+            'grado': str(i.grado),
+            'seccion': str(i.seccion),
+            'estado_final': i.estado_final,
+            'promedio_final': str(i.promedio_final or ''),
+        })
+
+    historial = [
+        {
+            'matricula': h.estudiante.matricula,
+            'nivel': str(h.nivel),
+            'grado': str(h.grado),
+            'seccion': str(h.seccion),
+            'estado': h.estado,
+        }
+        for h in HistorialAcademico.objects.filter(
+            anio_escolar=anio,
+        ).select_related('estudiante', 'nivel', 'grado', 'seccion')
+    ]
+
+    calificaciones = [
+        {
+            'matricula': c.inscripcion.estudiante.matricula,
+            'asignatura': str(c.asignatura),
+            'competencia': str(c.competencia),
+            'periodo': str(c.periodo),
+            'nota': str(c.nota),
+        }
+        for c in Calificacion.objects.filter(
+            inscripcion__anio_escolar=anio,
+        ).select_related(
+            'inscripcion__estudiante',
+            'asignatura',
+            'competencia',
+            'periodo',
+        )[:20000]
+    ]
+
+    bitacora = None
+    cierre = getattr(anio, 'cierre', None)
+    if cierre:
+        bitacora = {
+            'cerrado_por': cierre.usuario.username,
+            'fecha_cierre': cierre.fecha.isoformat(),
+            'totales': cierre.totales,
+            'deudores': cierre.deudores,
+            'total_deuda': str(cierre.total_deuda),
+            'reabierto': cierre.reabierto,
+            'motivo_reapertura': cierre.motivo_reapertura,
+        }
+
+    respuesta = JsonResponse({
+        'centro': {
+            'codigo_minerd': request.centro.codigo_minerd,
+            'nombre': request.centro.nombre,
+        },
+        'anio_escolar': {
+            'nombre': anio.nombre,
+            'fecha_inicio': str(anio.fecha_inicio),
+            'fecha_fin': str(anio.fecha_fin),
+        },
+        'bitacora_cierre': bitacora,
+        'inscripciones': datos_inscripciones,
+        'historial_academico': historial,
+        'calificaciones': calificaciones,
+    })
+
+    respuesta['Content-Disposition'] = (
+        f'attachment; filename="respaldo_{request.centro.codigo_minerd}'
+        f'_{anio.nombre}.json"'
+    )
+    return respuesta
+
+
+@login_required
+@centro_required
+@role_required('director', 'secretaria', 'admin', 'superadmin')
+def acta_seccion(request):
+    """Acta consolidada de cierre por grado/sección (imprimible)."""
+    anio_id = request.GET.get('anio')
+    grado_id = request.GET.get('grado')
+    seccion_id = request.GET.get('seccion')
+
+    anio = None
+    if anio_id:
+        anio = get_object_or_404(
+            AnioEscolar, pk=anio_id, centro=request.centro
+        )
+    else:
+        anio = obtener_anio_activo(request.centro)
+
+    inscripciones = Inscripcion.objects.none()
+    if anio and grado_id:
+        filtros = {
+            'anio_escolar': anio,
+            'grado_id': grado_id,
+        }
+        if seccion_id:
+            filtros['seccion_id'] = seccion_id
+
+        inscripciones = (
+            Inscripcion.objects
+            .filter(centro=request.centro, **filtros)
+            .select_related('estudiante', 'grado', 'seccion')
+            .order_by(
+                'seccion__nombre',
+                'estudiante__primer_apellido',
+                'estudiante__primer_nombre',
+            )
+        )
+
+    return render(
+        request,
+        'academico/acta_seccion.html',
+        {
+            'anio': anio,
+            'inscripciones': inscripciones,
+            'centro': request.centro,
+            'fecha_emision': timezone.localdate(),
+        },
+    )
 
 
 @login_required

@@ -21,6 +21,11 @@ def dop(valor):
 
 
 @register.filter
+def get_item(diccionario, clave):
+    return diccionario.get(clave) or []
+
+
+@register.filter
 def dop0(valor):
     return _formatear(valor, 0)
 

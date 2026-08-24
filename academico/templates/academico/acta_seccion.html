@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Acta de sección — {{ centro.nombre }}</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Georgia, 'Times New Roman', serif; color: #111; padding: 40px; max-width: 900px; margin: 0 auto; }
+        .encabezado { text-align: center; border-bottom: 3px double #111; padding-bottom: 12px; margin-bottom: 20px; }
+        .encabezado h1 { font-size: 18px; text-transform: uppercase; letter-spacing: 1px; }
+        .encabezado h2 { font-size: 15px; font-weight: normal; margin-top: 4px; }
+        .encabezado p { font-size: 12px; color: #444; margin-top: 2px; }
+        h3.titulo { text-align: center; font-size: 14px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 4px; }
+        p.subtitulo { text-align: center; font-size: 12px; color: #444; margin-bottom: 18px; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 24px; }
+        th, td { border: 1px solid #333; padding: 6px 8px; text-align: left; }
+        th { background: #eee; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+        td.num, th.num { text-align: center; width: 36px; }
+        td.mat, th.mat { font-family: 'Courier New', monospace; width: 90px; }
+        td.centro { text-align: center; }
+        .firmas { display: flex; justify-content: space-between; margin-top: 70px; page-break-inside: avoid; }
+        .firma { text-align: center; width: 260px; }
+        .firma .linea { border-top: 1.5px solid #111; margin-bottom: 6px; padding-top: 5px; font-size: 12px; font-weight: bold; }
+        .firma .cargo { font-size: 11px; color: #444; }
+        .pie { margin-top: 30px; font-size: 10px; color: #666; text-align: center; }
+        .acciones { max-width: 900px; margin: 0 auto 16px; text-align: right; }
+        button { background: #4338ca; color: #fff; border: 0; padding: 9px 18px; border-radius: 8px; font-size: 13px; cursor: pointer; }
+        @media print { .acciones { display: none; } body { padding: 20px; } }
+    </style>
+</head>
+<body>
+
+    <div class="acciones">
+        <button onclick="window.print()">Imprimir / Guardar PDF</button>
+    </div>
+
+    <div class="encabezado">
+        <h1>República Dominicana</h1>
+        <h2>Ministerio de Educación — MINERD</h2>
+        <p>Código: {{ centro.codigo_minerd }} · {{ centro.nombre }}</p>
+        {% if centro.region %}<p>Regional {{ centro.region }} · Distrito {{ centro.distrito }}</p>{% endif %}
+    </div>
+
+    <h3 class="titulo">Acta final de sección</h3>
+    <p class="subtitulo">
+        Año escolar {{ anio.nombre }}
+    </p>
+
+    {% if inscripciones %}
+    <table>
+        <thead>
+            <tr>
+                <th class="num">N°</th>
+                <th class="mat">Matrícula</th>
+                <th>Apellidos y nombres</th>
+                <th>Sección</th>
+                <th class="centro">Promedio</th>
+                <th class="centro">Estado final</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for i in inscripciones %}
+            <tr>
+                <td class="num">{{ forloop.counter }}</td>
+                <td class="mat">{{ i.estudiante.matricula }}</td>
+                <td>{{ i.estudiante.primer_apellido }} {{ i.estudiante.segundo_apellido }}, {{ i.estudiante.primer_nombre }} {{ i.estudiante.segundo_nombre }}</td>
+                <td>{{ i.seccion.nombre }}</td>
+                <td class="centro">{{ i.promedio_final|default:"—" }}</td>
+                <td class="centro">{{ i.get_estado_final_display|upper }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="firmas">
+        <div class="firma">
+            <div class="linea">&nbsp;</div>
+            <div class="cargo">Director(a)</div>
+        </div>
+        <div class="firma">
+            <div class="linea">&nbsp;</div>
+            <div class="cargo">Secretario(a)</div>
+        </div>
+    </div>
+
+    <p class="pie">
+        Emitida el {{ fecha_emision|date:"d/m/Y" }} · Documento generado por el sistema
+    </p>
+    {% else %}
+    <p style="text-align:center;color:#666;padding:40px 0;">
+        Sin resultados. Usa la consulta de estudiantes en Reportes para
+        elegir año, grado y sección, e imprime el acta desde ahí.
+    </p>
+    {% endif %}
+
+</body>
+</html>

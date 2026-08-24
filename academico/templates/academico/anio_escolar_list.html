@@ -180,9 +180,37 @@
                                     Cerrar
                                 </button>
                                 {% else %}
-                                <span class="inline-flex items-center gap-1 text-xs text-gray-400 italic">
-                                    Sin acciones disponibles
-                                </span>
+                                <div class="flex flex-col items-end gap-1.5">
+                                    <div class="flex items-center gap-2">
+                                        <a href="{% url 'promocion_preview' a.id %}" title="Asistente de promoción"
+                                           class="inline-flex items-center gap-1.5 bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-indigo-700 transition">
+                                            <i class="fas fa-users-rays"></i>
+                                            Promoción
+                                        </a>
+
+                                        <a href="{% url 'respaldo_anio' a.id %}" title="Descargar respaldo del año"
+                                           class="inline-flex items-center gap-1.5 bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-emerald-700 transition">
+                                            <i class="fas fa-download"></i>
+                                            Respaldo
+                                        </a>
+
+                                        {% if request.user.rol == 'director' or request.user.rol == 'admin' or request.user.rol == 'superadmin' %}
+                                        <button data-reabrir-url="{% url 'reabrir_anio_escolar' a.id %}" data-anio="{{ a.nombre }}"
+                                                title="Reabrir año (requiere motivo)"
+                                                class="btn-reabrir inline-flex items-center gap-1.5 bg-amber-500 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-amber-600 transition">
+                                            <i class="fas fa-lock-open"></i>
+                                            Reabrir
+                                        </button>
+                                        {% endif %}
+                                    </div>
+
+                                    {% if a.cierre %}
+                                    <span class="text-[11px] text-gray-400 italic">
+                                        Cerrado por {{ a.cierre.usuario.username }} el {{ a.cierre.fecha|date:"d/m/Y H:i" }}
+                                        {% if a.cierre.reabierto %}· <span class="text-amber-600">reabierto</span>{% endif %}
+                                    </span>
+                                    {% endif %}
+                                </div>
                                 {% endif %}
 
                             </div>
@@ -221,5 +249,50 @@
     </div>
 
 </div>
+
+<script nonce="{{ request.csp_nonce }}">
+document.addEventListener('DOMContentLoaded', function () {
+
+    document.querySelectorAll('.btn-reabrir').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            Swal.fire({
+                title: 'Reabrir año ' + btn.dataset.anio,
+                input: 'textarea',
+                inputLabel: 'Motivo (mínimo 10 caracteres)',
+                inputPlaceholder: 'Ej: se registró mal el estado final de un estudiante...',
+                showCancelButton: true,
+                confirmButtonText: 'Reabrir año',
+                confirmButtonColor: '#d97706',
+                cancelButtonText: 'Cancelar',
+                inputValidator: function (valor) {
+                    if (!valor || valor.trim().length < 10) {
+                        return 'Escribe un motivo de al menos 10 caracteres';
+                    }
+                }
+            }).then(function (resultado) {
+                if (!resultado.isConfirmed) return;
+                const m = document.cookie.match(/(^|;\s*)csrftoken=([^;]+)/);
+                if (!m) return;
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = btn.dataset.reabrirUrl;
+                const csrf = document.createElement('input');
+                csrf.type = 'hidden';
+                csrf.name = 'csrfmiddlewaretoken';
+                csrf.value = m[2];
+                const motivo = document.createElement('input');
+                motivo.type = 'hidden';
+                motivo.name = 'motivo';
+                motivo.value = resultado.value;
+                form.appendChild(csrf);
+                form.appendChild(motivo);
+                document.body.appendChild(form);
+                form.submit();
+            });
+        });
+    });
+
+});
+</script>
 
 {% endblock %}

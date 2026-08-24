@@ -110,6 +110,49 @@ class UsuarioCentro(models.Model):
     class Meta:
         unique_together = ('usuario', 'centro')
 
+
+class CierreAnio(models.Model):
+    """Bitácora oficial del cierre de un año escolar.
+
+    Deja constancia de quién cerró, cuándo, con qué resumen de
+    resultados y qué deudas quedaron pendientes. También registra
+    reaperturas supervisadas.
+    """
+
+    anio_escolar = models.OneToOneField(
+        AnioEscolar,
+        on_delete=models.CASCADE,
+        related_name='cierre'
+    )
+
+    usuario = models.ForeignKey(
+        'usuarios.Usuario',
+        on_delete=models.PROTECT,
+        related_name='cierres_realizados'
+    )
+    fecha = models.DateTimeField(auto_now_add=True)
+
+    # {'inscritos': n, 'aprobados': n, 'reprobados': n, ...}
+    totales = models.JSONField(default=dict)
+    # [{'matricula','nombre','grado','saldo'}]
+    deudores = models.JSONField(default=list)
+    total_deuda = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+
+    reabierto = models.BooleanField(default=False)
+    motivo_reapertura = models.TextField(blank=True)
+    usuario_reapertura = models.ForeignKey(
+        'usuarios.Usuario',
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name='reaperturas_realizadas'
+    )
+    fecha_reapertura = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return f"Cierre {self.anio_escolar.nombre} ({'reabierto' if self.reabierto else 'cerrado'})"
+
+
 class ConfiguracionCentro(models.Model):
     centro = models.OneToOneField(
         CentroEducativo,
