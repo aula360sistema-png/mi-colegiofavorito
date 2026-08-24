@@ -905,9 +905,68 @@ def reportes(request):
 
     metricas = obtener_metricas_reportes(centro)
 
+    # --- Consulta de matrícula por año / grado / sección -------------
+    anios = AnioEscolar.objects.filter(
+        centro=centro
+    ).order_by('-fecha_inicio')
+    # Los grados son un catálogo compartido; los del centro son aquellos
+    # vinculados a alguna de sus secciones.
+    grados = (
+        Grado.objects
+        .filter(secciones__centro=centro)
+        .distinct()
+        .order_by('orden')
+    )
+
+    anio_actual = obtener_anio_activo(centro)
+    sel_anio = request.GET.get('anio') or (
+        str(anio_actual.id) if anio_actual else ''
+    )
+    sel_grado = request.GET.get('grado', '')
+    sel_seccion = request.GET.get('seccion', '')
+
+    inscripciones = []
+    if sel_anio and sel_grado:
+        filtros = {
+            'anio_escolar_id': sel_anio,
+            'grado_id': sel_grado,
+        }
+        if sel_seccion:
+            filtros['seccion_id'] = sel_seccion
+
+        inscripciones = list(
+            Inscripcion.objects
+            .filter(centro=centro, **filtros)
+            .select_related(
+                'estudiante',
+                'grado',
+                'seccion',
+                'anio_escolar',
+            )
+            .order_by(
+                'estudiante__primer_apellido',
+                'estudiante__primer_nombre',
+            )
+        )
+
+    secciones_del_grado = (
+        Seccion.objects.filter(
+            centro=centro,
+            grados__id=sel_grado,
+        ).order_by('nombre')
+        if sel_grado else Seccion.objects.none()
+    )
+
     return render(request, 'administracion/reportes.html', {
         'centro': centro,
         **metricas,
+        'anios': anios,
+        'grados': grados,
+        'secciones_del_grado': secciones_del_grado,
+        'sel_anio': str(sel_anio or ''),
+        'sel_grado': sel_grado,
+        'sel_seccion': sel_seccion,
+        'inscripciones': inscripciones,
     })
 
 
