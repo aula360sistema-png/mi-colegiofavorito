@@ -35,6 +35,12 @@ path(
     name='grado_estudiantes'
 ),
 
+path(
+    'inscripciones/<int:pk>/cambiar-seccion/',
+    views.inscripcion_cambiar_seccion,
+    name='inscripcion_cambiar_seccion'
+),
+
 
     path('grados/', views.grado_list, name='grado_list'),
     path('grados/nuevo/', views.grado_create, name='grado_create'),

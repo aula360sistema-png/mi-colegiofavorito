@@ -330,10 +330,20 @@ def grado_estudiantes(request, grado_id):
         nivel__centro=centro
     )
 
-    anio_escolar = AnioEscolar.objects.filter(
-        centro=centro,
-        activo=True
-    ).first()
+    anios = AnioEscolar.objects.filter(
+        centro=centro
+    ).order_by('-fecha_inicio')
+
+    # Año consultado: activo por defecto; ?anio=N permite revisar años
+    # futuros (p. ej. recién promocionados) o históricos.
+    anio_escolar = anios.filter(activo=True).first()
+    anio_param = request.GET.get('anio')
+    if anio_param:
+        anio_escolar = get_object_or_404(
+            AnioEscolar,
+            pk=anio_param,
+            centro=centro
+        )
 
     inscripciones = Inscripcion.objects.filter(
         grado=grado,
@@ -350,13 +360,79 @@ def grado_estudiantes(request, grado_id):
 
     secciones = defaultdict(list)
     for ins in inscripciones:
-        secciones[ins.seccion].append(ins.estudiante)
+        secciones[ins.seccion].append(ins)
+
+    puede_mover = request.user.rol in (
+        'director', 'secretaria', 'admin', 'superadmin'
+    )
 
     return render(request, 'academico/grado_estudiantes.html', {
         'grado': grado,
         'anio_escolar': anio_escolar,
-        'secciones': dict(secciones)
+        'anios': anios,
+        'secciones': dict(secciones),
+        'secciones_grado': list(
+            grado.secciones.values('id', 'nombre')
+        ),
+        'puede_mover': puede_mover,
     })
+
+
+@login_required
+@require_POST
+@centro_required
+@role_required('director', 'secretaria', 'admin', 'superadmin')
+def inscripcion_cambiar_seccion(request, pk):
+    """Mueve un estudiante a otra sección de su mismo grado."""
+    from django.core.exceptions import ValidationError
+
+    from .models import Seccion
+    from .services.inscripciones import CambiarSeccionError, cambiar_seccion
+
+    centro = get_centro_activo(request)
+    inscripcion = get_object_or_404(Inscripcion, pk=pk, centro=centro)
+    es_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+
+    error = None
+    nueva = None
+    try:
+        seccion = Seccion.objects.get(
+            pk=request.POST.get('seccion'),
+            centro=centro,
+        )
+        _, nueva = cambiar_seccion(inscripcion, seccion, request.user)
+    except Seccion.DoesNotExist:
+        error = 'La sección indicada no existe en este centro.'
+    except (TypeError, ValueError):
+        error = 'Sección inválida.'
+    except ValidationError as e:
+        error = '; '.join(e.messages)
+    except CambiarSeccionError as e:
+        error = str(e)
+
+    nombre = inscripcion.estudiante.nombre_completo()
+
+    if es_ajax:
+        if error:
+            return JsonResponse(
+                {'success': False, 'error': error},
+                status=400,
+            )
+        return JsonResponse({
+            'success': True,
+            'mensaje': (
+                f'{nombre} movido a la sección {nueva.nombre}.'
+            ),
+        })
+
+    if error:
+        messages.error(request, f'No se pudo cambiar la sección: {error}')
+    else:
+        messages.success(
+            request,
+            f'{nombre} movido a la sección {nueva.nombre}.'
+        )
+    return redirect('grado_estudiantes', grado_id=inscripcion.grado_id)
 
 @login_required
 @centro_required
