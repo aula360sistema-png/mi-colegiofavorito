@@ -90,8 +90,34 @@ function confirmDeleteSwal(options) {
 }
 
 /* --- Sidebar toggle --- */
+function esMovil() {
+  return window.matchMedia('(max-width: 1024px)').matches;
+}
+
+function abrirSidebarMovil() {
+  const layout = document.querySelector('.dashboard-layout');
+  if (!layout) return;
+  layout.classList.add('sidebar-open');
+  document.body.style.overflow = 'hidden';
+}
+
+function cerrarSidebarMovil() {
+  const layout = document.querySelector('.dashboard-layout');
+  if (layout) layout.classList.remove('sidebar-open');
+  document.body.style.overflow = '';
+}
+
 function toggleSidebar() {
   const layout = document.querySelector('.dashboard-layout');
+  if (!layout) return;
+
+  /* En móvil el sidebar es un cajón: abrir/cerrar en vez de colapsar. */
+  if (esMovil()) {
+    if (layout.classList.contains('sidebar-open')) cerrarSidebarMovil();
+    else abrirSidebarMovil();
+    return;
+  }
+
   layout.classList.toggle('sidebar-collapsed');
   const collapsed = layout.classList.contains('sidebar-collapsed');
   localStorage.setItem('sidebar-collapsed', collapsed ? '1' : '0');
@@ -110,7 +136,8 @@ function toggleMenu(id) {
   const menu = document.getElementById(id);
   const button = document.querySelector('[data-menu-toggle="' + id + '"]');
   const collapsed = document.querySelector('.dashboard-layout').classList.contains('sidebar-collapsed');
-  if (collapsed) return;
+  /* En móvil el cajón siempre muestra etiquetas: el colapso no aplica. */
+  if (collapsed && !esMovil()) return;
   menu.classList.toggle('hidden');
   if (button) button.classList.toggle('open');
 }
@@ -196,8 +223,29 @@ document.addEventListener('DOMContentLoaded', function () {
     closePerfilMenu();
   });
   document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape') closePerfilMenu();
+    if (e.key === 'Escape') {
+      closePerfilMenu();
+      cerrarSidebarMovil();
+    }
   });
+
+  /* --- Cerrar el cajón al elegir un enlace (móvil) --- */
+  var sidebarEl = document.querySelector('.sidebar');
+  if (sidebarEl) {
+    sidebarEl.addEventListener('click', function (e) {
+      if (!esMovil()) return;
+      if (e.target.closest('.sidebar-link, .sidebar-sublink, .logout-btn, .footer-link')) {
+        cerrarSidebarMovil();
+      }
+    });
+  }
+
+  /* --- Al pasar a escritorio, limpiar estado del cajón --- */
+  window.addEventListener('resize', debounce(function () {
+    if (!esMovil()) cerrarSidebarMovil();
+  }, 150));
+
+  /* --- Event delegation for data-action --- */
 
   /* --- Event delegation for data-action --- */
   document.addEventListener('click', function (e) {
@@ -217,6 +265,9 @@ document.addEventListener('DOMContentLoaded', function () {
         break;
       case 'toggle-sidebar':
         toggleSidebar();
+        break;
+      case 'close-sidebar-mobile':
+        cerrarSidebarMovil();
         break;
       case 'toggle-acordeon':
         toggleAcordeon(target);

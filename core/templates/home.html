@@ -604,6 +604,25 @@
 
   <body class="dashboard-body">
     <div class="dashboard-layout">
+
+      <!-- ================= TOPBAR MÓVIL ================= -->
+      <header class="mobile-topbar">
+        <button type="button" class="topbar-btn" aria-label="Abrir menú" data-action="toggle-sidebar">
+          <i class="fas fa-bars"></i>
+        </button>
+        <span class="mobile-topbar-title">{% if centro_nombre %}{{ centro_nombre }}{% else %}Mi Colegio{% endif %}</span>
+        <a href="{% url 'usuarios:mi_perfil' %}" class="topbar-avatar" aria-label="Mi perfil">
+          {% if request.user.foto %}
+          <img src="{{ request.user.foto.url }}" alt="{{ request.user.get_full_name }}">
+          {% else %}
+          {{ request.user.first_name|slice:":1" }}{{ request.user.last_name|slice:":1" }}
+          {% endif %}
+        </a>
+      </header>
+
+      <!-- ================= FONDO OSCURO (cierra el menú en móvil) ================= -->
+      <div class="sidebar-backdrop" data-action="close-sidebar-mobile" aria-hidden="true"></div>
+
       <!-- ================= MENÚ DE PERFIL (avatar) ================= -->
       <div id="perfil-menu" class="perfil-menu hidden" role="menu" aria-label="Menú de cuenta">
         <div class="perfil-menu-header">
@@ -672,6 +691,10 @@
 
           <button type="button" id="sidebar-toggle" class="sidebar-toggle" title="Ocultar menú" data-action="toggle-sidebar">
             <i class="fas fa-angles-left"></i>
+          </button>
+
+          <button type="button" class="sidebar-close" title="Cerrar menú" aria-label="Cerrar menú" data-action="close-sidebar-mobile">
+            <i class="fas fa-xmark"></i>
           </button>
         </div>
 
@@ -1413,7 +1436,7 @@
 
 {% endif %}
 
-
+        </nav>
 
         <!-- FOOTER -->
         <div class="sidebar-footer">
