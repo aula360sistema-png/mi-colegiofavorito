@@ -102,6 +102,7 @@ class ConfiguracionCorreoCentralTests(TestCase):
                 'modulo_mensajeria': 'on',
                 'modulo_reportes': 'on',
                 'precio_certificado': '0.00',
+                'email_proveedor': 'smtp_gmail',
                 'email_servidor': 'smtp.gmail.com',
                 'email_puerto': '587',
                 'email_usuario': 'correo@prueba.com',

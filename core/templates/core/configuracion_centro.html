@@ -167,18 +167,24 @@
             <div class="space-y-6">
                 <div>
                     <h4 class="text-sm font-semibold text-gray-600 mb-3 flex items-center gap-2">
-                        <i class="fas fa-envelope text-blue-500"></i> Servidor de correo (SMTP)
+                        <i class="fas fa-envelope text-blue-500"></i> Proveedor de correo
                     </h4>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1.5">{{ form.email_servidor.label }}</label>
-                            {{ form.email_servidor }}
-                            <p class="text-xs text-gray-400 mt-1">{{ form.email_servidor.help_text }}</p>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1.5">{{ form.email_puerto.label }}</label>
-                            {{ form.email_puerto }}
-                        </div>
+
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-1.5">{{ form.email_proveedor.label }}</label>
+                        {{ form.email_proveedor }}
+                        <p class="text-xs text-gray-400 mt-1">{{ form.email_proveedor.help_text }}</p>
+                    </div>
+
+                    <div id="aviso-smtp-bloqueado" class="hidden mb-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+                        <i class="fas fa-triangle-exclamation mr-1"></i>
+                        Si tu hosting está en un plan gratuito (ej. Render free), el envío por SMTP
+                        puede quedar bloqueado por la red aunque estos datos estén correctos.
+                        Si el correo de prueba no llega, prueba con Resend o SendGrid (API).
+                    </div>
+
+                    <!-- Credenciales para Gmail / Outlook (host y puerto se autocompletan, no se muestran) -->
+                    <div id="bloque-smtp-credenciales" class="hidden grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1.5">{{ form.email_usuario.label }}</label>
                             {{ form.email_usuario }}
@@ -188,21 +194,53 @@
                             {{ form.email_clave }}
                             <p class="text-xs text-gray-400 mt-1">{{ form.email_clave.help_text }}</p>
                         </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1.5">{{ form.email_remitente.label }}</label>
-                            {{ form.email_remitente }}
-                            <p class="text-xs text-gray-400 mt-1">{{ form.email_remitente.help_text }}</p>
+                    </div>
+
+                    <!-- Servidor SMTP manual (solo "Otro servidor SMTP") -->
+                    <div id="bloque-smtp-generico" class="hidden">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1.5">{{ form.email_servidor.label }}</label>
+                                {{ form.email_servidor }}
+                                <p class="text-xs text-gray-400 mt-1">{{ form.email_servidor.help_text }}</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1.5">{{ form.email_puerto.label }}</label>
+                                {{ form.email_puerto }}
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1.5">{{ form.email_usuario.label }}</label>
+                                {{ form.email_usuario }}
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1.5">{{ form.email_clave.label }}</label>
+                                {{ form.email_clave }}
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
+                            <label class="flex items-center justify-between gap-4 rounded-xl border border-gray-200 p-4 cursor-pointer hover:bg-gray-50">
+                                <span class="text-sm font-medium text-gray-700">{{ form.email_tls.label }}</span>
+                                {{ form.email_tls }}
+                            </label>
+                            <label class="flex items-center justify-between gap-4 rounded-xl border border-gray-200 p-4 cursor-pointer hover:bg-gray-50">
+                                <span class="text-sm font-medium text-gray-700">{{ form.email_ssl.label }}</span>
+                                {{ form.email_ssl }}
+                            </label>
                         </div>
                     </div>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
-                        <label class="flex items-center justify-between gap-4 rounded-xl border border-gray-200 p-4 cursor-pointer hover:bg-gray-50">
-                            <span class="text-sm font-medium text-gray-700">{{ form.email_tls.label }}</span>
-                            {{ form.email_tls }}
-                        </label>
-                        <label class="flex items-center justify-between gap-4 rounded-xl border border-gray-200 p-4 cursor-pointer hover:bg-gray-50">
-                            <span class="text-sm font-medium text-gray-700">{{ form.email_ssl.label }}</span>
-                            {{ form.email_ssl }}
-                        </label>
+
+                    <!-- API Key (Resend / SendGrid) -->
+                    <div id="bloque-api" class="hidden">
+                        <label class="block text-sm font-medium text-gray-700 mb-1.5">{{ form.email_api_key.label }}</label>
+                        {{ form.email_api_key }}
+                        <p class="text-xs text-gray-400 mt-1">{{ form.email_api_key.help_text }}</p>
+                    </div>
+
+                    <!-- Remitente: aplica a todos los proveedores excepto "Ninguno" -->
+                    <div id="bloque-remitente" class="hidden mt-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-1.5">{{ form.email_remitente.label }}</label>
+                        {{ form.email_remitente }}
+                        <p class="text-xs text-gray-400 mt-1">{{ form.email_remitente.help_text }}</p>
                     </div>
                 </div>
 
@@ -253,4 +291,43 @@
     </form>
 
 </div>
+
+<script>
+(function () {
+    // Detectar si el hosting bloquea SMTP (ver banner de aviso). Ajusta
+    // esta bandera desde tu backend/env si quieres detección automática;
+    // por defecto queda en false para no asumir nada.
+    var HOSTING_BLOQUEA_SMTP = {{ hosting_bloquea_smtp|yesno:"true,false"|default:"false" }};
+
+    var PROVEEDORES_SMTP_CON_HOST_MANUAL = ['smtp_otro'];
+    var PROVEEDORES_SMTP_CREDENCIALES = ['smtp_gmail', 'smtp_outlook', 'smtp_otro'];
+    var PROVEEDORES_API = ['resend', 'sendgrid'];
+
+    window.mostrarCamposCorreo = function (proveedor) {
+        var bloqueCredenciales = document.getElementById('bloque-smtp-credenciales');
+        var bloqueGenerico = document.getElementById('bloque-smtp-generico');
+        var bloqueApi = document.getElementById('bloque-api');
+        var bloqueRemitente = document.getElementById('bloque-remitente');
+        var avisoBloqueado = document.getElementById('aviso-smtp-bloqueado');
+
+        var esSmtpGenerico = PROVEEDORES_SMTP_CON_HOST_MANUAL.indexOf(proveedor) !== -1;
+        var esSmtpConCredenciales = PROVEEDORES_SMTP_CREDENCIALES.indexOf(proveedor) !== -1 && !esSmtpGenerico;
+        var esApi = PROVEEDORES_API.indexOf(proveedor) !== -1;
+        var esSmtp = esSmtpGenerico || PROVEEDORES_SMTP_CREDENCIALES.indexOf(proveedor) !== -1;
+
+        bloqueCredenciales.classList.toggle('hidden', !esSmtpConCredenciales);
+        bloqueGenerico.classList.toggle('hidden', !esSmtpGenerico);
+        bloqueApi.classList.toggle('hidden', !esApi);
+        bloqueRemitente.classList.toggle('hidden', proveedor === 'consola' || !proveedor);
+        avisoBloqueado.classList.toggle('hidden', !(esSmtp && HOSTING_BLOQUEA_SMTP));
+    };
+
+    document.addEventListener('DOMContentLoaded', function () {
+        var select = document.getElementById('id_email_proveedor');
+        if (select) {
+            mostrarCamposCorreo(select.value);
+        }
+    });
+})();
+</script>
 {% endblock %}

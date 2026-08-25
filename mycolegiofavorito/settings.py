@@ -97,6 +97,7 @@ INSTALLED_APPS = [
     'entrenamiento',
     'orientacion',
     'seguridad',
+    'anymail',
 ]
 
 MIDDLEWARE = [

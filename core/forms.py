@@ -86,6 +86,8 @@ class ConfiguracionCentroForm(forms.ModelForm):
             'precio_certificado',
             'permitir_pago_online',
 
+            'email_proveedor',
+            'email_api_key',
             'email_servidor',
             'email_puerto',
             'email_usuario',
@@ -150,6 +152,15 @@ class ConfiguracionCentroForm(forms.ModelForm):
             'permitir_pago_online': CHECKBOX_WIDGET,
             'email_tls': CHECKBOX_WIDGET,
             'email_ssl': CHECKBOX_WIDGET,
+            'email_proveedor': forms.Select(attrs={
+                'class': (
+                    'w-full rounded-lg border border-gray-300 bg-white '
+                    'px-3.5 py-2.5 text-sm text-gray-800 shadow-sm outline-none '
+                    'transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200'
+                ),
+                'id': 'id_email_proveedor',
+                'onchange': 'mostrarCamposCorreo(this.value)',
+            }),
         }
 
     def __init__(self, *args, **kwargs):
@@ -165,6 +176,7 @@ class ConfiguracionCentroForm(forms.ModelForm):
             ('email_servidor', forms.TextInput),
             ('email_usuario', forms.EmailInput),
             ('email_clave', forms.PasswordInput),
+            ('email_api_key', forms.PasswordInput),
             ('email_remitente', forms.EmailInput),
             ('whatsapp_url', forms.URLInput),
             ('whatsapp_token', forms.PasswordInput),
@@ -176,6 +188,7 @@ class ConfiguracionCentroForm(forms.ModelForm):
             ('email_puerto', {'placeholder': '587'}),
             ('email_usuario', {'placeholder': 'correo@centro.com'}),
             ('email_clave', {'placeholder': '••••••••••'}),
+            ('email_api_key', {'placeholder': 'API Key del proveedor'}),
             ('email_remitente', {'placeholder': 'notificaciones@centro.com'}),
             ('whatsapp_url', {'placeholder': 'https://gateway.ejemplo.com/whatsapp'}),
             ('whatsapp_token', {'placeholder': '••••••••••'}),
@@ -185,6 +198,43 @@ class ConfiguracionCentroForm(forms.ModelForm):
         self.fields['email_puerto'].widget = forms.NumberInput(
             attrs={**TEXTO, 'placeholder': '587', 'min': '1', 'max': '65535'}
         )
+
+        # Estos campos solo son obligatorios según el proveedor elegido
+        # (se valida en clean()); a nivel de formulario todos son opcionales
+        # para no bloquear el guardado con campos ocultos por el JS.
+        for nombre in (
+            'email_servidor', 'email_usuario', 'email_clave',
+            'email_api_key', 'email_remitente',
+        ):
+            self.fields[nombre].required = False
+
+    def clean(self):
+        cleaned = super().clean()
+        proveedor = cleaned.get('email_proveedor')
+
+        if proveedor in ('smtp_gmail', 'smtp_outlook'):
+            if not cleaned.get('email_usuario') or not cleaned.get('email_clave'):
+                raise forms.ValidationError(
+                    'Para Gmail/Outlook debes indicar el correo y la '
+                    'clave de aplicación (app password).'
+                )
+        elif proveedor == 'smtp_otro':
+            if not cleaned.get('email_servidor'):
+                raise forms.ValidationError(
+                    'Debes indicar el servidor SMTP.'
+                )
+        elif proveedor in ('resend', 'sendgrid'):
+            if not cleaned.get('email_api_key'):
+                raise forms.ValidationError(
+                    'Debes indicar la API Key del proveedor elegido.'
+                )
+
+        if proveedor and proveedor != 'consola' and not cleaned.get('email_remitente'):
+            raise forms.ValidationError(
+                'Debes indicar el correo remitente (From).'
+            )
+
+        return cleaned
 
 
 # =====================================================

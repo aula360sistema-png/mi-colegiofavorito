@@ -119,6 +119,7 @@ class ConstruirDestinatariosTestCase(BaseComunicacionesTestCase):
     def test_configuracion_correo_desde_bd_gana_a_settings(self):
         from django.conf import settings
 
+        self.config.email_proveedor = 'smtp_otro'
         self.config.email_servidor = 'smtp.centro.com'
         self.config.email_puerto = 465
         self.config.email_usuario = 'aviso@centro.com'
@@ -143,12 +144,18 @@ class ConstruirDestinatariosTestCase(BaseComunicacionesTestCase):
         from django.conf import settings
 
         self.config.email_servidor = ''
+        self.config.email_proveedor = 'consola'
         self.config.save()
 
         from comunicaciones.services.configuracion import obtener_configuracion_correo
 
         config = obtener_configuracion_correo(self.centro)
-        self.assertEqual(config['host'], settings.EMAIL_HOST)
+        # Sin servidor SMTP ni proveedor API configurado, cae al proveedor
+        # 'consola' (o al EMAIL_HOST de settings/.env si estuviera definido).
+        if settings.EMAIL_HOST:
+            self.assertEqual(config['host'], settings.EMAIL_HOST)
+        else:
+            self.assertEqual(config['proveedor'], 'consola')
         self.assertEqual(config['from_email'], settings.DEFAULT_FROM_EMAIL)
 
     def test_configuracion_whatsapp_desde_bd(self):
@@ -170,6 +177,7 @@ class ConstruirDestinatariosTestCase(BaseComunicacionesTestCase):
         from comunicaciones.services.email import enviar_email
         from comunicaciones.models import DestinatarioCampania
 
+        self.config.email_proveedor = 'smtp_otro'
         self.config.email_servidor = 'smtp.centro.com'
         self.config.email_usuario = 'aviso@centro.com'
         self.config.email_clave = 'clave'

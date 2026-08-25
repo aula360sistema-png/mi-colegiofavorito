@@ -119,20 +119,49 @@ def enviar_correo_prueba(centro, destino):
 
 
 def _conexion(config):
-    if not config['host']:
+    """Resuelve la conexión de envío según el proveedor elegido.
+
+    Este es el ÚNICO lugar del proyecto que decide *cómo* se manda el
+    correo (SMTP clásico o API HTTP vía django-anymail). El resto del
+    módulo de comunicaciones no necesita saber nada de esto: solo llama
+    a send_mail(..., connection=_conexion(config)).
+    """
+    proveedor = config.get('proveedor', 'consola')
+
+    if proveedor == 'consola':
+        # Sin backend explícito: respeta settings.EMAIL_BACKEND, que en
+        # desarrollo es consola y que Django sustituye automáticamente por
+        # locmem durante los tests (mail.outbox). Igual que el
+        # comportamiento original antes de este selector.
         return get_connection()
 
-    return get_connection(
-        backend='django.core.mail.backends.smtp.EmailBackend',
-        host=config['host'],
-        port=config['port'],
-        username=config['user'],
-        password=config['password'],
-        use_tls=config['use_tls'],
-        use_ssl=config['use_ssl'],
-        timeout=getattr(settings, 'EMAIL_TIMEOUT', 30),
-        fail_silently=False,
-    )
+    if proveedor in ('smtp_gmail', 'smtp_outlook', 'smtp_otro'):
+        return get_connection(
+            backend='django.core.mail.backends.smtp.EmailBackend',
+            host=config['host'],
+            port=config['port'],
+            username=config['user'],
+            password=config['password'],
+            use_tls=config['use_tls'],
+            use_ssl=config['use_ssl'],
+            timeout=getattr(settings, 'EMAIL_TIMEOUT', 30),
+            fail_silently=False,
+        )
+
+    if proveedor == 'resend':
+        return get_connection(
+            backend='anymail.backends.resend.EmailBackend',
+            api_key=config['api_key'],
+        )
+
+    if proveedor == 'sendgrid':
+        return get_connection(
+            backend='anymail.backends.sendgrid.EmailBackend',
+            api_key=config['api_key'],
+        )
+
+    # Proveedor desconocido: mejor no perder el correo silenciosamente.
+    raise ValueError(f"Proveedor de correo no soportado: {proveedor!r}")
 
 
 def _mensaje_pago(pago, tutor):

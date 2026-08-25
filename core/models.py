@@ -229,6 +229,33 @@ class ConfiguracionCentro(models.Model):
     # ------------------------------------------------------------------
     # Valores por centro. Si quedan vacíos se usa lo configurado en
     # settings/.env (y si tampoco hay SMTP, se usa el backend de consola).
+    PROVEEDORES_CORREO = (
+        ('smtp_gmail', 'Gmail / Google Workspace (SMTP)'),
+        ('smtp_outlook', 'Outlook / Microsoft 365 (SMTP)'),
+        ('smtp_otro', 'Otro servidor SMTP (personalizado)'),
+        ('resend', 'Resend (API)'),
+        ('sendgrid', 'SendGrid (API)'),
+        ('consola', 'Ninguno (modo consola / desarrollo)'),
+    )
+
+    email_proveedor = models.CharField(
+        'Proveedor de correo',
+        max_length=20,
+        choices=PROVEEDORES_CORREO,
+        default='consola',
+        help_text=(
+            "Elige cómo se envían los correos de este centro. Si tu "
+            "hosting bloquea SMTP (ej. Render plan gratuito), usa Resend "
+            "o SendGrid."
+        ),
+    )
+    email_api_key = models.CharField(
+        'API Key del proveedor',
+        max_length=300,
+        blank=True,
+        default='',
+        help_text='API Key de Resend o SendGrid, según el proveedor elegido.',
+    )
     email_servidor = models.CharField(
         'Servidor SMTP',
         max_length=200,
