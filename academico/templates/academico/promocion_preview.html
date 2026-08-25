@@ -21,6 +21,19 @@
         {% endif %}
     </p>
 
+    <!-- Advertencia: recuperaciones sin completivo procesado -->
+    {% if advertencia_completivo %}
+    <div class="bg-amber-50 border border-amber-300 rounded-xl px-4 py-3 text-sm text-amber-800 mb-6 flex items-start gap-3">
+        <i class="fas fa-triangle-exclamation text-amber-500 mt-0.5"></i>
+        <div>
+            <strong>{{ recuperacion_en_plan }} estudiante(s) en recuperación</strong> serán marcados para repetir.
+            Si el completivo de este año aún no se procesó, procésalo primero
+            (Boletines → Cerrar completivo) o estos estudiantes repetirán sin
+            haber evaluado su recuperación.
+        </div>
+    </div>
+    {% endif %}
+
     <!-- Resumen -->
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-center">

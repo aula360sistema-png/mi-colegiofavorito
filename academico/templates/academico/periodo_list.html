@@ -23,6 +23,18 @@
 
         <div class="flex flex-wrap gap-2">
 
+            {% if pendientes_por_periodo and stats.puede_forzar %}
+            <a href="{% url 'cerrar_todos_periodos' %}?forzar=1"
+               data-action="confirm-delete-redirect"
+               data-confirm-title="¿Forzar cierre de períodos?"
+               data-confirm-text="Se pondrán 0 automáticos en todas las notas faltantes (quedará auditado como origen='sistema') y se cerrarán los períodos abiertos."
+               data-confirm-btn="Sí, forzar cierre"
+               class="inline-flex items-center gap-2 bg-orange-600 text-white px-5 py-2.5 rounded-lg shadow-sm hover:bg-orange-700 hover:shadow transition text-sm font-semibold">
+                <i class="fas fa-triangle-exclamation"></i>
+                Cerrar forzando ceros automáticos
+            </a>
+            {% endif %}
+
             <a href="{% url 'cerrar_todos_periodos' %}"
                class="inline-flex items-center gap-2 bg-red-600 text-white px-5 py-2.5 rounded-lg shadow-sm hover:bg-red-700 hover:shadow transition text-sm font-semibold">
                 <i class="fas fa-lock"></i>
@@ -38,6 +50,63 @@
         </div>
 
     </div>
+
+    <!-- Panel: notas pendientes antes del cierre -->
+    {% if pendientes_por_periodo %}
+    <div class="bg-amber-50 border border-amber-300 rounded-xl overflow-hidden mb-6">
+
+        <div class="px-5 py-4 border-b border-amber-200 flex items-start gap-3">
+            <i class="fas fa-triangle-exclamation text-amber-500 mt-0.5"></i>
+            <div>
+                <h3 class="font-bold text-amber-900">
+                    Notas pendientes antes de cerrar
+                </h3>
+                <p class="text-xs text-amber-800 mt-0.5">
+                    El cierre de un período se bloquea mientras haya estudiantes sin nota completa.
+                    {% if stats.puede_forzar %}
+                    Como Dirección puedes forzar el cierre: los faltantes se pondrán en 0 automáticamente (auditado).
+                    {% else %}
+                    Solicita a los docentes completar las calificaciones, o a Dirección forzar el cierre.
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-amber-200 text-sm">
+                <thead class="bg-amber-100/60">
+                    <tr>
+                        <th class="px-5 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-amber-800">Período</th>
+                        <th class="px-5 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-amber-800">Docente</th>
+                        <th class="px-5 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-amber-800">Asignatura</th>
+                        <th class="px-5 py-2.5 text-center text-xs font-semibold uppercase tracking-wider text-amber-800">Grado-Sección</th>
+                        <th class="px-5 py-2.5 text-center text-xs font-semibold uppercase tracking-wider text-amber-800">Estudiantes sin nota</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-amber-100">
+                    {% for item in pendientes_por_periodo %}
+                        {% for f in item.filas %}
+                        <tr class="hover:bg-amber-100/40">
+                            {% if forloop.first %}
+                            <td class="px-5 py-2.5 align-top" rowspan="{{ item.filas|length }}">
+                                <span class="bg-amber-200 text-amber-900 px-2 py-0.5 rounded-md text-xs font-bold">{{ item.periodo.nombre }}</span>
+                            </td>
+                            {% endif %}
+                            <td class="px-5 py-2.5 text-gray-700">{{ f.docente }}</td>
+                            <td class="px-5 py-2.5 text-gray-700">{{ f.asignatura }}</td>
+                            <td class="px-5 py-2.5 text-center text-gray-600">{{ f.grado }} · {{ f.seccion }}</td>
+                            <td class="px-5 py-2.5 text-center">
+                                <span class="bg-red-100 text-red-700 px-2 py-0.5 rounded-md text-xs font-bold">{{ f.faltantes }}</span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+    {% endif %}
 
     <!-- Tarjetas de resumen -->
     <div class="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 gap-4 mb-6">

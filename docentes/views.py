@@ -421,7 +421,7 @@ def guardar_notas_ajax(request, asignacion_id):
                 asignatura=asignacion.asignatura,
                 competencia_id=item['competencia'],
                 periodo_id=item['periodo'],
-                defaults={'nota': item['nota']},
+                defaults={'nota': item['nota'], 'origen': 'docente'},
             )
             guardadas += 1
 
@@ -504,7 +504,7 @@ def calificar_tabla(request, asignacion_id):
                             asignatura=asignacion.asignatura,
                             competencia=c,
                             periodo=p,
-                            defaults={'nota': nota}
+                            defaults={'nota': nota, 'origen': 'docente'}
                         )
 
         messages.success(request, 'Calificaciones guardadas')

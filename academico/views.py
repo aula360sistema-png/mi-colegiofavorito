@@ -374,6 +374,70 @@ def cerrar_todos_los_periodos(request):
 
     sincronizar_periodos_centro(centro)
 
+    # ====================================
+    # VALIDAR NOTAS PENDIENTES POR PERÍODO
+    # ====================================
+    from .services.cierre import pendientes_por_docente, rellenar_ceros_periodo
+
+    abiertos = PeriodoAnio.objects.filter(
+        anio_escolar=anio,
+        cerrado=False,
+    ).select_related('periodo')
+
+    forzar = request.GET.get('forzar') == '1'
+    puede_forzar = _puede_forzar_cierre(request.user)
+
+    bloqueados = {}
+    for estado in abiertos:
+        pendientes = pendientes_por_docente(anio, estado.periodo)
+        if pendientes:
+            bloqueados[estado.periodo] = pendientes
+
+    if bloqueados:
+        if not forzar:
+            detalle = '; '.join(
+                f"{p.nombre} ({len(rows)} asignatura(s) incompleta(s))"
+                for p, rows in bloqueados.items()
+            )
+            messages.error(
+                request,
+                f"No se pueden cerrar los períodos: hay notas pendientes "
+                f"en {detalle}. Completa las calificaciones antes de cerrar."
+            )
+            if puede_forzar:
+                messages.warning(
+                    request,
+                    "Como Dirección puedes forzar el cierre: se pondrán 0 "
+                    "automáticos en las notas faltantes (queda auditado)."
+                )
+            return redirect('periodo_list')
+
+        if not puede_forzar:
+            messages.error(
+                request,
+                "Solo Dirección puede forzar el cierre con ceros automáticos."
+            )
+            return redirect('periodo_list')
+
+        total_notas = 0
+        for periodo_pendiente, filas in bloqueados.items():
+            creados = rellenar_ceros_periodo(anio, periodo_pendiente)
+            total_notas += creados
+            _auditar_cierre_forzado(
+                request,
+                periodo_pendiente,
+                anio,
+                len(filas),
+                creados,
+            )
+
+        if total_notas:
+            messages.warning(
+                request,
+                f"⚠️ Cierre forzado: {total_notas} nota(s) puesta(s) en 0 "
+                f"automáticamente (origen='sistema', auditado)."
+            )
+
     # Cerrar todos los períodos del año activo
     count = PeriodoAnio.objects.filter(
         anio_escolar=anio,
@@ -385,7 +449,7 @@ def cerrar_todos_los_periodos(request):
     invalidar_estructura(centro.id)
 
     messages.success(request, f"✅ Se cerraron {count} periodo(s) correctamente.")
-    return redirect('periodo_list') 
+    return redirect('periodo_list')
 
 # LISTAR
 @login_required
@@ -1036,7 +1100,28 @@ def periodo_list(request):
         'cerrados': cerrados,
         'anio': anio,
         'todos_cerrados': bool(estados) and abiertos == 0,
+        'puede_forzar': _puede_forzar_cierre(request.user),
     }
+
+    # Panel de notas pendientes (períodos abiertos del año activo):
+    # docentes/asignaturas con estudiantes sin nota completa.
+    from .services.cierre import pendientes_por_docente
+
+    pendientes_por_periodo = []
+    if anio:
+        for item in lista:
+            estado = item['estado']
+            if not estado or estado.cerrado:
+                continue
+            filas_pendientes = pendientes_por_docente(anio, item['periodo'])
+            if filas_pendientes:
+                pendientes_por_periodo.append({
+                    'periodo': item['periodo'],
+                    'filas': filas_pendientes,
+                    'estudiantes': max(
+                        f['faltantes'] for f in filas_pendientes
+                    ),
+                })
 
     # Relación Período ↔ AñoEscolar (matriz para la pestaña "Relación")
     catalogo = list(periodos)
@@ -1060,6 +1145,7 @@ def periodo_list(request):
         'stats': stats,
         'catalogo': catalogo,
         'filas': filas,
+        'pendientes_por_periodo': pendientes_por_periodo,
     })
 
 
@@ -1126,12 +1212,76 @@ def periodo_delete(request, pk):
         })
 
 
+# ============================================
+# HELPERS: CIERRE DE PERÍODOS CON VALIDACIÓN
+# ============================================
+
+ROLES_FORZAR_CIERRE = ('director', 'admin', 'superadmin')
+
+
+def _puede_forzar_cierre(usuario):
+    """Solo Dirección puede forzar cierre con ceros automáticos."""
+    return getattr(usuario, 'rol', None) in ROLES_FORZAR_CIERRE
+
+
+def _resumen_pendientes(pendientes):
+    filas = pendientes[:5]
+    resumen = '; '.join(
+        f"{p['asignatura']} ({p['grado']}-{p['seccion']}): "
+        f"{p['faltantes']} estudiante(s)"
+        for p in filas
+    )
+    if len(pendientes) > len(filas):
+        resumen += f" y {len(pendientes) - len(filas)} más"
+    return resumen
+
+
+def _auditar_cierre_forzado(request, periodo, anio, asignaturas, notas_creadas):
+    """Deja constancia del cierre forzado con ceros automáticos."""
+    try:
+        from auditoria.services import registrar_evento
+
+        registrar_evento(
+            accion='CIERRE_FORZADO',
+            descripcion=(
+                f"Cierre forzado del período {periodo.nombre} "
+                f"({anio.nombre}): {notas_creadas} nota(s) puesta(s) en 0 "
+                f"(origen='sistema') por {asignaturas} asignatura(s) "
+                f"incompleta(s)."
+            ),
+            usuario=request.user,
+            modulo='ACADEMICO',
+            modelo='PeriodoAnio',
+            objeto_id=periodo.id,
+            riesgo='ALTO',
+            datos_nuevos={
+                'periodo': periodo.nombre,
+                'anio': anio.nombre,
+                'asignaturas_pendientes': asignaturas,
+                'notas_en_cero': notas_creadas,
+            },
+        )
+    except Exception:
+        logger.warning(
+            'No se pudo auditar cierre forzado del período %s',
+            periodo.id,
+            exc_info=True,
+        )
+
+
 @login_required
 @require_POST
 @centro_required
 @role_required('director', 'secretaria', 'admin', 'superadmin')
 def alternar_periodo_anio(request, pk):
-    """Abre o cierra un período del catálogo para el año escolar activo."""
+    """Abre o cierra un período del catálogo para el año escolar activo.
+
+    Al cerrar valida que no haya estudiantes con notas incompletas.
+    Si las hay, bloquea; solo Dirección puede forzar y en ese caso se
+    rellenan los huecos con ceros automáticos auditados (origen='sistema').
+    """
+    from .services.cierre import pendientes_por_docente, rellenar_ceros_periodo
+
     centro = get_centro_activo(request)
     periodo = get_object_or_404(Periodo, pk=pk, centro=centro)
 
@@ -1143,6 +1293,50 @@ def alternar_periodo_anio(request, pk):
         periodo=periodo,
         anio_escolar=anio,
     )
+
+    if not estado.cerrado:
+        # Intento de cierre: validar notas pendientes primero.
+        puede_forzar = _puede_forzar_cierre(request.user)
+        forzar = request.POST.get('forzar') == '1'
+        pendientes = pendientes_por_docente(anio, periodo)
+
+        if pendientes and not (forzar and puede_forzar):
+            # Payload liviano: al cliente solo le importan los conteos.
+            for fila in pendientes:
+                fila.pop('nombres', None)
+                fila.pop('inscripciones', None)
+
+            if not puede_forzar:
+                return JsonResponse({
+                    'success': False,
+                    'bloqueado': True,
+                    'puede_forzar': False,
+                    'error': (
+                        f'El período {periodo.nombre} tiene notas '
+                        f'pendientes ({len(pendientes)} asignatura(s)). '
+                        f'Solicita a Dirección completarlas o forzar el cierre.'
+                    ),
+                    'pendientes': pendientes,
+                }, status=400)
+
+            return JsonResponse({
+                'success': False,
+                'bloqueado': True,
+                'puede_forzar': True,
+                'error': (
+                    f'El período {periodo.nombre} tiene notas pendientes: '
+                    f'{_resumen_pendientes(pendientes)}. Completa las notas o '
+                    f'fuerza el cierre (se pondrán 0 automáticos auditados).'
+                ),
+                'pendientes': pendientes,
+            }, status=400)
+
+        if pendientes and forzar:
+            creados = rellenar_ceros_periodo(anio, periodo)
+            _auditar_cierre_forzado(
+                request, periodo, anio, len(pendientes), creados,
+            )
+
     estado.cerrado = not estado.cerrado
     estado.fecha_cierre = now().date() if estado.cerrado else None
     estado.save()
@@ -1421,6 +1615,31 @@ def cerrar_anio_escolar(request, pk):
         return redirect('anio_escolar_list')
 
     # ====================================
+    # VALIDAR COMPLETIVO PENDIENTE (orden del cierre)
+    # ====================================
+    # Si hay estudiantes en 'recuperacion' y el centro usa completivo,
+    # obliga a procesar primero cerrar_completivo; si no, la promoción
+    # los marcaría para repetir sin haber evaluado su recuperación.
+    from core.models import ConfiguracionCentro
+
+    configuracion = ConfiguracionCentro.objects.filter(
+        centro=anio.centro
+    ).first()
+    total_recup = Inscripcion.objects.filter(
+        anio_escolar=anio,
+        estado_final='recuperacion',
+    ).count()
+    if configuracion and configuracion.permite_completivo and total_recup:
+        messages.error(
+            request,
+            f"No se puede cerrar el año: {total_recup} estudiante(s) están "
+            f"en recuperación y el completivo aún no se ha procesado. "
+            f"Ejecuta primero 'Cerrar completivo' (Boletines) con el "
+            f"período de completivo cerrado."
+        )
+        return redirect('anio_escolar_list')
+
+    # ====================================
     # CIERRE FINANCIERO (reporte de deudas)
     # ====================================
     from .services.cierre import deudores_del_anio, resumen_cierre
@@ -1651,6 +1870,24 @@ def promocion_preview(request, pk):
     for fila in plan:
         resumen[fila['accion']] += 1
 
+    # Advertencia: estudiantes en 'recuperacion' que el plan manda a
+    # repetir; si el completivo sigue pendiente, conviene procesarlo
+    # antes de ejecutar la promoción.
+    from core.models import ConfiguracionCentro
+
+    configuracion = ConfiguracionCentro.objects.filter(
+        centro=origen.centro
+    ).first()
+    recuperacion_en_plan = sum(
+        1 for fila in plan
+        if fila['estado'] == 'recuperacion'
+    )
+    advertencia_completivo = bool(
+        configuracion
+        and configuracion.permite_completivo
+        and recuperacion_en_plan
+    )
+
     grados_destino = {}
     for fila in plan:
         if fila['destino']:
@@ -1676,6 +1913,8 @@ def promocion_preview(request, pk):
             'resumen': resumen,
             'grados_destino': grados_destino.values(),
             'secciones_por_grado': secciones_por_grado,
+            'recuperacion_en_plan': recuperacion_en_plan,
+            'advertencia_completivo': advertencia_completivo,
         },
     )
 

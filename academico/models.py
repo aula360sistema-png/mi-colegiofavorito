@@ -189,6 +189,11 @@ class DocenteMateria(models.Model):
 
 
 class Calificacion(models.Model):
+    ORIGEN_CHOICES = (
+        ('docente', 'Docente'),
+        ('sistema', 'Sistema (cierre forzado)'),
+    )
+
     inscripcion = models.ForeignKey(
         'estudiantes.Inscripcion',
         on_delete=models.CASCADE
@@ -199,6 +204,19 @@ class Calificacion(models.Model):
     periodo = models.ForeignKey(Periodo, on_delete=models.PROTECT)
 
     nota = models.DecimalField(max_digits=5, decimal_places=2)
+
+    # Trazabilidad: 'docente' = la cargó el docente; 'sistema' = cero
+    # automático generado al forzar el cierre de un período.
+    origen = models.CharField(
+        'Origen de la nota',
+        max_length=10,
+        choices=ORIGEN_CHOICES,
+        default='docente',
+        help_text=(
+            "Quién registró la nota. Las notas 'Sistema' fueron puestas "
+            "en 0 automáticamente al forzar un cierre de período."
+        ),
+    )
 
     class Meta:
         unique_together = (
