@@ -255,7 +255,8 @@ class PeriodoForm(forms.ModelForm):
         fields = [
             'nombre',
             'orden',
-            'es_completivo'
+            'es_completivo',
+            'es_extraordinario',
         ]
 
         widgets = {
@@ -273,6 +274,9 @@ class PeriodoForm(forms.ModelForm):
             ),
             'es_completivo': forms.CheckboxInput(
                 attrs={'class': 'h-5 w-5 rounded border-gray-300 accent-blue-600 focus:ring-blue-500'}
+            ),
+            'es_extraordinario': forms.CheckboxInput(
+                attrs={'class': 'h-5 w-5 rounded border-gray-300 accent-amber-600 focus:ring-amber-500'}
             ),
         }
 

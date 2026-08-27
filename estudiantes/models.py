@@ -198,6 +198,7 @@ class Inscripcion(models.Model):
         ('recuperacion', 'Recuperación'),
         ('retirado', 'Retirado'),
         ('sin_calificacion', 'Sin Calificación'),
+        ('promocion_condicional', 'Promoción Condicional'),
     ]
 
 
@@ -225,7 +226,7 @@ class Inscripcion(models.Model):
     fecha = models.DateField(auto_now_add=True)
 
     promedio_final = models.DecimalField(max_digits=4, decimal_places=2, null=True, blank=True)
-    estado_final = models.CharField(max_length=20, choices=ESTADO_FINALES, default='pendiente')
+    estado_final = models.CharField(max_length=25, choices=ESTADO_FINALES, default='pendiente')
     fecha_cierre = models.DateField(null=True, blank=True)
     
     def __str__(self):
@@ -268,7 +269,7 @@ class HistorialAcademico(models.Model):
     )
 
     estado = models.CharField(
-    max_length=20,
+    max_length=25,
     choices=Inscripcion.ESTADO_FINALES,
     default='aprobado'
 )

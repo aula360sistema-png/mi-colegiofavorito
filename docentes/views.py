@@ -316,6 +316,7 @@ def dashboard_docente(request):
         'asignaciones_completas': datos['asignaciones_completas'],
         'asignaciones': datos['asignaciones'],
         'total_estudiantes': datos['total_estudiantes'],
+        'grupos': datos['grupos'],
     })
 
 
@@ -465,6 +466,16 @@ def calificar_tabla(request, asignacion_id):
         p.id in periodos_cerrados for p in periodos
     )
 
+    # Solo estudiantes en recuperacion pueden ser calificados en completivo
+    recuperacion_ids = set(
+        inscripciones.filter(estado_final='recuperacion').values_list('id', flat=True)
+    )
+
+    # Estudiantes aprobados no pueden calificar en extraordinario
+    aprobados_ids = set(
+        inscripciones.filter(estado_final='aprobado').values_list('id', flat=True)
+    )
+
 
 
 
@@ -493,7 +504,15 @@ def calificar_tabla(request, asignacion_id):
             for c in competencias:
                 for p in periodos:
                     if p.id in periodos_cerrados:
-                     continue  
+                     continue
+
+                    # Completivo: solo para recuperación
+                    if p.es_completivo and ins.id not in recuperacion_ids:
+                        continue
+
+                    # Extraordinario: solo para reprobados (no aprobados ni condicionales)
+                    if p.es_extraordinario and ins.id in aprobados_ids:
+                        continue
 
                     campo = f"nota_{ins.id}_{c.id}_{p.id}"
                     nota = request.POST.get(campo)
@@ -518,4 +537,7 @@ def calificar_tabla(request, asignacion_id):
         'notas': notas, 
         'todos_cerrados' : todos_cerrados,
         'periodos_cerrados': periodos_cerrados,
+        'recuperacion_ids': recuperacion_ids,
+        'aprobados_ids': aprobados_ids,
+        'tiene_completivo': any(p.es_completivo for p in periodos),
     })

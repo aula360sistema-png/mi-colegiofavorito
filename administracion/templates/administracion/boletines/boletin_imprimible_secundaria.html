@@ -53,7 +53,7 @@
             {% endfor %}
             <th colspan="{{ datos.periodos|length }}">PROMEDIOS</th>
             <th rowspan="2">CF</th>
-            <th rowspan="2">Completivo</th>
+            <th rowspan="2">Eval. Completiva</th>
         </tr>
         <tr>
             {% for c in primera.competencias %}
@@ -112,7 +112,7 @@
 
 {% if datos.completivo %}
 <div class="situacion">
-    Resultado del completivo:
+    Resultado de la evaluación completiva:
     {% if datos.completivo.aprobado %} Aprobado {% else %} Reprobado {% endif %}
     {% if datos.completivo.detalle %} —
         {% for d in datos.completivo.detalle %}

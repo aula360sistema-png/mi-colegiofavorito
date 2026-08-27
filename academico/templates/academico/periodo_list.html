@@ -237,7 +237,12 @@
                         </td>
 
                         <td class="px-5 py-3 text-center">
-                            {% if item.periodo.es_completivo %}
+                            {% if item.periodo.es_extraordinario %}
+                            <span class="inline-flex items-center gap-1 bg-amber-100 text-amber-700 px-2.5 py-1 rounded-full text-xs font-semibold">
+                                <i class="fas fa-exclamation-triangle text-[10px]"></i>
+                                Extraordinario
+                            </span>
+                            {% elif item.periodo.es_completivo %}
                             <span class="inline-flex items-center gap-1 bg-purple-100 text-purple-700 px-2.5 py-1 rounded-full text-xs font-semibold">
                                 <i class="fas fa-bolt text-[10px]"></i>
                                 Completivo

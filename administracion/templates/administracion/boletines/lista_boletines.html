@@ -43,7 +43,7 @@
                 <button type="submit"
                         class="inline-flex items-center gap-2 bg-amber-600 text-white px-4 py-2.5 rounded-lg shadow-sm hover:bg-amber-700 transition text-sm font-semibold">
                     <i class="fas fa-graduation-cap"></i>
-                    Cerrar completivo
+                    Cerrar evaluación completiva
                 </button>
             </form>
             {% endif %}
@@ -53,7 +53,7 @@
     </div>
 
     <!-- Resumen -->
-    <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+    <div class="grid grid-cols-2 md:grid-cols-6 gap-4 mb-6">
 
         <div class="bg-white shadow-sm rounded-xl p-4 border border-gray-200">
             <div class="flex items-center gap-3">
@@ -99,6 +99,18 @@
                 <div>
                     <p class="text-xs uppercase tracking-wide text-gray-500 font-semibold">Reprobados</p>
                     <p class="text-xl font-bold text-red-600">{{ resumen.reprobado }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white shadow-sm rounded-xl p-4 border {% if resumen.sin_calificacion > 0 %}border-red-300 bg-red-50{% else %}border-gray-200{% endif %}">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg {% if resumen.sin_calificacion > 0 %}bg-red-100 text-red-600{% else %}bg-gray-200 text-gray-600{% endif %} flex items-center justify-center">
+                    <i class="fas fa-circle-exclamation"></i>
+                </div>
+                <div>
+                    <p class="text-xs uppercase tracking-wide text-gray-500 font-semibold">Sin Notas</p>
+                    <p class="text-xl font-bold {% if resumen.sin_calificacion > 0 %}text-red-600{% else %}text-gray-700{% endif %}">{{ resumen.sin_calificacion }}</p>
                 </div>
             </div>
         </div>
@@ -197,6 +209,9 @@
                         <option value="recuperacion" {% if filtro_estado == "recuperacion" %}selected{% endif %}>
                             Recuperación
                         </option>
+                        <option value="sin_calificacion" {% if filtro_estado == "sin_calificacion" %}selected{% endif %}>
+                            Sin calificación
+                        </option>
                     </select>
                 </div>
 
@@ -234,6 +249,7 @@
                     <i class="fas fa-circle-check text-[10px]"></i>
                     {% if filtro_estado == "aprobado" %}Aprobado
                     {% elif filtro_estado == "reprobado" %}Reprobado
+                    {% elif filtro_estado == "sin_calificacion" %}Sin calificación
                     {% else %}Recuperación{% endif %}
                     <button type="button" data-action="remove-filter" data-param="estado" class="hover:text-red-500 transition">
                         <i class="fas fa-xmark"></i>
@@ -342,6 +358,11 @@
                             <span class="inline-flex items-center gap-1 bg-yellow-100 text-yellow-700 px-2.5 py-1 rounded-full text-xs font-semibold">
                                 <i class="fas fa-clock-rotate-left text-[10px]"></i>
                                 Recuperación
+                            </span>
+                            {% elif acta.datos.estado_final == "sin_calificacion" %}
+                            <span class="inline-flex items-center gap-1 bg-red-50 text-red-600 border border-red-200 px-2.5 py-1 rounded-full text-xs font-semibold">
+                                <i class="fas fa-circle-exclamation text-[10px]"></i>
+                                Sin calificación
                             </span>
                             {% else %}
                             <span class="inline-flex items-center gap-1 bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full text-xs font-semibold">

@@ -265,6 +265,11 @@ def modulos_sidebar(configuracion, request):
                 'href': reverse('administracion:lista_boletines'),
                 'icono': 'fa-file-lines',
             })
+            links.append({
+                'etiqueta': 'Cierre y Promociones',
+                'href': reverse('administracion:promociones_dashboard'),
+                'icono': 'fa-graduation-cap',
+            })
 
         modulos.append({
             'nombre': 'Calificaciones',

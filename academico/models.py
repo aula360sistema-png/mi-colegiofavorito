@@ -112,6 +112,7 @@ class Periodo(models.Model):
     nombre = models.CharField(max_length=20)  # P1, P2...
     orden = models.PositiveIntegerField()
     es_completivo = models.BooleanField(default=False)
+    es_extraordinario = models.BooleanField(default=False)
 
     class Meta:
         ordering = ['orden', 'nombre']

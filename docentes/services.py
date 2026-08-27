@@ -153,4 +153,35 @@ def _datos_dashboard_docente_sql(docente, anio):
         'asignaciones_completas': asignaciones_completas,
         'total_estudiantes': total_estudiantes,
         'periodos': periodos,
+        'grupos': _agrupar_por_grado_seccion(lista),
     }
+
+
+def _agrupar_por_grado_seccion(lista):
+    """Agrupa asignaciones por grado -> sección para el dashboard."""
+    from collections import OrderedDict
+
+    grados = OrderedDict()
+    for item in lista:
+        a = item['obj']
+        grado_key = a.grado_id
+        grado_nombre = a.grado.nombre
+        seccion_nombre = a.seccion.nombre
+
+        if grado_key not in grados:
+            grados[grado_key] = {
+                'grado_id': grado_key,
+                'grado_nombre': grado_nombre,
+                'secciones': OrderedDict(),
+            }
+
+        secc_key = a.seccion_id
+        if secc_key not in grados[grado_key]['secciones']:
+            grados[grado_key]['secciones'][secc_key] = {
+                'seccion_nombre': seccion_nombre,
+                'asignaciones': [],
+            }
+
+        grados[grado_key]['secciones'][secc_key]['asignaciones'].append(item)
+
+    return list(grados.values())

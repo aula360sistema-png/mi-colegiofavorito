@@ -1,0 +1,177 @@
+{% extends "home.html" %}
+{% block title %}Cierre y Promociones{% endblock %}
+
+{% block content %}
+
+<div class="max-w-5xl mx-auto py-8 px-4">
+
+    <!-- Encabezado -->
+    <div class="mb-6">
+        <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+            <i class="fas fa-graduation-cap text-indigo-600"></i>
+            Cierre de Año Escolar y Promociones
+        </h2>
+        {% if estado %}
+        <p class="text-sm text-gray-500 mt-1">
+            <i class="fas fa-school mr-1"></i>
+            {{ centro.nombre }} — {{ estado.anio }}
+        </p>
+        {% endif %}
+    </div>
+
+    {% if not estado %}
+        <div class="bg-amber-50 border border-amber-200 text-amber-800 rounded-xl p-4 flex items-center gap-2">
+            <i class="fas fa-info-circle"></i>
+            No hay año escolar activo. Active un año escolar para gestionar el cierre y las promociones.
+        </div>
+    {% else %}
+    {% if estado.anio_cerrado %}
+    <div class="bg-blue-50 border border-blue-200 text-blue-800 rounded-xl p-3 flex items-center gap-2 text-sm mb-4">
+        <i class="fas fa-lock"></i>
+        <span>Mostrando el año <strong>{{ estado.anio }}</strong> (cerrado). Para gestionar un nuevo año, créelo desde Año Escolar.</span>
+    </div>
+    {% endif %}
+    <div class="space-y-3">
+
+        <!-- Paso 1: Periodos regulares cerrados -->
+        <div class="flex items-center justify-between bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
+            <div>
+                <span class="{% if estado.periodos_ok %}text-green-600{% else %}text-amber-600{% endif %} font-semibold">
+                    {% if estado.periodos_ok %}<i class="fas fa-check-circle"></i>{% else %}<i class="far fa-circle"></i>{% endif %}
+                    1. Períodos regulares cerrados
+                </span>
+                <p class="text-xs text-gray-400 mt-0.5">{{ estado.periodos_cerrados }}/{{ estado.periodos_total }} cerrados</p>
+            </div>
+            <a href="{% url 'periodo_list' %}" class="text-sm text-indigo-600 hover:underline">Ver períodos</a>
+        </div>
+
+        <!-- Paso 2: Boletines generados -->
+        <div class="flex items-center justify-between bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
+            <div>
+                <span class="{% if estado.boletines_ok %}text-green-600{% else %}text-amber-600{% endif %} font-semibold">
+                    {% if estado.boletines_ok %}<i class="fas fa-check-circle"></i>{% else %}<i class="far fa-circle"></i>{% endif %}
+                    2. Boletines generados
+                </span>
+                <p class="text-xs text-gray-400 mt-0.5">{{ estado.boletines_generados }}/{{ estado.boletines_total }} inscritos con boletín</p>
+            </div>
+            <a href="{% url 'administracion:lista_boletines' %}" class="text-sm text-indigo-600 hover:underline">Ver boletines</a>
+        </div>
+
+        {% if estado.sin_calificacion > 0 %}
+        <div class="bg-red-50 rounded-xl border border-red-300 p-4 shadow-sm">
+            <div class="flex items-start gap-3">
+                <div class="w-10 h-10 rounded-lg bg-red-100 text-red-600 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <i class="fas fa-exclamation-triangle text-lg"></i>
+                </div>
+                <div class="flex-1">
+                    <p class="text-red-700 font-semibold">
+                        {{ estado.sin_calificacion }} estudiante{{ estado.sin_calificacion|pluralize }} sin calificaciones
+                    </p>
+                    <p class="text-xs text-red-600 mt-1 leading-relaxed">
+                        Estos estudiantes tienen boletín generado pero <strong>cero notas registradas</strong>.
+                        Antes de cerrar el año debe decidir:
+                    </p>
+                    <ul class="text-xs text-red-600 mt-2 ml-4 list-disc leading-relaxed">
+                        <li><strong>Si el docente no calificó:</strong> pida al docente que registre las notas y vuelva a generar boletines.</li>
+                        <li><strong>Si el estudiante abandonó sin retiro formal:</strong> márquelo como <em>Retirado</em> desde el módulo de estudiantes.</li>
+                    </ul>
+                    <a href="{% url 'administracion:lista_boletines' %}?estado=sin_calificacion"
+                       class="inline-flex items-center gap-1.5 mt-3 bg-red-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-red-700 transition">
+                        <i class="fas fa-arrow-right"></i>
+                        Ver estudiantes sin calificación
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Paso 3: Estudiantes en recuperación / completivo -->
+        <div class="flex items-center justify-between bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
+            <div>
+                <span class="{% if estado.completivo_ok %}text-green-600{% else %}text-amber-600{% endif %} font-semibold">
+                    {% if estado.completivo_ok %}<i class="fas fa-check-circle"></i>{% else %}<i class="fas fa-exclamation-triangle"></i>{% endif %}
+                    3. Estudiantes en recuperación
+                </span>
+                <p class="text-xs text-gray-400 mt-0.5">
+                    {{ estado.en_recuperacion }} pendiente{{ estado.en_recuperacion|pluralize }}
+                    {% if estado.completivo_abierto %} · Evaluación completiva abierta{% endif %}
+                </p>
+            </div>
+            <a href="{% url 'administracion:promociones_recuperacion' %}" class="text-sm text-indigo-600 hover:underline">Ver detalle</a>
+        </div>
+
+        <!-- Paso 4: Evaluación extraordinaria -->
+        <div class="flex items-center justify-between bg-white rounded-xl border border-gray-100 p-4 shadow-sm {% if not estado.completivo_ok %}opacity-50{% endif %}">
+            <div>
+                <span class="{% if estado.extraordinario_ok %}text-green-600{% else %}text-amber-600{% endif %} font-semibold">
+                    {% if estado.extraordinario_ok %}<i class="fas fa-check-circle"></i>{% else %}<i class="fas fa-exclamation-triangle"></i>{% endif %}
+                    4. Evaluación extraordinaria
+                </span>
+                <p class="text-xs text-gray-400 mt-0.5">
+                    {{ estado.reprobados }} pendiente{{ estado.reprobados|pluralize }}
+                    {% if estado.extraordinario_abierto %} · Extraordinario abierto{% endif %}
+                </p>
+            </div>
+            <a href="{% url 'administracion:promociones_extraordinario' %}" class="text-sm text-indigo-600 hover:underline">Ver detalle</a>
+        </div>
+
+        <!-- Paso 5: Año escolar cerrado -->
+        {% if estado.sin_calificacion_bloquea %}
+        <div class="flex items-center justify-between bg-white rounded-xl border border-red-200 p-4 shadow-sm opacity-50">
+            <div>
+                <span class="text-gray-500 font-semibold">
+                    <i class="fas fa-lock text-red-400"></i>
+                    5. Año escolar cerrado
+                </span>
+                <p class="text-xs text-red-500 mt-0.5">
+                    Bloqueado: hay {{ estado.sin_calificacion }} estudiante{{ estado.sin_calificacion|pluralize }} sin calificaciones.
+                    Resuelva antes de cerrar.
+                </p>
+            </div>
+            <span class="text-sm text-gray-400">Bloqueado</span>
+        </div>
+        {% else %}
+        <div class="flex items-center justify-between bg-white rounded-xl border border-gray-100 p-4 shadow-sm {% if not estado.completivo_ok %}opacity-50{% endif %}">
+            <div>
+                <span class="{% if estado.anio_cerrado %}text-green-600{% else %}text-gray-500{% endif %} font-semibold">
+                    {% if estado.anio_cerrado %}<i class="fas fa-check-circle"></i>{% else %}<i class="far fa-circle"></i>{% endif %}
+                    5. Año escolar cerrado
+                </span>
+                {% if estado.cierre %}
+                <p class="text-xs text-gray-400 mt-0.5">Cerrado el {{ estado.cierre.fecha|date:"d/m/Y H:i" }}</p>
+                {% endif %}
+            </div>
+            <a href="{% url 'anio_escolar_list' %}" class="text-sm text-indigo-600 hover:underline">Ir a cierre</a>
+        </div>
+        {% endif %}
+
+        <!-- Paso 6-7: Año siguiente y promoción -->
+        <div class="flex items-center justify-between bg-white rounded-xl border border-gray-100 p-4 shadow-sm {% if not estado.anio_cerrado %}opacity-50{% endif %}">
+            <div>
+                <span class="{% if estado.promocion_ejecutada %}text-green-600{% else %}text-gray-500{% endif %} font-semibold">
+                    {% if estado.promocion_ejecutada %}<i class="fas fa-check-circle"></i>{% else %}<i class="far fa-circle"></i>{% endif %}
+                    6-7. Año siguiente y promoción
+                </span>
+                <p class="text-xs text-gray-400 mt-0.5">
+                    {% if estado.anio_siguiente_existe %}
+                        Año siguiente creado
+                    {% else %}
+                        Aún no creado
+                    {% endif %}
+                </p>
+            </div>
+            <a href="{% url 'anio_escolar_list' %}" class="text-sm text-indigo-600 hover:underline">Ir a promoción</a>
+        </div>
+
+    </div>
+
+    <!-- Leyenda -->
+    <div class="mt-6 bg-gray-50 rounded-xl border border-gray-200 px-4 py-3 text-xs text-gray-500">
+        <p class="font-semibold text-gray-600 mb-1">Flujo del cierre de año:</p>
+        <p>Cierra los períodos genera los boletines resuelve la recuperación cierra el año escolar y ejecuta la promoción. Los pasos aparecen bloqueados si los anteriores no están completos.</p>
+    </div>
+
+    {% endif %}
+</div>
+
+{% endblock %}

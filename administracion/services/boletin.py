@@ -264,3 +264,116 @@ def resultado_completivo_estudiante(inscripcion, centro, anio, nota_minima):
         })
 
     return {"aprobado": aprobado, "detalle": detalle}
+
+
+def resultado_extraordinario_estudiante(inscripcion, centro, anio, nota_minima):
+    """
+    Evalúa el período extraordinario (es_extraordinario=True) para una inscripción.
+
+    Reglas MINERD (Ordenanza 04-2023):
+    - Primaria (3ro-6to): reprueba con 4+ asignaturas; 1-3 = promoción condicional
+    - Secundaria: reprueba con 3+ asignaturas; 1-2 = promoción condicional
+
+    Devuelve dict con:
+      aprobado: True/False/None (None = sin cambios)
+      condicional: True si promueve condicionalmente
+      repite: True si debe repetir
+      detalle: lista de asignaturas evaluadas
+    """
+
+    extraordinario_periodos = list(
+        Periodo.objects.filter(
+            estados__anio_escolar=anio,
+            estados__cerrado=True,
+            es_extraordinario=True
+        ).order_by("orden")
+    )
+
+    if not extraordinario_periodos:
+        return None
+
+    base = construir_boletin_estudiante(inscripcion, centro, anio)
+
+    reprobadas = [
+        a for a in base["asignaturas"]
+        if a.get("pf") is not None and a["pf"] < nota_minima
+    ]
+
+    if not reprobadas:
+        return {"aprobado": True, "condicional": False, "repite": False, "detalle": []}
+
+    extraordinario_notas = {}
+
+    asignaciones = DocenteMateria.objects.filter(
+        grado=inscripcion.grado,
+        seccion=inscripcion.seccion,
+        anio_escolar=anio
+    ).select_related("asignatura")
+
+    for asignacion in asignaciones:
+        asignatura = asignacion.asignatura
+
+        if asignatura.id in extraordinario_notas:
+            continue
+
+        calificaciones = Calificacion.objects.filter(
+            inscripcion=inscripcion,
+            asignatura=asignatura,
+            periodo__in=extraordinario_periodos,
+            nota__isnull=False
+        )
+
+        if calificaciones.exists():
+            promedio = (
+                sum(float(c.nota) for c in calificaciones)
+                / calificaciones.count()
+            )
+            extraordinario_notas[asignatura.id] = redondear(promedio)
+
+    detalle = []
+    aprueba_todas = True
+
+    for a in reprobadas:
+        nota_extraordinario = extraordinario_notas.get(a["asignatura_id"])
+        aprueba = (
+            nota_extraordinario is not None
+            and nota_extraordinario >= nota_minima
+        )
+
+        if not aprueba:
+            aprueba_todas = False
+
+        detalle.append({
+            "asignatura": a["asignatura"],
+            "pf": a["pf"],
+            "nota_extraordinario": nota_extraordinario,
+            "aprueba": aprueba
+        })
+
+    total_reprobadas = len(reprobadas)
+    no_aprobadas = sum(1 for d in detalle if not d["aprueba"])
+
+    # Determinar si es primaria o secundaria
+    # Primaria: 3ro-6to; Secundaria: 1ro-6to
+    es_primaria = (
+        inscripcion.grado.nivel
+        and inscripcion.grado.nivel.nombre.lower().startswith("primar")
+    )
+
+    if aprueba_todas:
+        return {"aprobado": True, "condicional": False, "repite": False, "detalle": detalle}
+
+    # No aprobó todas: aplicar regla de repetición
+    if es_primaria:
+        # Primaria: 4+ reprobadas = repite; 1-3 = condicional
+        repite = no_aprobadas >= 4
+    else:
+        # Secundaria: 3+ reprobadas = repite; 1-2 = condicional
+        repite = no_aprobadas >= 3
+
+    return {
+        "aprobado": False,
+        "condicional": not repite,
+        "repite": repite,
+        "detalle": detalle
+    }

@@ -18,6 +18,14 @@
         </p>
     </div>
 
+    <!-- NOTA EC -->
+    {% if tiene_completivo %}
+    <div class="bg-amber-50 border border-amber-200 text-amber-800 text-xs rounded-lg px-3 py-2 mb-3 flex items-center gap-2">
+        <i class="fas fa-info-circle"></i>
+        <span><strong>EC</strong> = Evaluación Completiva. Solo se califican estudiantes en estado de <em>recuperación</em>.</span>
+    </div>
+    {% endif %}
+
     <!-- TABLA -->
     <div class="overflow-x-auto bg-white shadow rounded-lg">
 
@@ -59,7 +67,7 @@
                     {% for c in competencias %}
                         {% for p in periodos %}
                             <th class="border px-1 py-1 text-xs">
-                                P{{ forloop.counter }}
+                                {% if p.es_completivo %}EC{% else %}{{ p.nombre }}{% endif %}
                             </th>
                         {% endfor %}
                     {% endfor %}
@@ -90,7 +98,16 @@
                     <!-- NOTAS -->
                     {% for c in competencias %}
                         {% for p in periodos %}
-                        <td class="border px-0.5">
+                        <td class="border px-0.5 {% if p.es_completivo and ins.id not in recuperacion_ids %}bg-gray-100{% elif p.es_extraordinario and ins.id in aprobados_ids %}bg-gray-100{% endif %}">
+                            {% if p.es_completivo and ins.id not in recuperacion_ids %}
+                            <span class="block w-14 text-center text-gray-300 text-xs py-1" title="Solo para estudiantes en recuperacion">
+                                <i class="fas fa-lock"></i>
+                            </span>
+                            {% elif p.es_extraordinario and ins.id in aprobados_ids %}
+                            <span class="block w-14 text-center text-gray-300 text-xs py-1" title="Estudiante aprobado - no aplica extraordinario">
+                                <i class="fas fa-lock"></i>
+                            </span>
+                            {% elif p.id in periodos_cerrados %}
                             <input
                                 type="text"
                                 inputmode="decimal"
@@ -99,8 +116,19 @@
                                 data-competencia="{{ c.id }}"
                                 data-periodo="{{ p.id }}"
                                 value="{{ notas|get_item:ins.id|get_item:c.id|get_item:p.id|default:''|unlocalize }}"
-                                {% if p.id in periodos_cerrados %}disabled{% endif %}
+                                disabled
                             >
+                            {% else %}
+                            <input
+                                type="text"
+                                inputmode="decimal"
+                                class="nota-input w-14 text-center border rounded"
+                                data-inscripcion="{{ ins.id }}"
+                                data-competencia="{{ c.id }}"
+                                data-periodo="{{ p.id }}"
+                                value="{{ notas|get_item:ins.id|get_item:c.id|get_item:p.id|default:''|unlocalize }}"
+                            >
+                            {% endif %}
                         </td>
                         {% endfor %}
                     {% endfor %}
