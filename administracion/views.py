@@ -1,4 +1,4 @@
-from collections import defaultdict
+﻿from collections import defaultdict
 from decimal import Decimal, ROUND_HALF_UP
 
 from django.contrib import messages
@@ -75,7 +75,7 @@ from django.db.models import Count
 
 
 def obtener_metricas_dashboard(centro):
-    """Métricas del dashboard cacheadas ~60s para no recalcular en cada request.
+    """MÃ©tricas del dashboard cacheadas ~60s para no recalcular en cada request.
 
     Se guardan como valores planos (lists/dicts) para que sean serializables
     en LocMemCache y Redis.
@@ -167,7 +167,7 @@ def obtener_metricas_dashboard(centro):
         if anio_actual else []
     )
 
-    # ================= MÉTRICAS ACADÉMICAS DEL AÑO ACTIVO =================
+    # ================= MÃ‰TRICAS ACADÃ‰MICAS DEL AÃ‘O ACTIVO =================
     caja_activa = modulo_activo(centro.id, 'caja')
     if anio_actual:
         sincronizar_periodos_anio(anio_actual)
@@ -490,7 +490,7 @@ def listado_personal(request):
         paginator = Paginator(estudiantes, 10)
         page_obj = paginator.get_page(request.GET.get('page'))
 
-        # 🔥 Traer TODAS las inscripciones de una vez (solo página actual)
+        # ðŸ”¥ Traer TODAS las inscripciones de una vez (solo pÃ¡gina actual)
         inscripciones = {
             i.estudiante_id: i
             for i in (
@@ -504,7 +504,7 @@ def listado_personal(request):
             )
         }
 
-        # 🔥 Relacionar sin hacer queries extra
+        # ðŸ”¥ Relacionar sin hacer queries extra
         for e in page_obj.object_list:
 
             inscripcion = inscripciones.get(e.id)
@@ -512,13 +512,13 @@ def listado_personal(request):
             e.grado_actual = (
                 inscripcion.grado.nombre
                 if inscripcion and inscripcion.grado
-                else '—'
+                else 'â€”'
             )
 
             e.seccion_actual = (
                 inscripcion.seccion.nombre
                 if inscripcion and inscripcion.seccion
-                else '—'
+                else 'â€”'
             )
 
         return render(
@@ -535,7 +535,7 @@ def listado_personal(request):
             }
         )
 
-    # ================= SIN SELECCIÓN =================
+    # ================= SIN SELECCIÃ“N =================
     return render(
         request,
         'administracion/listado_personal.html',
@@ -627,13 +627,13 @@ def generar_boletines(request):
     anio = obtener_anio_activo(centro)
 
     if not anio:
-        messages.error(request, "No hay año escolar activo.")
+        messages.error(request, "No hay aÃ±o escolar activo.")
         return redirect("administracion:dashboard_admin")
 
     configuracion, _ = ConfiguracionCentro.objects.get_or_create(centro=centro)
     nota_minima = float(configuracion.nota_minima_aprobacion)
 
-    # 🔒 validar períodos cerrados (se ignoran los completivos)
+    # ðŸ”’ validar perÃ­odos cerrados (se ignoran los completivos)
     if PeriodoAnio.objects.filter(
         anio_escolar=anio,
         cerrado=False,
@@ -641,7 +641,7 @@ def generar_boletines(request):
     ).exists():
         messages.error(
             request,
-            "❌ No se pueden generar boletines. Hay períodos abiertos."
+            "âŒ No se pueden generar boletines. Hay perÃ­odos abiertos."
         )
         return redirect("administracion:dashboard_admin")
 
@@ -652,7 +652,7 @@ def generar_boletines(request):
     ).exists():
         messages.error(
             request,
-            "❌ No hay períodos cerrados para generar boletines."
+            "âŒ No hay perÃ­odos cerrados para generar boletines."
         )
         return redirect("administracion:lista_boletines")
 
@@ -667,7 +667,7 @@ def generar_boletines(request):
 
     for inscripcion in inscripciones:
 
-        # 🔥 1. CONSTRUIR BOLETÍN COMPLETO (motor real)
+        # ðŸ”¥ 1. CONSTRUIR BOLETÃN COMPLETO (motor real)
         try:
             boletin = construir_boletin_estudiante(
                 inscripcion=inscripcion,
@@ -678,7 +678,7 @@ def generar_boletines(request):
             sin_periodos += 1
             continue
 
-        # 🔥 2. EXTRAER PROMEDIO GENERAL
+        # ðŸ”¥ 2. EXTRAER PROMEDIO GENERAL
         asignaturas = boletin.get("asignaturas", [])
 
         promedios = [
@@ -691,13 +691,14 @@ def generar_boletines(request):
             sum(promedios) / len(promedios)
             if promedios else None
         )
+        nota_minima = inscripcion.grado.nivel.nota_minima(configuracion)
         tiene_materia_reprobada = any(
             (a.get("pf") or 0) < nota_minima
             for a in asignaturas
             if a.get("pf") is not None
         )
 
-        # 🔥 3. DEFINIR ESTADO ACADÉMICO
+        # ðŸ”¥ 3. DEFINIR ESTADO ACADÃ‰MICO
         if not promedios:
             estado = "sin_calificacion"
         elif tiene_materia_reprobada:
@@ -707,16 +708,16 @@ def generar_boletines(request):
         else:
             estado = "reprobado"
 
-        # 🔥 4. ACTUALIZAR INSCRIPCIÓN (estado operativo)
+        # ðŸ”¥ 4. ACTUALIZAR INSCRIPCIÃ“N (estado operativo)
         inscripcion.promedio_final = promedio_general
         inscripcion.estado_final = estado
         inscripcion.save()
 
-        # 🔥 5. AGREGAR ESTADO AL BOLETÍN (IMPORTANTE PARA FILTROS)
+        # ðŸ”¥ 5. AGREGAR ESTADO AL BOLETÃN (IMPORTANTE PARA FILTROS)
         boletin["estado_final"] = estado
         boletin["promedio_general"] = promedio_general
 
-        # 🔥 6. GENERAR / ACTUALIZAR ACTA (snapshot oficial)
+        # ðŸ”¥ 6. GENERAR / ACTUALIZAR ACTA (snapshot oficial)
         acta, creada = Acta.objects.update_or_create(
             centro=centro,
             anio_escolar=anio,
@@ -736,9 +737,9 @@ def generar_boletines(request):
 
     messages.success(
         request,
-        f"✅ Boletines procesados correctamente. Nuevos: {creados}, "
+        f"âœ… Boletines procesados correctamente. Nuevos: {creados}, "
         f"Actualizados: {actualizados}."
-        + (f" Sin períodos: {sin_periodos}." if sin_periodos else "")
+        + (f" Sin perÃ­odos: {sin_periodos}." if sin_periodos else "")
     )
 
     return redirect("administracion:lista_boletines")
@@ -750,9 +751,9 @@ def generar_boletines(request):
 @ratelimit(key='ip', rate='20/h', method='POST', block=True)
 def cerrar_completivo(request):
     """
-    Cierra el completivo del año activo: los estudiantes en estado
+    Cierra el completivo del aÃ±o activo: los estudiantes en estado
     'recuperacion' aprueban si superaron TODAS las asignaturas reprobadas
-    dentro del (los) período(s) de completivo cerrado(s).
+    dentro del (los) perÃ­odo(s) de completivo cerrado(s).
     """
 
     if request.method != "POST":
@@ -762,11 +763,10 @@ def cerrar_completivo(request):
     anio = obtener_anio_activo(centro)
 
     if not anio:
-        messages.error(request, "No hay año escolar activo.")
+        messages.error(request, "No hay aÃ±o escolar activo.")
         return redirect("administracion:lista_boletines")
 
     configuracion, _ = ConfiguracionCentro.objects.get_or_create(centro=centro)
-    nota_minima = float(configuracion.nota_minima_aprobacion)
 
     completivo_abierto = PeriodoAnio.objects.filter(
         anio_escolar=anio,
@@ -777,7 +777,7 @@ def cerrar_completivo(request):
     if completivo_abierto:
         messages.error(
             request,
-            "❌ El período de completivo está abierto. Ciérralo antes de procesar."
+            "âŒ El perÃ­odo de completivo estÃ¡ abierto. CiÃ©rralo antes de procesar."
         )
         return redirect("administracion:lista_boletines")
 
@@ -785,7 +785,7 @@ def cerrar_completivo(request):
         centro=centro,
         anio_escolar=anio,
         estado_final='recuperacion'
-    ).select_related("estudiante")
+    ).select_related("estudiante", "grado", "grado__nivel")
 
     aprobados = 0
     reprobados = 0
@@ -793,6 +793,7 @@ def cerrar_completivo(request):
 
     for inscripcion in inscripciones:
 
+        nota_minima = inscripcion.grado.nivel.nota_minima(configuracion)
         resultado = resultado_completivo_estudiante(
             inscripcion,
             centro,
@@ -829,7 +830,7 @@ def cerrar_completivo(request):
 
     messages.success(
         request,
-        f"✅ Completivo procesado: {aprobados} aprobados, "
+        f"âœ… Completivo procesado: {aprobados} aprobados, "
         f"{reprobados} reprobados, {sin_completivo} sin completivo."
     )
 
@@ -842,21 +843,20 @@ def cerrar_completivo(request):
 @ratelimit(key='ip', rate='20/h', method='POST', block=True)
 def cerrar_extraordinario(request):
     """
-    Cierra el extraordinario del año activo: los estudiantes en estado
-    'reprobado' (que venían de recuperacion → completivo reprobado)
+    Cierra el extraordinario del aÃ±o activo: los estudiantes en estado
+    'reprobado' (que venÃ­an de recuperacion â†’ completivo reprobado)
     aprueban si superaron TODAS las asignaturas reprobadas
-    dentro del (los) período(s) extraordinario(s) cerrado(s).
+    dentro del (los) perÃ­odo(s) extraordinario(s) cerrado(s).
     """
 
     centro = request.centro
     anio = obtener_anio_activo(centro)
 
     if not anio:
-        messages.error(request, "No hay año escolar activo.")
+        messages.error(request, "No hay aÃ±o escolar activo.")
         return redirect("administracion:lista_boletines")
 
     configuracion, _ = ConfiguracionCentro.objects.get_or_create(centro=centro)
-    nota_minima = float(configuracion.nota_minima_aprobacion)
 
     extraordinario_abierto = PeriodoAnio.objects.filter(
         anio_escolar=anio,
@@ -867,7 +867,7 @@ def cerrar_extraordinario(request):
     if extraordinario_abierto:
         messages.error(
             request,
-            "El período extraordinario está abierto. Ciérralo antes de procesar."
+            "El perÃ­odo extraordinario estÃ¡ abierto. CiÃ©rralo antes de procesar."
         )
         return redirect("administracion:lista_boletines")
 
@@ -884,6 +884,7 @@ def cerrar_extraordinario(request):
 
     for inscripcion in inscripciones:
 
+        nota_minima = inscripcion.grado.nivel.nota_minima(configuracion)
         resultado = resultado_extraordinario_estudiante(
             inscripcion,
             centro,
@@ -939,8 +940,8 @@ from administracion.models import Acta
 def obtener_stats_personal(centro):
     """Conteos de la pantalla de personal, cacheados por dominio.
 
-    Dependen de la versión de estudiantes (Estudiante) y de personal
-    (Administrativo), ambas invalidadas por sus respectivas señales.
+    Dependen de la versiÃ³n de estudiantes (Estudiante) y de personal
+    (Administrativo), ambas invalidadas por sus respectivas seÃ±ales.
     """
     from core.cache_utils import obtener_o_generar, obtener_version, ttl
 
@@ -973,8 +974,8 @@ def actas_del_centro(centro):
     """Boletines (actas) del centro, cacheados por dominio.
 
     Es la consulta base de la lista de boletines: la vista filtra y
-    pagina en memoria para no re-consultar la BD por cada combinación
-    de filtros. Se invalida con la señal de `Acta`.
+    pagina en memoria para no re-consultar la BD por cada combinaciÃ³n
+    de filtros. Se invalida con la seÃ±al de `Acta`.
     """
     from core.cache_utils import obtener_o_generar, obtener_version, ttl
 
@@ -1002,11 +1003,11 @@ def reportes(request):
 
     metricas = obtener_metricas_reportes(centro)
 
-    # --- Consulta de matrícula por año / grado / sección -------------
+    # --- Consulta de matrÃ­cula por aÃ±o / grado / secciÃ³n -------------
     anios = AnioEscolar.objects.filter(
         centro=centro
     ).order_by('-fecha_inicio')
-    # Los grados son un catálogo compartido; los del centro son aquellos
+    # Los grados son un catÃ¡logo compartido; los del centro son aquellos
     # vinculados a alguna de sus secciones.
     grados = (
         Grado.objects
@@ -1070,9 +1071,9 @@ def reportes(request):
 def obtener_metricas_reportes(centro):
     """Agregados de la pantalla de reportes cacheados.
 
-    Las claves dependen de la versión de estructura (grados/secciones/
-    periodos) y de estudiantes (matrícula/inscripciones), así que se
-    invalidan con las señales existentes.
+    Las claves dependen de la versiÃ³n de estructura (grados/secciones/
+    periodos) y de estudiantes (matrÃ­cula/inscripciones), asÃ­ que se
+    invalidan con las seÃ±ales existentes.
     """
     from core.cache_utils import (
         invalidar_dominio,
@@ -1150,7 +1151,7 @@ def _obtener_metricas_reportes_sql(centro):
 @role_required('director', 'secretaria', 'admin', 'superadmin')
 def ver_boletin_estudiante(request, acta_id):
     """
-    Vista SOLO LECTURA del boletín oficial (Acta).
+    Vista SOLO LECTURA del boletÃ­n oficial (Acta).
     No recalcula nada, solo muestra el snapshot guardado.
     """
 
@@ -1176,7 +1177,7 @@ def lista_boletines(request):
 
     actas = actas_del_centro(centro)
 
-    # 🔥 filtros GET (en memoria sobre la lista base cacheada)
+    # ðŸ”¥ filtros GET (en memoria sobre la lista base cacheada)
     q = request.GET.get("q", "").strip()
     anio_id = request.GET.get("anio")
     estado = request.GET.get("estado")
@@ -1277,7 +1278,7 @@ def anio_escolar_create(request):
             anio = form.save(commit=False)
             anio.centro = centro
 
-            # Solo un año activo por centro
+            # Solo un aÃ±o activo por centro
             if anio.activo:
                 AnioEscolar.objects.filter(
                     centro=centro,
@@ -1368,7 +1369,7 @@ def seguimiento_estudiantes(request):
     if grado_id:
         actas_qs = actas_qs.filter(grado_id=grado_id)
 
-    # Una fila por estudiante: el acta más reciente (último promedio)
+    # Una fila por estudiante: el acta mÃ¡s reciente (Ãºltimo promedio)
     unicos = {}
     for acta in actas_qs:
         if acta.estudiante_id not in unicos:
@@ -1420,7 +1421,7 @@ def seguimiento_estudiantes(request):
         datos = acta.datos or {}
         asignaturas = datos.get("asignaturas", [])
 
-        # 🧮 Calcular promedio general desde los PF
+        # ðŸ§® Calcular promedio general desde los PF
         pfs = [
             a["pf"]
             for a in asignaturas
@@ -1499,7 +1500,7 @@ def seguimiento_estudiante(request, estudiante_id):
             "acta": acta,
             "anio": acta.anio_escolar.nombre,
             "grado": acta.grado,
-            "seccion": acta.seccion or '—',
+            "seccion": acta.seccion or 'â€”',
             "promedio": promedio,
             "estado": estado,
         })
@@ -1549,216 +1550,3 @@ def imprimir_boletin_acta(request, acta_id):
         }
     )
 
-
-# ---------------------------------------------------------------------------
-# Dashboard de Promociones – semáforo de las 6 etapas del cierre de año
-# ---------------------------------------------------------------------------
-
-def _estado_cierre_anio(centro):
-    """Arma el semáforo de las 6 etapas del cierre para el año activo o el último cerrado.
-
-    Reutiliza datos ya existentes: PeriodoAnio, Inscripcion.estado_final,
-    CierreAnio, AnioEscolar. No hace ningún cálculo nuevo de negocio.
-    """
-    from core.models import CierreAnio
-
-    anio = obtener_anio_activo(centro)
-    if not anio:
-        ultimo_cierre = CierreAnio.objects.filter(
-            anio_escolar__centro=centro
-        ).select_related('anio_escolar').order_by('-fecha').first()
-        if ultimo_cierre:
-            anio = ultimo_cierre.anio_escolar
-        else:
-            return None
-
-    periodos = PeriodoAnio.objects.filter(
-        anio_escolar=anio, periodo__es_completivo=False,
-        periodo__es_extraordinario=False
-    )
-    periodos_total = periodos.count()
-    periodos_cerrados = periodos.filter(cerrado=True).count()
-
-    completivo_periodos = PeriodoAnio.objects.filter(
-        anio_escolar=anio, periodo__es_completivo=True
-    )
-    completivo_abierto = completivo_periodos.filter(cerrado=False).exists()
-    completivo_existe = completivo_periodos.exists()
-
-    extraordinario_periodos = PeriodoAnio.objects.filter(
-        anio_escolar=anio, periodo__es_extraordinario=True
-    )
-    extraordinario_abierto = extraordinario_periodos.filter(
-        cerrado=False
-    ).exists()
-    extraordinario_existe = extraordinario_periodos.exists()
-
-    inscripciones = Inscripcion.objects.filter(
-        centro=centro, anio_escolar=anio
-    )
-    total_inscripciones = inscripciones.count()
-    con_boletin = inscripciones.exclude(estado_final='pendiente').count()
-    en_recuperacion = inscripciones.filter(estado_final='recuperacion').count()
-    reprobados = inscripciones.filter(estado_final='reprobado').count()
-    condicionales = inscripciones.filter(
-        estado_final='promocion_condicional'
-    ).count()
-    sin_calificacion = inscripciones.filter(estado_final='sin_calificacion').count()
-
-    cierre = CierreAnio.objects.filter(anio_escolar=anio).first()
-    anio_siguiente_existe = AnioEscolar.objects.filter(
-        centro=centro, fecha_inicio__gt=anio.fecha_fin
-    ).exists()
-
-    return {
-        'anio': anio,
-        'periodos_total': periodos_total,
-        'periodos_cerrados': periodos_cerrados,
-        'periodos_ok': periodos_total > 0 and periodos_cerrados == periodos_total,
-
-        'boletines_total': total_inscripciones,
-        'boletines_generados': con_boletin,
-        'boletines_ok': total_inscripciones == 0 or con_boletin == total_inscripciones,
-
-        'sin_calificacion': sin_calificacion,
-
-        'en_recuperacion': en_recuperacion,
-        'completivo_existe': completivo_existe,
-        'completivo_abierto': completivo_abierto,
-        'completivo_ok': en_recuperacion == 0,
-
-        'reprobados': reprobados,
-        'condicionales': condicionales,
-        'extraordinario_existe': extraordinario_existe,
-        'extraordinario_abierto': extraordinario_abierto,
-        'extraordinario_ok': reprobados == 0,
-
-        'anio_cerrado': anio.cerrado,
-        'cierre': cierre,
-
-        'anio_siguiente_existe': anio_siguiente_existe,
-        'promocion_ejecutada': cierre is not None,
-
-        'sin_calificacion_bloquea': sin_calificacion > 0,
-    }
-
-
-@login_required
-@centro_required
-@role_required('director', 'admin', 'superadmin')
-def promociones_dashboard(request):
-    centro = request.centro
-    estado = _estado_cierre_anio(centro)
-    return render(request, 'administracion/promociones/dashboard.html', {
-        'estado': estado,
-    })
-
-
-# ---------------------------------------------------------------------------
-# Vista de estudiantes en recuperación – detalle de quién debe qué
-# ---------------------------------------------------------------------------
-
-@login_required
-@centro_required
-@role_required('director', 'admin', 'superadmin')
-def promociones_recuperacion(request):
-    centro = request.centro
-    anio = obtener_anio_activo(centro)
-    if not anio:
-        return redirect('administracion:promociones_dashboard')
-
-    configuracion, _ = ConfiguracionCentro.objects.get_or_create(centro=centro)
-    nota_minima = float(configuracion.nota_minima_aprobacion)
-
-    inscripciones = Inscripcion.objects.filter(
-        centro=centro, anio_escolar=anio, estado_final='recuperacion'
-    ).select_related('estudiante', 'grado', 'seccion')
-
-    filas = []
-    for ins in inscripciones:
-        try:
-            boletin = construir_boletin_estudiante(ins, centro, anio)
-        except ValueError:
-            continue
-
-        reprobadas = [
-            a for a in boletin['asignaturas']
-            if a.get('pf') is not None and a['pf'] < nota_minima
-        ]
-
-        detalle = []
-        for a in reprobadas:
-            docente_materia = DocenteMateria.objects.filter(
-                grado=ins.grado, seccion=ins.seccion,
-                anio_escolar=anio, asignatura_id=a['asignatura_id']
-            ).select_related('docente').first()
-            detalle.append({
-                'asignatura': a['asignatura'],
-                'nota': a['pf'],
-                'docente': docente_materia.docente if docente_materia else None,
-            })
-
-        filas.append({
-            'inscripcion': ins,
-            'asignaturas_pendientes': detalle,
-        })
-
-    return render(request, 'administracion/promociones/recuperacion.html', {
-        'anio': anio,
-        'filas': filas,
-    })
-
-
-# ---------------------------------------------------------------------------
-# Vista de estudiantes reprobados – extraordinario
-# ---------------------------------------------------------------------------
-
-@login_required
-@centro_required
-@role_required('director', 'admin', 'superadmin')
-def promociones_extraordinario(request):
-    centro = request.centro
-    anio = obtener_anio_activo(centro)
-    if not anio:
-        return redirect('administracion:promociones_dashboard')
-
-    configuracion, _ = ConfiguracionCentro.objects.get_or_create(centro=centro)
-    nota_minima = float(configuracion.nota_minima_aprobacion)
-
-    inscripciones = Inscripcion.objects.filter(
-        centro=centro, anio_escolar=anio, estado_final='reprobado'
-    ).select_related('estudiante', 'grado', 'seccion')
-
-    filas = []
-    for ins in inscripciones:
-        try:
-            boletin = construir_boletin_estudiante(ins, centro, anio)
-        except ValueError:
-            continue
-
-        reprobadas = [
-            a for a in boletin['asignaturas']
-            if a.get('pf') is not None and a['pf'] < nota_minima
-        ]
-
-        detalle = []
-        for a in reprobadas:
-            docente_materia = DocenteMateria.objects.filter(
-                grado=ins.grado, seccion=ins.seccion,
-                anio_escolar=anio, asignatura_id=a['asignatura_id']
-            ).select_related('docente').first()
-            detalle.append({
-                'asignatura': a['asignatura'],
-                'nota': a['pf'],
-                'docente': docente_materia.docente if docente_materia else None,
-            })
-
-        filas.append({
-            'inscripcion': ins,
-            'asignaturas_pendientes': detalle,
-        })
-
-    return render(request, 'administracion/promociones/extraordinario.html', {
-        'anio': anio,
-        'filas': filas,
-    })

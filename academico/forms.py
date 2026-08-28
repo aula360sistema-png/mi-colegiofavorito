@@ -79,10 +79,14 @@ class GradoForm(forms.ModelForm):
 class SeccionForm(forms.ModelForm):
     class Meta:
         model = Seccion
-        fields = ['nombre']
+        fields = ['nombre', 'capacidad_max']
         widgets = {
             'nombre': forms.TextInput(attrs={
                 'class': 'w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
+            }),
+            'capacidad_max': forms.NumberInput(attrs={
+                'class': 'w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
+                'min': '1',
             }),
         }
 

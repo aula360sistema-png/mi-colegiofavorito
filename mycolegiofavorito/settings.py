@@ -86,6 +86,7 @@ INSTALLED_APPS = [
     'docentes',
     'academico',
     'administracion',
+    'promociones.apps.PromocionesConfig',
     'auditoria.apps.AuditoriaConfig',
     'ia',
     'nomina',

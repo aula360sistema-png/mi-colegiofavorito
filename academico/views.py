@@ -1648,14 +1648,22 @@ def cerrar_anio_escolar(request, pk):
     # ====================================
     # VALIDAR PERIODOS ABIERTOS
     # ====================================
-    if PeriodoAnio.objects.filter(
+    periodos_abiertos = PeriodoAnio.objects.filter(
         anio_escolar=anio,
         cerrado=False
-    ).exists():
+    ).select_related('periodo')
+
+    if periodos_abiertos.exists():
+
+        detalle = ', '.join(
+            f"{p.periodo.nombre} "
+            f"({'completivo' if p.periodo.es_completivo else 'extraordinario' if p.periodo.es_extraordinario else 'regular'})"
+            for p in periodos_abiertos
+        )
 
         messages.error(
             request,
-            "No se puede cerrar el año escolar. Existen períodos abiertos."
+            f"No se puede cerrar el año escolar. Períodos abiertos: {detalle}."
         )
 
         return redirect('anio_escolar_list')

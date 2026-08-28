@@ -17,7 +17,7 @@
                 {{ centro.nombre }} — {{ anio }}
             </p>
         </div>
-        <a href="{% url 'administracion:promociones_dashboard' %}"
+        <a href="{% url 'promociones:dashboard' %}"
            class="inline-flex items-center gap-2 text-sm text-indigo-600 hover:text-indigo-800 transition">
             <i class="fas fa-arrow-left"></i>
             Volver al panel de cierre
@@ -63,9 +63,11 @@
                             {% endfor %}
                         </td>
                         <td class="px-4 py-3 text-gray-500 text-xs">
-                            {% for d in fila.asignaturas_pendientes %}
-                                {{ d.docente|default:"Sin asignar" }}{% if not forloop.last %}, {% endif %}
-                            {% endfor %}
+                            {% if fila.docentes %}
+                                {{ fila.docentes|join:", " }}
+                            {% else %}
+                                Sin asignar
+                            {% endif %}
                         </td>
                     </tr>
                     {% endfor %}

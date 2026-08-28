@@ -267,7 +267,7 @@ def modulos_sidebar(configuracion, request):
             })
             links.append({
                 'etiqueta': 'Cierre y Promociones',
-                'href': reverse('administracion:promociones_dashboard'),
+                'href': reverse('promociones:dashboard'),
                 'icono': 'fa-graduation-cap',
             })
 

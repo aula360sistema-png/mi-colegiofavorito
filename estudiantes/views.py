@@ -551,6 +551,22 @@ def inscribir_estudiante_avanzado(request, estudiante_id):
             inscripcion.centro = centro
             inscripcion.anio_escolar = anio_escolar
 
+            from academico.services.cupo import hay_cupo_disponible
+
+            if inscripcion.seccion and not hay_cupo_disponible(
+                inscripcion.seccion,
+                inscripcion.grado,
+                anio_escolar,
+            ):
+                messages.error(
+                    request,
+                    f"La sección {inscripcion.seccion.nombre} está llena."
+                )
+                return redirect(
+                    'inscribir_estudiante',
+                    estudiante_id=estudiante.id
+                )
+
             inscripcion.save()
 
             logger.debug(

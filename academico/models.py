@@ -1,4 +1,15 @@
 from django.db import models
+
+
+# Nota mínima de aprobación por tipo de nivel según la Ordenanza 04-2023
+# (65 Primaria / 70 Secundaria). Nivel Inicial no tiene escala numérica de
+# promoción, por lo que no se incluye y cae al valor del centro.
+NOTA_MINIMA_MINERD_POR_TIPO = {
+    'primaria': 65,
+    'secundaria': 70,
+}
+
+
 class Nivel(models.Model):
     TIPOS = (
         ('inicial', 'Nivel Inicial'),
@@ -14,6 +25,34 @@ class Nivel(models.Model):
         choices=TIPOS,
         default='primaria'
     )
+    nota_minima_aprobacion = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text=(
+            "Nota mínima de aprobación específica del nivel (ej. 65 "
+            "Primaria, 70 Secundaria). Si se deja vacío, se usa el valor "
+            "general del centro."
+        ),
+    )
+
+    def nota_minima(self, configuracion=None):
+        """Nota mínima efectiva del nivel.
+
+        Cadena de resolución (Ordenanza 04-2023):
+        1) valor explícito del nivel si está configurado;
+        2) nota mínima MINERD por tipo (65 Primaria / 70 Secundaria);
+        3) valor general del centro como último recurso.
+        """
+        if self.nota_minima_aprobacion is not None:
+            return float(self.nota_minima_aprobacion)
+        minerd = NOTA_MINIMA_MINERD_POR_TIPO.get(self.tipo)
+        if minerd is not None:
+            return minerd
+        if configuracion is not None and configuracion.nota_minima_aprobacion is not None:
+            return float(configuracion.nota_minima_aprobacion)
+        return None
 
     def __str__(self):
         return self.nombre
@@ -47,6 +86,11 @@ class Grado(models.Model):
 class Seccion(models.Model):
     centro = models.ForeignKey('core.CentroEducativo', on_delete=models.CASCADE)
     nombre = models.CharField(max_length=5)
+    capacidad_max = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text="Dejar vacío para sin límite.",
+    )
 
     class Meta:
         ordering = ['nombre']

@@ -269,6 +269,34 @@ class PromocionMasivaTests(BaseCierreTestCase):
             2,
         )
 
+    def test_condicional_se_promueve_y_no_se_omite(self):
+        condicional = self._estudiante('22000006')
+        self._inscribir(
+            condicional, '1ro de Primaria', 'promocion_condicional'
+        )
+
+        self.anio.cerrar()
+        self._login(self.director)
+
+        response = self.client.post(
+            reverse('promocion_ejecutar', args=[self.anio.pk]),
+            {
+                'anio_destino': self.nuevo.pk,
+                f'seccion_{self.grados["2do de Primaria"].id}': self.seccion_a.id,
+            },
+            follow=True,
+        )
+        self.assertEqual(response.status_code, 200)
+
+        # El condicional no debe quedar fuera del plan: se promueve.
+        self.assertTrue(
+            Inscripcion.objects.filter(
+                estudiante=condicional,
+                anio_escolar=self.nuevo,
+                grado=self.grados['2do de Primaria'],
+            ).exists()
+        )
+
     def test_preview_muestra_plan_y_destino(self):
         self._inscribir(self._estudiante('22000004'), '3ro de Primaria', 'aprobado')
         self.anio.cerrar()

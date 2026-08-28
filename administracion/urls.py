@@ -1,6 +1,7 @@
 from django import views
 from django.urls import path
-from .views import administrativo_create, imprimir_boletin_acta, cerrar_completivo, cerrar_extraordinario, dashboard_admin, generar_boletines, lista_boletines, listado_personal, mantenimiento_home, reportes, seguimiento_estudiante, seguimiento_estudiantes, ver_boletin_estudiante, promociones_dashboard, promociones_recuperacion, promociones_extraordinario
+from django.views.generic import RedirectView
+from .views import administrativo_create, imprimir_boletin_acta, cerrar_completivo, cerrar_extraordinario, dashboard_admin, generar_boletines, lista_boletines, listado_personal, mantenimiento_home, reportes, seguimiento_estudiante, seguimiento_estudiantes, ver_boletin_estudiante
 
 app_name = 'administracion'
 
@@ -55,17 +56,17 @@ urlpatterns = [
 
     path(
         'promociones/',
-        promociones_dashboard,
+        RedirectView.as_view(pattern_name='promociones:dashboard', permanent=True),
         name='promociones_dashboard'
     ),
     path(
         'promociones/recuperacion/',
-        promociones_recuperacion,
+        RedirectView.as_view(pattern_name='promociones:recuperacion', permanent=True),
         name='promociones_recuperacion'
     ),
     path(
         'promociones/extraordinario/',
-        promociones_extraordinario,
+        RedirectView.as_view(pattern_name='promociones:extraordinario', permanent=True),
         name='promociones_extraordinario'
     ),
     path(

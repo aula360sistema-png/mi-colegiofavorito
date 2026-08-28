@@ -90,12 +90,15 @@ def enriquecer_boletin_para_vista(datos):
 
 def construir_boletin_estudiante(inscripcion, centro, anio):
 
-    # 🔒 Los períodos de completivo NO entran en el promedio base
+    # 🔒 Los períodos de completivo y extraordinario NO entran en el promedio
+    # base (MINERD: las calificaciones parciales del año son solo los períodos
+    # regulares; completivo y extraordinario se evalúan por separado).
     periodos = list(
         Periodo.objects.filter(
             estados__anio_escolar=anio,
             estados__cerrado=True,
-            es_completivo=False
+            es_completivo=False,
+            es_extraordinario=False
         ).order_by("orden")
     )
 
@@ -152,6 +155,8 @@ def construir_boletin_estudiante(inscripcion, centro, anio):
                     "nota": nota
                 })
 
+            # PC = promedio de la competencia: promedio de sus calificaciones
+            # por período  -> (P1+P2+P3+P4)/4  (Art. 49 / Art. 30-e MINERD)
             pc = redondear(sum(valores) / len(valores)) if valores else None
             if pc is not None:
                 pcs.append(pc)
@@ -162,6 +167,8 @@ def construir_boletin_estudiante(inscripcion, centro, anio):
                 "pc": pc
             })
 
+        # PF = promedio final del área: promedio de los PCs de sus competencias
+        # -> (C1+C2+C3)/3  (Art. 30-f MINERD)
         pf = redondear(sum(pcs) / len(pcs)) if pcs else None
 
         asignaturas_map[asignatura.id] = {
@@ -190,10 +197,17 @@ def resultado_completivo_estudiante(inscripcion, centro, anio, nota_minima):
     """
     Evalúa el período de completivo (es_completivo=True) para una inscripción.
 
+    Regla MINERD (Ordenanza 04-2023, Art. 51 y Art. 80):
+    La evaluación completiva vale 50% y la calificación final obtenida durante
+    el año (el promedio de calificaciones parciales, que es el pf del área)
+    representa el otro 50%. Aprueba la asignatura cuya calificación final
+    combinada sea igual o superior a la nota mínima:
+
+        final = (nota_completivo * 0.50) + (pf * 0.50)
+
     Solo se toman en cuenta los períodos de completivo cerrados. Si no existe
     ninguno, devuelve None. El estudiante aprueba el completivo cuando TODAS
-    las asignaturas reprobadas en el promedio base alcanzan la nota mínima
-    dentro del completivo.
+    las asignaturas reprobadas en el promedio base aprueban con el combinado.
     """
 
     completivo_periodos = list(
@@ -251,7 +265,15 @@ def resultado_completivo_estudiante(inscripcion, centro, anio, nota_minima):
 
     for a in reprobadas:
         nota_completivo = completivo_notas.get(a["asignatura_id"])
-        aprueba = nota_completivo is not None and nota_completivo >= nota_minima
+        # MINERD Art. 51/80: completiva 50% + promedio parcial del año (pf) 50%
+        if nota_completivo is not None and a.get("pf") is not None:
+            final = redondear(
+                (nota_completivo * 0.50) + (a["pf"] * 0.50)
+            )
+            aprueba = final >= nota_minima
+        else:
+            final = None
+            aprueba = False
 
         if not aprueba:
             aprobado = False
@@ -260,6 +282,7 @@ def resultado_completivo_estudiante(inscripcion, centro, anio, nota_minima):
             "asignatura": a["asignatura"],
             "pf": a["pf"],
             "nota_completivo": nota_completivo,
+            "final": final,
             "aprueba": aprueba
         })
 
@@ -271,8 +294,15 @@ def resultado_extraordinario_estudiante(inscripcion, centro, anio, nota_minima):
     Evalúa el período extraordinario (es_extraordinario=True) para una inscripción.
 
     Reglas MINERD (Ordenanza 04-2023):
-    - Primaria (3ro-6to): reprueba con 4+ asignaturas; 1-3 = promoción condicional
-    - Secundaria: reprueba con 3+ asignaturas; 1-2 = promoción condicional
+    - Evaluación extraordinaria vale 70%; la calificación final del año de la
+      asignatura (pf) representa el 30% restante (Art. 52 y Art. 81):
+
+        final = (nota_extraordinario * 0.70) + (pf * 0.30)
+
+      La calificación mínima aprobatoria es la nota mínima.
+    - Repetición: Primaria (3ro-6to) reprueba con 4+ asignaturas; 1-3 =
+      promoción condicional. Secundaria: reprueba con 3+ asignaturas; 1-2 =
+      promoción condicional.
 
     Devuelve dict con:
       aprobado: True/False/None (None = sin cambios)
@@ -335,10 +365,15 @@ def resultado_extraordinario_estudiante(inscripcion, centro, anio, nota_minima):
 
     for a in reprobadas:
         nota_extraordinario = extraordinario_notas.get(a["asignatura_id"])
-        aprueba = (
-            nota_extraordinario is not None
-            and nota_extraordinario >= nota_minima
-        )
+        # MINERD Art. 52/81: extraordinaria 70% + calificación final del año (pf) 30%
+        if nota_extraordinario is not None and a.get("pf") is not None:
+            final = redondear(
+                (nota_extraordinario * 0.70) + (a["pf"] * 0.30)
+            )
+            aprueba = final >= nota_minima
+        else:
+            final = None
+            aprueba = False
 
         if not aprueba:
             aprueba_todas = False
@@ -347,6 +382,7 @@ def resultado_extraordinario_estudiante(inscripcion, centro, anio, nota_minima):
             "asignatura": a["asignatura"],
             "pf": a["pf"],
             "nota_extraordinario": nota_extraordinario,
+            "final": final,
             "aprueba": aprueba
         })
 

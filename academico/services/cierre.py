@@ -17,6 +17,7 @@ from academico.models import (
     Competencia,
     DocenteMateria,
     Grado,
+    Seccion,
 )
 from caja.services import deuda_detalle_estudiante
 from estudiantes.models import HistorialAcademico, Inscripcion
@@ -88,7 +89,7 @@ def grado_siguiente(grado):
     )
 
 
-PROMUEVE = ('aprobado',)
+PROMUEVE = ('aprobado', 'promocion_condicional')
 REPITE = ('reprobado', 'recuperacion', 'sin_calificacion')
 
 
@@ -149,6 +150,20 @@ def ejecutar_promocion(anio_origen, anio_destino, usuario,
     Devuelve (creadas, omitidas).
     """
     creadas = omitidas = 0
+    # Contador en memoria de asignaciones por sección para respetar el
+    # cupo durante la promoción masiva (sin reconsultar DB por fila).
+    from .cupo import cantidad_ocupada, hay_cupo_disponible
+
+    secciones_validas = {}
+    for grado_id, sec_id in secciones_por_grado.items():
+        seccion = Seccion.objects.filter(
+            centro=anio_origen.centro, pk=sec_id
+        ).first()
+        if seccion:
+            secciones_validas[int(grado_id)] = (
+                seccion,
+                cantidad_ocupada(seccion, Grado.objects.filter(pk=grado_id).first(), anio_destino),
+            )
 
     existentes = set(
         Inscripcion.objects.filter(
@@ -176,6 +191,15 @@ def ejecutar_promocion(anio_origen, anio_destino, usuario,
             omitidas += 1
             continue
 
+        # Valida cupo de la sección destino (si tiene límite).
+        info_seccion = secciones_validas.get(fila['destino'].id)
+        if info_seccion:
+            seccion_destino, ocupados = info_seccion
+            if seccion_destino.capacidad_max is not None \
+                    and ocupados >= seccion_destino.capacidad_max:
+                omitidas += 1
+                continue
+
         Inscripcion.objects.create(
             estudiante=fila['estudiante'],
             centro=anio_origen.centro,
@@ -184,6 +208,10 @@ def ejecutar_promocion(anio_origen, anio_destino, usuario,
             seccion_id=seccion_id,
         )
         creadas += 1
+        if info_seccion:
+            secciones_validas[fila['destino'].id] = (
+                info_seccion[0], info_seccion[1] + 1,
+            )
 
     return creadas, omitidas
 

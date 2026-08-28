@@ -27,6 +27,18 @@ def cambiar_seccion(inscripcion, seccion, usuario):
             f'{inscripcion.grado.nombre}.'
         )
 
+    from .cupo import hay_cupo_disponible
+
+    if not hay_cupo_disponible(
+        seccion,
+        inscripcion.grado,
+        inscripcion.anio_escolar,
+        excluir_inscripcion_id=inscripcion.id,
+    ):
+        raise CambiarSeccionError(
+            f'La sección {seccion.nombre} está llena.'
+        )
+
     anterior = inscripcion.seccion
     inscripcion.seccion = seccion
     inscripcion.save(update_fields=['seccion'])
