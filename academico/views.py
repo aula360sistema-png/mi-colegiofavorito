@@ -37,6 +37,7 @@ from .forms import NivelForm
 
 from django.db import transaction
 
+@login_required
 def asignar_docente2(request):
     if request.method == "POST":
         DocenteMateria.objects.create(

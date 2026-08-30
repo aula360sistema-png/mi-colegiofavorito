@@ -39,6 +39,8 @@ body.dashboard-body {
 
     width: 290px;
 
+    position: relative;
+
     background: #312e81;
 
     border-right: 1px solid rgba(255,255,255,.06);
@@ -113,17 +115,66 @@ body.dashboard-body {
 }
 
 .dashboard-layout.sidebar-collapsed .sidebar-title,
-.dashboard-layout.sidebar-collapsed .sidebar-user,
-.dashboard-layout.sidebar-collapsed .sidebar-role,
 .dashboard-layout.sidebar-collapsed .sidebar-section span,
 .dashboard-layout.sidebar-collapsed .sidebar-link span,
 .dashboard-layout.sidebar-collapsed .menu-toggle span,
 .dashboard-layout.sidebar-collapsed .sidebar-sublink span,
 .dashboard-layout.sidebar-collapsed .logout-btn span,
 .dashboard-layout.sidebar-collapsed .footer-link span,
-.dashboard-layout.sidebar-collapsed .submenu {
+.dashboard-layout.sidebar-collapsed .submenu,
+.dashboard-layout.sidebar-collapsed .menu-toggle > i.fa-chevron-down {
 
     display: none;
+}
+
+/* --- Flyout de submenú al pasar el mouse (sidebar colapsado, escritorio) ---
+   El submenu es hermano inmediato de su botón .menu-toggle en el HTML, así
+   que no hace falta envolverlos en un contenedor nuevo: basta con mostrarlo
+   vía selector de hermano adyacente y mantenerlo abierto si el mouse pasa
+   sobre el propio submenu (para poder hacer clic en sus opciones). */
+
+.dashboard-layout.sidebar-collapsed .sidebar-nav {
+    /* Necesario para que el flyout (position:absolute) no quede recortado
+       por el scroll vertical del nav. Solo aplica en modo colapsado, donde
+       el contenido visible es más corto (solo íconos) y es menos probable
+       que haga falta scroll; si tu cuenta tiene muchos módulos y el listado
+       de íconos colapsados no entra en la pantalla, este es el trade-off a
+       revisar primero. */
+    overflow-y: visible;
+}
+
+.dashboard-layout.sidebar-collapsed .menu-toggle:hover + .submenu,
+.dashboard-layout.sidebar-collapsed .menu-toggle:focus-visible + .submenu,
+.dashboard-layout.sidebar-collapsed .submenu:hover,
+.dashboard-layout.sidebar-collapsed .submenu:focus-within {
+    display: block;
+    position: absolute;
+    left: 66px;
+    min-width: 240px;
+    max-height: 70vh;
+    overflow-y: auto;
+    background: var(--color-sidebar-bg, #312e81);
+    border-radius: 10px;
+    box-shadow: 0 12px 32px rgba(0,0,0,.4);
+    padding: 8px 0;
+    z-index: 60;
+    /* El sidebar mide 84px de ancho y el .sidebar-nav deja 14px de padding
+       a cada lado, así que el botón colapsado termina en x=70 (84-14). Si el
+       flyout arranca en x=84 queda una franja muerta de 14px donde el hover
+       se pierde. Con left:66 el flyout SOLAPA el borde derecho del botón y
+       no hay ningún hueco al mover el mouse. Además sube un poco (margen
+       negativo) para quedar a la altura del item. */
+    margin-top: -52px;
+    margin-left: 0;
+    border-left: none;
+    padding-left: 0;
+}
+
+.dashboard-layout.sidebar-collapsed .menu-toggle:hover + .submenu span,
+.dashboard-layout.sidebar-collapsed .menu-toggle:focus-visible + .submenu span,
+.dashboard-layout.sidebar-collapsed .submenu:hover span,
+.dashboard-layout.sidebar-collapsed .submenu:focus-within span {
+    display: inline;
 }
 
 .dashboard-layout.sidebar-collapsed .sidebar-header {
@@ -133,16 +184,13 @@ body.dashboard-body {
     padding: 24px 12px;
 }
 
-.dashboard-layout.sidebar-collapsed .sidebar-header > div:nth-child(2) {
-
-    display: none;
-}
-
 .dashboard-layout.sidebar-collapsed .sidebar-link,
 .dashboard-layout.sidebar-collapsed .menu-toggle,
 .dashboard-layout.sidebar-collapsed .footer-link {
 
     justify-content: center;
+
+    height: 48px;
 }
 
 }
@@ -196,55 +244,28 @@ body.dashboard-body {
 
     padding: 0;
 
-    cursor: pointer;
-
     transition: transform .2s ease;
-}
-
-.sidebar-logo:hover {
-
-    transform: scale(1.05);
 }
 
 /* Title */
 
 .sidebar-title {
 
-    font-size: 20px;
+    font-size: 21px;
 
     font-weight: 700;
 
     margin: 0;
 
+    min-width: 0;
+
+    overflow: hidden;
+
+    white-space: nowrap;
+
+    text-overflow: ellipsis;
+
     color: #ffffff;
-}
-
-.sidebar-user {
-
-    margin-top: 6px;
-
-    font-size: 14px;
-
-    color: #c7d2fe;
-}
-
-.sidebar-role {
-
-    display: inline-block;
-
-    margin-top: 8px;
-
-    background: rgba(99,102,241,.35);
-
-    color: #e0e7ff;
-
-    padding: 5px 12px;
-
-    border-radius: 999px;
-
-    font-size: 12px;
-
-    font-weight: 600;
 }
 
 /* =========================
@@ -830,6 +851,7 @@ body.dashboard-body {
         display: none;
     }
 
+    .topbar,
     .mobile-topbar,
     .sidebar-backdrop,
     .sidebar-close {
@@ -995,6 +1017,183 @@ body.dashboard-body {
 .sidebar-close {
 
     display: none;
+}
+
+/* =========================
+   TOPBAR ESCRITORIO (perfil a la derecha)
+========================= */
+
+.topbar {
+
+    display: none;
+}
+
+@media (min-width: 1025px) {
+
+    .topbar {
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: flex-end;
+
+        position: fixed;
+
+        top: 0;
+
+        right: 0;
+
+        left: 290px;
+
+        height: 64px;
+
+        padding: 0 24px;
+
+        background: rgba(255,255,255,.92);
+
+        -webkit-backdrop-filter: blur(10px);
+
+        backdrop-filter: blur(10px);
+
+        border-bottom: 1px solid rgba(17,24,39,.08);
+
+        z-index: 55;
+    }
+
+    .dashboard-layout.sidebar-collapsed .topbar {
+
+        left: 84px;
+    }
+
+    .topbar-perfil {
+
+        display: flex;
+
+        align-items: center;
+
+        gap: 12px;
+    }
+
+    .topbar-avatar {
+
+        width: 40px;
+
+        height: 40px;
+
+        flex-shrink: 0;
+
+        border-radius: 999px;
+
+        border: 2px solid #e0e7ff;
+
+        background:
+            linear-gradient(
+                135deg,
+                #4f46e5,
+                #6366f1
+            );
+
+        padding: 0;
+
+        overflow: hidden;
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: center;
+
+        color: #ffffff;
+
+        font-size: 14px;
+
+        font-weight: 700;
+
+        cursor: pointer;
+
+        transition: border-color .2s ease, transform .2s ease;
+    }
+
+    .topbar-avatar:hover {
+
+        border-color: #6366f1;
+
+        transform: scale(1.05);
+    }
+
+    .topbar-avatar img {
+
+        width: 100%;
+
+        height: 100%;
+
+        object-fit: cover;
+    }
+
+    .topbar-avatar-iniciales {
+
+        width: 100%;
+
+        height: 100%;
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: center;
+
+        text-transform: uppercase;
+    }
+
+    .topbar-identidad {
+
+        display: flex;
+
+        flex-direction: column;
+
+        min-width: 0;
+
+        line-height: 1.25;
+    }
+
+    .topbar-nombre {
+
+        font-size: 14px;
+
+        font-weight: 600;
+
+        color: #1e1b4b;
+
+        white-space: nowrap;
+
+        overflow: hidden;
+
+        text-overflow: ellipsis;
+
+        max-width: 220px;
+    }
+
+    .topbar-rol {
+
+        font-size: 12px;
+
+        color: #6b7280;
+    }
+
+    .topbar-caret {
+
+        font-size: 12px;
+
+        color: #9ca3af;
+    }
+
+    /* Contenido con espacio para la topbar fija */
+
+    .main-content {
+
+        padding-top: 99px;
+    }
 }
 
 /* =========================

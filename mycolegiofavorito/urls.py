@@ -33,6 +33,7 @@ urlpatterns = [
     path('academico/', include('academico.urls')),
     path('usuarios/', include('usuarios.urls', namespace='usuarios')),  # aquí
     path('administracion/', include('administracion.urls', namespace='administracion')),
+    path('reportes/', include('reportes.urls', namespace='reportes')),
     path('promociones/', include('promociones.urls', namespace='promociones')),
      path('ia/', include('ia.urls')),
     path('nomina/', include('nomina.urls', namespace='nomina')),
@@ -45,6 +46,7 @@ urlpatterns = [
     path('entrenamiento/', include('entrenamiento.urls', namespace='entrenamiento')),
     path('orientacion/', include('orientacion.urls', namespace='orientacion')),
     path('seguridad/', include('seguridad.urls', namespace='seguridad')),
+    path('automatizaciones/', include('automatizaciones.urls', namespace='automatizaciones')),
 
 ]
 

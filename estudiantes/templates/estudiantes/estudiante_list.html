@@ -67,63 +67,75 @@
 
     </div>
 
-    <!-- Filtros -->
-    <div class="bg-white shadow-sm rounded-xl border border-gray-200 p-4 mb-6">
-
-        <form method="get" class="flex flex-col md:flex-row gap-3">
-
-            <div class="flex-1 relative">
-                <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
-                <input
-                    type="text"
-                    name="q"
-                    value="{{ q }}"
-                    placeholder="Buscar por matrícula, nombre o apellido..."
-                    class="w-full border border-gray-300 rounded-lg pl-10 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-            </div>
-
-            <select
-                name="estado"
-                class="md:w-52 border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                <option value="">Todos los estados</option>
-                <option value="matriculado" {% if estado == 'matriculado' %}selected{% endif %}>
-                    <i class="fa-solid fa-check text-green-600"></i> Matriculados
-                </option>
-                <option value="sin_matricula" {% if estado == 'sin_matricula' %}selected{% endif %}>
-                    <i class="fa-solid fa-xmark text-red-600"></i> Sin matrícula
-                </option>
-            </select>
-
-            <button type="submit"
-                    class="inline-flex items-center justify-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-lg hover:bg-blue-700 text-sm font-semibold">
-                <i class="fas fa-filter"></i>
-                Filtrar
-            </button>
-
-            {% if q or estado %}
-            <a href="{% url 'estudiante_list' %}"
-               class="inline-flex items-center justify-center gap-2 bg-gray-200 text-gray-700 px-5 py-2.5 rounded-lg hover:bg-gray-300 text-sm font-medium">
-                <i class="fas fa-times"></i>
-                Limpiar
-            </a>
-            {% endif %}
-
-        </form>
-
-    </div>
-
     <!-- Tabla -->
     <div class="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
 
-        <div class="flex items-center justify-between px-5 py-4 border-b border-gray-200 bg-gray-50">
-            <h3 class="font-semibold text-gray-800 flex items-center gap-2">
-                <i class="fas fa-list text-gray-400"></i>
-                Listado de estudiantes
-            </h3>
-            <span class="text-xs font-medium bg-blue-100 text-blue-700 px-2.5 py-1 rounded-full">
-                {{ estudiantes|length }} mostrando
-            </span>
+        <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-3 px-5 py-3.5 border-b border-gray-200 bg-gray-50">
+
+            <div class="flex items-center gap-2">
+                <h3 class="font-semibold text-gray-800 flex items-center gap-2">
+                    <i class="fas fa-list text-gray-400"></i>
+                    Listado de estudiantes
+                </h3>
+                <span class="text-xs font-medium bg-blue-100 text-blue-700 px-2.5 py-1 rounded-full">
+                    {{ page_obj.paginator.count }} resultado{{ page_obj.paginator.count|pluralize }}
+                </span>
+            </div>
+
+            <form method="get" class="flex-1 min-w-0 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+
+                <div class="flex-1 min-w-0 relative">
+                    <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                    <input
+                        type="text"
+                        name="q"
+                        value="{{ q }}"
+                        placeholder="Buscar matrícula, nombre o apellido..."
+                        class="w-full border border-gray-300 rounded-lg pl-10 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    >
+                </div>
+
+                <select
+                    name="estado"
+                    class="w-full sm:w-52 border border-gray-300 rounded-lg px-2.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <option value="">Todos los estados</option>
+                    <optgroup label="Matrícula">
+                        <option value="matriculado" {% if estado == 'matriculado' %}selected{% endif %}>
+                            Matriculados
+                        </option>
+                        <option value="sin_matricula" {% if estado == 'sin_matricula' %}selected{% endif %}>
+                            Sin matrícula
+                        </option>
+                    </optgroup>
+                    <optgroup label="Estado actual">
+                        <option value="activo" {% if estado == 'activo' %}selected{% endif %}>
+                            Activos
+                        </option>
+                        <option value="retirado" {% if estado == 'retirado' %}selected{% endif %}>
+                            Retirados
+                        </option>
+                        <option value="egresado" {% if estado == 'egresado' %}selected{% endif %}>
+                            Egresados
+                        </option>
+                    </optgroup>
+                </select>
+
+                <button type="submit"
+                        class="inline-flex items-center justify-center gap-2 bg-blue-600 text-white px-3.5 py-2 rounded-lg hover:bg-blue-700 text-sm font-semibold">
+                    <i class="fas fa-filter"></i>
+                    <span class="hidden sm:inline">Filtrar</span>
+                </button>
+
+                {% if q or estado %}
+                <a href="{% url 'estudiante_list' %}" title="Limpiar filtros"
+                   class="inline-flex items-center justify-center gap-2 bg-gray-200 text-gray-700 px-3.5 py-2 rounded-lg hover:bg-gray-300 text-sm font-medium">
+                    <i class="fas fa-times"></i>
+                    <span class="hidden sm:inline">Limpiar</span>
+                </a>
+                {% endif %}
+
+            </form>
+
         </div>
 
         <div class="overflow-x-auto">
@@ -165,7 +177,7 @@
                                 </button>
                                 <div>
                                     <p class="font-medium text-gray-800">{{ e.nombre_completo }}</p>
-                                    <p class="text-xs text-gray-400">{{ e.get_sexo_display }}</p>
+                                    <p class="text-xs text-gray-400">{{ e.get_sexo_display }} · {{ e.edad }} años</p>
                                 </div>
                             </div>
                         </td>
@@ -262,15 +274,45 @@
 
         </div>
 
-        <div class="flex items-center justify-between px-5 py-3 border-t border-gray-200 bg-gray-50 text-sm text-gray-600">
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-3 px-5 py-3 border-t border-gray-200 bg-gray-50 text-sm text-gray-600">
             <span>
-                Mostrando <strong>{{ estudiantes|length }}</strong> de
-                <strong>{{ stats.total }}</strong> estudiantes
+                Mostrando <strong>{{ page_obj.start_index }}</strong>–<strong>{{ page_obj.end_index }}</strong> de
+                <strong>{{ page_obj.paginator.count }}</strong> estudiantes
             </span>
 
+            {% if page_obj.paginator.num_pages > 1 %}
+            <nav class="flex items-center gap-1" aria-label="Paginación">
+                {% if page_obj.has_previous %}
+                <a href="?{% if q %}q={{ q|urlencode }}&{% endif %}{% if estado %}estado={{ estado }}&{% endif %}pagina={{ page_obj.previous_page_number }}"
+                   class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-100 text-xs font-medium transition">
+                    <i class="fas fa-chevron-left text-[10px]"></i> Anterior
+                </a>
+                {% else %}
+                <span class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-300 text-xs font-medium cursor-not-allowed">
+                    <i class="fas fa-chevron-left text-[10px]"></i> Anterior
+                </span>
+                {% endif %}
+
+                <span class="px-2.5 py-1 text-xs font-semibold text-gray-500">
+                    {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
+                </span>
+
+                {% if page_obj.has_next %}
+                <a href="?{% if q %}q={{ q|urlencode }}&{% endif %}{% if estado %}estado={{ estado }}&{% endif %}pagina={{ page_obj.next_page_number }}"
+                   class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-100 text-xs font-medium transition">
+                    Siguiente <i class="fas fa-chevron-right text-[10px]"></i>
+                </a>
+                {% else %}
+                <span class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-300 text-xs font-medium cursor-not-allowed">
+                    Siguiente <i class="fas fa-chevron-right text-[10px]"></i>
+                </span>
+                {% endif %}
+            </nav>
+            {% else %}
             <span class="text-xs text-gray-400 hidden sm:block">
                 Ordenados por apellido
             </span>
+            {% endif %}
         </div>
 
     </div>

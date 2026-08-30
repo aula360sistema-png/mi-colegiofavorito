@@ -11,23 +11,19 @@
     <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-600 shadow-xl">
         <div class="absolute inset-0 opacity-20 hero-bg">
         </div>
-        <div class="relative px-8 py-8 flex flex-wrap items-center justify-between gap-6">
-            <div>
-                <p class="text-indigo-200 text-sm font-medium uppercase tracking-wider">Panel de Dirección</p>
-                <h2 class="text-3xl font-bold text-white mt-1">
-                    <span id="saludo">Buen día</span>, {{ request.user.first_name|default:request.user.get_full_name }}
-                </h2>
-                <p class="text-indigo-100 mt-2 flex items-center gap-2">
-                    <i class="fas fa-school"></i> {{ centro.nombre }}
-                    <span class="text-white/40">|</span>
-                    <i class="fas fa-calendar-days"></i>
-                    <span id="fecha-hoy"></span>
-                </p>
-            </div>
+        <div class="relative px-6 py-7 sm:px-8">
 
-            <div class="flex flex-col items-end gap-2">
+            <!-- Fila superior: saludo + año escolar -->
+            <div class="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                    <p class="text-indigo-200 text-xs font-semibold uppercase tracking-widest">Panel de Dirección</p>
+                    <h2 class="text-2xl sm:text-3xl font-bold text-white mt-1">
+                        <span id="saludo">Buenos días</span>
+                    </h2>
+                </div>
+
                 {% if anio_actual %}
-                    <span class="inline-flex items-center gap-2 bg-white/15 text-white rounded-full px-4 py-1.5 text-sm font-semibold backdrop-blur">
+                    <span class="inline-flex items-center gap-2 bg-white/15 text-white rounded-full px-4 py-1.5 text-sm font-semibold backdrop-blur ring-1 ring-inset ring-white/20">
                         <i class="fas fa-calendar-check"></i>
                         Año escolar: {{ anio_actual.nombre }}
                     </span>
@@ -37,14 +33,24 @@
                         No hay año escolar activo
                     </span>
                 {% endif %}
+            </div>
 
-                <div class="flex gap-2 mt-2">
+            <!-- Fila inferior: colegio/fecha + acciones -->
+            <div class="mt-6 flex flex-wrap items-center justify-between gap-4 border-t border-white/15 pt-5">
+                <p class="text-indigo-100 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+                    <i class="fas fa-school"></i> {{ centro.nombre }}
+                    <span class="text-white/40">|</span>
+                    <i class="fas fa-calendar-days"></i>
+                    <span id="fecha-hoy"></span>
+                </p>
+
+                <div class="flex flex-col sm:flex-row gap-2">
                     <a href="{% url 'usuarios:crear_miembro' %}"
-                       class="inline-flex items-center gap-2 bg-white text-indigo-700 text-sm font-semibold rounded-lg px-4 py-2 hover:bg-indigo-50 shadow">
+                       class="inline-flex items-center justify-center gap-2 bg-white text-indigo-700 text-sm font-semibold rounded-lg px-4 py-2 shadow hover:bg-indigo-50 transition">
                         <i class="fas fa-user-plus"></i> Crear usuario
                     </a>
                     <a href="{% url 'caja:registrar_pago' %}"
-                       class="inline-flex items-center gap-2 bg-white/15 text-white text-sm font-semibold rounded-lg px-4 py-2 hover:bg-white/25 backdrop-blur">
+                       class="inline-flex items-center justify-center gap-2 bg-white/15 text-white text-sm font-semibold rounded-lg px-4 py-2 ring-1 ring-inset ring-white/25 hover:bg-white/25 transition">
                         <i class="fas fa-money-bill-wave"></i> Registrar pago
                     </a>
                 </div>
@@ -139,18 +145,6 @@
         </div>
         {% endif %}
     </div>
-
-    <!-- ================= ACCESOS RÁPIDOS ================= -->
-    {% has_perm_page 'solicitudes_certificados' as p_dash_solic %}
-    {% if p_dash_solic %}
-    <div class="flex flex-wrap gap-3">
-        <a href="{% url 'solicitudes_certificados' %}"
-           class="inline-flex items-center gap-2 bg-white border border-indigo-200 text-indigo-700 px-4 py-2.5 rounded-xl text-sm font-semibold shadow-sm hover:bg-indigo-50 transition">
-            <i class="fas fa-file-circle-check"></i>
-            Solicitudes de certificados
-        </a>
-    </div>
-    {% endif %}
 
     <!-- ================= MÉTRICAS EJECUTIVAS ================= -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-5">

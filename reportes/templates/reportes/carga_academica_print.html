@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Carga académica de docentes — {{ centro.nombre }}</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Georgia, 'Times New Roman', serif; color: #111; padding: 40px; max-width: 900px; margin: 0 auto; }
+        .encabezado { text-align: center; border-bottom: 3px double #111; padding-bottom: 12px; margin-bottom: 16px; }
+        .encabezado h1 { font-size: 18px; text-transform: uppercase; letter-spacing: 1px; }
+        .encabezado h2 { font-size: 15px; font-weight: normal; margin-top: 4px; }
+        .encabezado p { font-size: 12px; color: #444; margin-top: 2px; }
+        h3.titulo { text-align: center; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+        p.subtitulo { text-align: center; font-size: 12px; color: #444; margin-bottom: 14px; }
+        .docente { border: 1px solid #333; margin-bottom: 12px; page-break-inside: avoid; }
+        .docente .cabecera { background: #eee; border-bottom: 1px solid #333; padding: 8px 10px; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+        .docente .nombre { font-weight: bold; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .docente .datos { font-size: 11px; color: #444; }
+        table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        th, td { border: 1px solid #333; padding: 5px 8px; text-align: left; }
+        th { background: #f4f4f4; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .firmas { display: flex; justify-content: space-between; margin-top: 60px; page-break-inside: avoid; }
+        .firma { text-align: center; width: 280px; }
+        .firma .linea { border-top: 1.5px solid #111; margin-bottom: 5px; padding-top: 5px; font-size: 12px; font-weight: bold; }
+        .firma .cargo { font-size: 11px; color: #444; }
+        .pie { margin-top: 16px; font-size: 10px; color: #666; text-align: center; }
+        .acciones { max-width: 900px; margin: 0 auto 16px; text-align: right; }
+        button { background: #7c3aed; color: #fff; border: 0; padding: 9px 18px; border-radius: 8px; font-size: 13px; cursor: pointer; }
+        @media print { .acciones { display: none; } body { padding: 16px; } }
+    </style>
+</head>
+<body>
+
+    <div class="acciones">
+        <button onclick="window.print()">Imprimir / Guardar PDF</button>
+    </div>
+
+    <div class="encabezado">
+        <h1>República Dominicana</h1>
+        <h2>Ministerio de Educación — MINERD</h2>
+        <p>Código: {{ centro.codigo_minerd }} · {{ centro.nombre }}</p>
+        {% if centro.region %}<p>Regional {{ centro.region }} · Distrito {{ centro.distrito }}</p>{% endif %}
+    </div>
+
+    <h3 class="titulo">Carga académica de docentes</h3>
+    <p class="subtitulo">
+        Año escolar {{ anio.nombre }}
+        · {{ total_asignaciones }} asignación{{ total_asignaciones|pluralize }}
+    </p>
+
+    {% if filas %}
+    {% for f in filas %}
+    <div class="docente">
+        <div class="cabecera">
+            <div class="nombre">{{ f.docente.nombre_completo }}</div>
+            <div class="datos">
+                Cédula {{ f.docente.cedula }} · {{ f.docente.tipo_contrato|title }} · Tanda {{ f.docente.tanda|title }}
+            </div>
+        </div>
+
+        {% if f.asignaciones %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Grado</th>
+                    <th>Sección</th>
+                    <th>Asignatura</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for a in f.asignaciones %}
+                <tr>
+                    <td>{{ a.grado.nombre }}</td>
+                    <td>{{ a.seccion.nombre }}</td>
+                    <td>{{ a.asignatura.nombre }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p style="text-align:center;color:#666;padding:10px 0;font-style:italic;">
+            Sin asignaciones en este año escolar.
+        </p>
+        {% endif %}
+    </div>
+    {% endfor %}
+
+    <p class="pie">
+        Total de docentes: <strong>{{ filas|length }}</strong> ·
+        Emitido el {{ fecha_emision|date:"d/m/Y" }}
+    </p>
+
+    <div class="firmas">
+        <div class="firma">
+            <div class="linea">&nbsp;</div>
+            <div class="cargo">Director(a)</div>
+        </div>
+        <div class="firma">
+            <div class="linea">&nbsp;</div>
+            <div class="cargo">Secretario(a)</div>
+        </div>
+    </div>
+
+    {% else %}
+    <p style="text-align:center;color:#666;padding:40px 0;">
+        Sin docentes para los filtros elegidos.
+    </p>
+    {% endif %}
+
+</body>
+</html>

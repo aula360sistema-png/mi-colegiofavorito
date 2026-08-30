@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Reporte de asistencia — {{ centro.nombre }}</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Georgia, 'Times New Roman', serif; color: #111; padding: 40px; max-width: 1100px; margin: 0 auto; }
+        .encabezado { text-align: center; border-bottom: 3px double #111; padding-bottom: 12px; margin-bottom: 16px; }
+        .encabezado h1 { font-size: 18px; text-transform: uppercase; letter-spacing: 1px; }
+        .encabezado h2 { font-size: 15px; font-weight: normal; margin-top: 4px; }
+        .encabezado p { font-size: 12px; color: #444; margin-top: 2px; }
+        h3.titulo { text-align: center; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+        p.subtitulo { text-align: center; font-size: 12px; color: #444; margin-bottom: 14px; }
+        .datos { font-size: 12.5px; line-height: 1.7; margin-bottom: 14px; }
+        table { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 16px; }
+        th, td { border: 1px solid #333; padding: 5px 7px; text-align: left; }
+        th { background: #eee; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.4px; }
+        td.num, th.num { text-align: center; width: 34px; }
+        td.ctr, th.ctr { text-align: center; }
+        td.mat, th.mat { font-family: 'Courier New', monospace; }
+        td.dia { text-align: center; width: 22px; font-size: 11px; }
+        th.dia { text-align: center; width: 22px; padding: 3px 1px; font-size: 9px; }
+        .celda { text-align: center; font-weight: bold; }
+        .celda.c-presente { color: #111; }
+        .celda.c-ausente { color: #111; }
+        .vacio { background: #f5f5f5; }
+        .firmas { display: flex; justify-content: space-between; margin-top: 60px; page-break-inside: avoid; }
+        .firma { text-align: center; width: 280px; }
+        .firma .linea { border-top: 1.5px solid #111; margin-bottom: 5px; padding-top: 5px; font-size: 12px; font-weight: bold; }
+        .firma .cargo { font-size: 11px; color: #444; }
+        .pie { margin-top: 24px; font-size: 10px; color: #666; text-align: center; }
+        .acciones { max-width: 1100px; margin: 0 auto 16px; text-align: right; }
+        button { background: #059669; color: #fff; border: 0; padding: 9px 18px; border-radius: 8px; font-size: 13px; cursor: pointer; }
+        .beta { color: #b91c1c; }
+        @media print { .acciones { display: none; } body { padding: 16px; } }
+        .no-romper { page-break-inside: avoid; }
+    </style>
+</head>
+<body>
+
+    <div class="acciones">
+        <button onclick="window.print()">Imprimir / Guardar PDF</button>
+    </div>
+
+    <div class="encabezado">
+        <h1>República Dominicana</h1>
+        <h2>Ministerio de Educación — MINERD</h2>
+        <p>Código: {{ centro.codigo_minerd }} · {{ centro.nombre }}</p>
+        {% if centro.region %}<p>Regional {{ centro.region }} · Distrito {{ centro.distrito }}</p>{% endif %}
+    </div>
+
+    {% if error %}
+        <p class="aviso">{{ error }}</p>
+    {% elif tipo == 'estudiante' and inscripcion %}
+        <h3 class="titulo">Reporte de asistencia del estudiante</h3>
+        <p class="subtitulo">Año escolar {{ anio.nombre }}{% if MES %} · {{ MESES|slice:MES|last }}{% endif %}</p>
+
+        <div class="datos no-romper">
+            <strong>Estudiante:</strong> {{ inscripcion.estudiante.nombre_completo }}<br>
+            <strong>Matrícula:</strong> {{ inscripcion.estudiante.matricula }} &nbsp;·&nbsp;
+            <strong>Grado:</strong> {{ inscripcion.grado.nombre }} &nbsp;·&nbsp;
+            <strong>Sección:</strong> {{ inscripcion.seccion.nombre }}
+        </div>
+
+        {% if resumen.meses %}
+        <table class="no-romper">
+            <thead>
+                <tr>
+                    <th class="num">Mes</th>
+                    <th class="ctr">Presente</th>
+                    <th class="ctr">Tardanza</th>
+                    <th class="ctr">Justificado</th>
+                    <th class="ctr">Ausente</th>
+                    <th class="ctr">Total</th>
+                    <th class="ctr">% Asistencia</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for m in resumen.meses %}
+                <tr>
+                    <td>{{ m.nombre }}</td>
+                    <td class="ctr">{{ m.presente }}</td>
+                    <td class="ctr">{{ m.tardanza }}</td>
+                    <td class="ctr">{{ m.justificado }}</td>
+                    <td class="ctr">{{ m.ausente }}</td>
+                    <td class="ctr">{{ m.total }}</td>
+                    <td class="ctr">{{ m.porcentaje|default:"—" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+
+        {% if resumen.detalle %}
+        <p class="subtitulo">Detalle por fecha</p>
+        <table>
+            <thead>
+                <tr>
+                    <th class="num">N°</th>
+                    <th>Fecha</th>
+                    <th>Día</th>
+                    <th>Estado</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for d in resumen.detalle %}
+                <tr>
+                    <td class="num">{{ forloop.counter }}</td>
+                    <td>{{ d.fecha|date:"d/m/Y" }}</td>
+                    <td>{{ d.dia }}</td>
+                    <td>{{ d.estado_display }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% elif resumen.dias == 0 %}
+        <p style="text-align:center;color:#666;padding:30px 0;">
+            Sin registros de asistencia para el período seleccionado.
+        </p>
+        {% endif %}
+
+        {% with c=resumen.totales %}
+        {% if c.total %}
+        <div class="datos no-romper" style="margin-top:4px;">
+            <strong>Totales:</strong> Presente {{ c.presente }} · Tardanza {{ c.tardanza }} ·
+            Justificado {{ c.justificado }} · Ausente {{ c.ausente }} ·
+            <strong>% Asistencia: {{ c.porcentaje|default:"—" }}%</strong>
+        </div>
+        {% endif %}
+        {% endwith %}
+
+    {% elif tipo == 'seccion' %}
+
+        {% if resumen.mes %}
+        <h3 class="titulo">Planilla de asistencia mensual</h3>
+        <p class="subtitulo">
+            Año escolar {{ anio.nombre }} · {{ MESES|slice:resumen.mes|last }} ·
+            {{ resumen.filas|length }} estudiante{{ resumen.filas|length|pluralize }}
+        </p>
+        {% if resumen.dias_celdas %}
+        <table>
+            <thead>
+                <tr>
+                    <th class="num">N°</th>
+                    <th class="mat">Estudiante</th>
+                    {% for d in resumen.dias_celdas %}
+                    <th class="dia">{{ d.fecha.day }}<br>{{ d.dia }}</th>
+                    {% endfor %}
+                    <th class="ctr">P</th>
+                    <th class="ctr">T</th>
+                    <th class="ctr">J</th>
+                    <th class="ctr">A</th>
+                    <th class="ctr">%</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for f in resumen.filas %}
+                <tr>
+                    <td class="num">{{ forloop.counter }}</td>
+                    <td>{{ f.inscripcion.estudiante.primer_apellido }} {{ f.inscripcion.estudiante.segundo_apellido }}, {{ f.inscripcion.estudiante.primer_nombre }} {{ f.inscripcion.estudiante.segundo_nombre }}</td>
+                    {% for dc in resumen.dias_celdas %}
+                    <td class="dia celda{% if not dc.celdas|get_item:f.inscripcion.id %} vacio{% endif %}">
+                        {% with s=dc.celdas|get_item:f.inscripcion.id %}
+                        {% if s == 'presente' %}P{% elif s == 'tardanza' %}T{% elif s == 'justificado' %}J{% elif s == 'ausente' %}A{% elif s %}{{ s.0|upper }}{% else %}&middot;{% endif %}
+                        {% endwith %}
+                    </td>
+                    {% endfor %}
+                    <td class="ctr">{{ f.presente }}</td>
+                    <td class="ctr">{{ f.tardanza }}</td>
+                    <td class="ctr">{{ f.justificado }}</td>
+                    <td class="ctr">{{ f.ausente }}</td>
+                    <td class="ctr">{{ f.porcentaje|default:"—" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <p class="pie">P: Presente · T: Tardanza · J: Justificado · A: Ausente · %: porcentaje de asistencia (P+T+J)</p>
+        {% elif resumen.hay_registros %}
+        <p style="text-align:center;color:#666;padding:30px 0;">No hay celdas para mostrar.</p>
+        {% else %}
+        <p style="text-align:center;color:#666;padding:30px 0;">
+            Sin registros de asistencia en este mes. Las asistencias se registran en el
+            módulo de asistencia (toma de lista diaria).
+        </p>
+        {% endif %}
+
+        {% else %}
+        <h3 class="titulo">Resumen de asistencia</h3>
+        <p class="subtitulo">
+            Año escolar {{ anio.nombre }} · {{ resumen.filas|length }} estudiante{{ resumen.filas|length|pluralize }}
+        </p>
+
+        <table class="no-romper">
+            <thead>
+                <tr>
+                    <th class="num">N°</th>
+                    <th class="mat">Matrícula</th>
+                    <th>Estudiante</th>
+                    <th class="ctr">Sección</th>
+                    <th class="ctr">Presente</th>
+                    <th class="ctr">Tardanza</th>
+                    <th class="ctr">Justificado</th>
+                    <th class="ctr">Ausente</th>
+                    <th class="ctr">% Asistencia</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for f in resumen.filas %}
+                <tr>
+                    <td class="num">{{ forloop.counter }}</td>
+                    <td class="mat">{{ f.inscripcion.estudiante.matricula }}</td>
+                    <td>{{ f.inscripcion.estudiante.primer_apellido }} {{ f.inscripcion.estudiante.segundo_apellido }}, {{ f.inscripcion.estudiante.primer_nombre }} {{ f.inscripcion.estudiante.segundo_nombre }}</td>
+                    <td class="ctr">{{ f.inscripcion.seccion.nombre }}</td>
+                    <td class="ctr">{{ f.presente }}</td>
+                    <td class="ctr">{{ f.tardanza }}</td>
+                    <td class="ctr">{{ f.justificado }}</td>
+                    <td class="ctr">{{ f.ausente }}</td>
+                    <td class="ctr">{{ f.porcentaje|default:"—" }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="9" class="ctr">Sin estudiantes en el rango seleccionado.</td></tr>
+                {% endfor %}
+            </tbody>
+            {% if resumen.totales.total %}
+            <tfoot>
+                <tr>
+                    <td class="num" colspan="3"><strong>Totales</strong></td>
+                    <td class="ctr">—</td>
+                    <td class="ctr"><strong>{{ resumen.totales.presente }}</strong></td>
+                    <td class="ctr"><strong>{{ resumen.totales.tardanza }}</strong></td>
+                    <td class="ctr"><strong>{{ resumen.totales.justificado }}</strong></td>
+                    <td class="ctr"><strong>{{ resumen.totales.ausente }}</strong></td>
+                    <td class="ctr"><strong>{{ resumen.totales.porcentaje|default:"—" }}%</strong></td>
+                </tr>
+            </tfoot>
+            {% endif %}
+        </table>
+        {% endif %}
+
+        <div class="firmas">
+            <div class="firma">
+                <div class="linea">&nbsp;</div>
+                <div class="cargo">Director(a)</div>
+            </div>
+            <div class="firma">
+                <div class="linea">&nbsp;</div>
+                <div class="cargo">Secretario(a)</div>
+            </div>
+        </div>
+
+    {% endif %}
+
+    <p class="pie">
+        Emitido el {{ fecha_emision|date:"d/m/Y" }} · Documento generado por el sistema
+    </p>
+
+</body>
+</html>

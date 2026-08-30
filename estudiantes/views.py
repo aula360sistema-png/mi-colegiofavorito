@@ -1,5 +1,6 @@
 from django.shortcuts import render
 from django.http import JsonResponse
+from django.core.paginator import Paginator
 import logging
 
 logger = logging.getLogger(__name__)
@@ -66,6 +67,7 @@ from .services.listados import (
     observaciones_del_centro,
     solicitudes_del_centro,
 )
+from .services.matricula import generar_matricula
 from academico.services import estructura
 
 
@@ -141,13 +143,16 @@ def estudiante_create(request):
 
             estudiante = form.save(commit=False)
             estudiante.centro = centro
+            estudiante.matricula = generar_matricula(estudiante)
 
             password = get_random_string(8)
 
             usuario = Usuario.objects.create_user(
                 username=estudiante.matricula,
                 email=f"{estudiante.matricula}@colegio.com",
-                password=password
+                password=password,
+                first_name=estudiante.primer_nombre,
+                last_name=f"{estudiante.primer_apellido} {estudiante.segundo_apellido or ''}".strip(),
             )
 
             usuario.rol = 'estudiante'
@@ -156,6 +161,9 @@ def estudiante_create(request):
 
             estudiante.usuario = usuario
             estudiante.save()
+            tutores = form.cleaned_data.get('tutores')
+            if tutores is not None:
+                estudiante.tutores.set(tutores)
 
             return render(
                 request,
@@ -362,12 +370,20 @@ def estudiante_list(request):
         lista = [e for e in lista if getattr(e, 'inscripcion_actual', None)]
     elif estado == "sin_matricula":
         lista = [e for e in lista if not getattr(e, 'inscripcion_actual', None)]
+    elif estado in ("activo", "retirado", "egresado"):
+        lista = [e for e in lista if getattr(e, 'estado', "") == estado]
+
+    paginator = Paginator(lista, 15)
+    pagina = request.GET.get('pagina', '1')
+    pagina = pagina if pagina.isdigit() else '1'
+    page_obj = paginator.get_page(pagina)
 
     return render(
         request,
         'estudiantes/estudiante_list.html',
         {
-            'estudiantes': lista,
+            'estudiantes': page_obj.object_list,
+            'page_obj': page_obj,
             'centro': centro,
             'anio_activo': anio_activo,
             'q': q,

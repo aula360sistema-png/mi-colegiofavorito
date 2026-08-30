@@ -7,13 +7,15 @@ import pyotp
 
 
 class UsuarioManager(BaseUserManager):
-    def create_user(self, username, email, password=None):
+    def create_user(self, username, email, password=None, first_name='', last_name=''):
         if not email:
             raise ValueError("Debe tener email")
 
         user = self.model(
             username=username,
             email=self.normalize_email(email),
+            first_name=first_name,
+            last_name=last_name,
             is_active=True,
             password_cambiada_en=timezone.now(),
         )

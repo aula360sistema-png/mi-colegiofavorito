@@ -151,7 +151,12 @@ Convenciones:
 | `/administracion/crear-administrativo/` | `administracion:administrativo_create` | `administracion.views.administrativo_create` |
 | `/administracion/personal/` | `administracion:listado_personal` | `administracion.views.listado_personal` |
 | `/administracion/mantenimiento/` | `administracion:mantenimiento` | `administracion.views.mantenimiento_home` |
-| `/administracion/reportes/` | `administracion:reportes` | `administracion.views.reportes` |
+| `/reportes/` | `reportes:reportes` | `reportes.views.reportes` |
+| `/reportes/asistencia/` | `reportes:reporte_asistencia` | `reportes.views.reporte_asistencia` |
+| `/reportes/listado-seccion/imprimir/` | `reportes:print_listado_seccion` | `reportes.views.print_listado_seccion` |
+| `/reportes/asistencia/imprimir/` | `reportes:print_asistencia` | `reportes.views.print_asistencia` |
+| `/reportes/carga-academica/` | `reportes:reporte_carga_academica` | `reportes.views.reporte_carga_academica` |
+| `/reportes/carga-academica/imprimir/` | `reportes:print_carga_academica` | `reportes.views.print_carga_academica` |
 | `/administracion/boletines/generar/` | `administracion:generar_boletines` | `administracion.views.generar_boletines` |
 | `/administracion/boletines/cerrar-completivo/` | `administracion:cerrar_completivo` | `administracion.views.cerrar_completivo` |
 | `/administracion/boletines/` | `administracion:lista_boletines` | `administracion.views.lista_boletines` |

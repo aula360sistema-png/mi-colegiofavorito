@@ -1,7 +1,7 @@
 from django import views
 from django.urls import path
 from django.views.generic import RedirectView
-from .views import administrativo_create, imprimir_boletin_acta, cerrar_completivo, cerrar_extraordinario, dashboard_admin, generar_boletines, lista_boletines, listado_personal, mantenimiento_home, reportes, seguimiento_estudiante, seguimiento_estudiantes, ver_boletin_estudiante
+from .views import administrativo_create, imprimir_boletin_acta, cerrar_completivo, cerrar_extraordinario, dashboard_admin, generar_boletines, lista_boletines, listado_personal, mantenimiento_home, seguimiento_estudiante, seguimiento_estudiantes, ver_boletin_estudiante
 
 app_name = 'administracion'
 
@@ -10,7 +10,6 @@ urlpatterns = [
     path('crear-administrativo/', administrativo_create, name='administrativo_create'),
     path('personal/', listado_personal, name='listado_personal'),
     path('mantenimiento/', mantenimiento_home, name='mantenimiento'),
-    path('reportes/', reportes, name='reportes'),
         path(
         'boletines/generar/',
         generar_boletines,

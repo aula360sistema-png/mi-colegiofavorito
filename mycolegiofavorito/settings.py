@@ -86,6 +86,7 @@ INSTALLED_APPS = [
     'docentes',
     'academico',
     'administracion',
+    'reportes.apps.ReportesConfig',
     'promociones.apps.PromocionesConfig',
     'auditoria.apps.AuditoriaConfig',
     'ia',
@@ -98,6 +99,7 @@ INSTALLED_APPS = [
     'entrenamiento',
     'orientacion',
     'seguridad',
+    'automatizaciones',
     'anymail',
 ]
 
@@ -404,9 +406,42 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # --- Seguridad: cifrado de datos ---
 ENCRYPTION_KEY = os.getenv('ENCRYPTION_KEY', '')
 
+from cryptography.fernet import Fernet
+from django.core.exceptions import ImproperlyConfigured
+
+if ENCRYPTION_KEY:
+    try:
+        Fernet(ENCRYPTION_KEY.encode())
+    except Exception:
+        raise ImproperlyConfigured('ENCRYPTION_KEY no es una clave Fernet válida. '
+                                   'Genera una con: python -c "from cryptography.fernet import Fernet; '
+                                   'print(Fernet.generate_key().decode())"')
+elif not DEBUG:
+    # Fail-closed: en producción, sin clave de cifrado el sistema no arranca.
+    # Nunca guardar datos sensibles en texto plano.
+    raise ImproperlyConfigured(
+        'ENCRYPTION_KEY no está definida. En producción es obligatoria: '
+        'python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"'
+    )
+
 # --- Retención de datos ---
 DATA_RETENTION_YEARS = int(os.getenv('DATA_RETENTION_YEARS', '5'))
 DATA_RETENTION_ANONYMIZE_AFTER_YEARS = int(os.getenv('DATA_RETENTION_ANONYMIZE_AFTER_YEARS', '2'))
+
+# --- DRF: throttling y permisos por defecto para API endpoints ---
+REST_FRAMEWORK = {
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle',
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '50/h',
+        'user': '200/h',
+    },
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+}
 
 # --- Content Security Policy (django-csp) ---
 from csp.constants import NONCE

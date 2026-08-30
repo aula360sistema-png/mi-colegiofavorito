@@ -997,7 +997,7 @@ class Command(BaseCommand):
         Bitacora.objects.create(usuario=admin, accion="EXPORTAR", modulo="REPORTES",
                                 descripcion="Exportación de matrícula por grado",
                                 modelo=None, objeto_id=None,
-                                ip="127.0.0.1", ruta="/administracion/reportes/", metodo="GET",
+                                ip="127.0.0.1", ruta="/reportes/", metodo="GET",
                                 navegador="Datos demo", tipo_dispositivo="PC", riesgo="BAJO")
 
         # ===================== RESUMEN =====================

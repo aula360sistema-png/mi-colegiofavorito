@@ -18,6 +18,13 @@ services:
         value: "False"
       - key: SECRET_KEY
         generateValue: true
+      # Clave de cifrado de datos sensibles (Fernet). Render NO genera una
+      # clave Fernet válida automáticamente: genera una con:
+      #   python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+      # y pégala en el dashboard (Environment > ENCRYPTION_KEY). Sin ella el
+      # sistema NO arranca en producción (fail-closed), nunca guarda en claro.
+      - key: ENCRYPTION_KEY
+        sync: false
       - key: ALLOWED_HOSTS
         value: .onrender.com
       - key: CSRF_TRUSTED_ORIGINS

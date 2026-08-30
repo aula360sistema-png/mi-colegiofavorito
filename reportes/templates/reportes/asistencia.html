@@ -1,0 +1,357 @@
+{% extends "home.html" %}
+
+{% block title %}Reporte de asistencia{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+
+    <!-- HERO -->
+    <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 shadow-xl mb-6">
+        <div class="absolute inset-0 opacity-20 hero-bg"></div>
+        <div class="absolute -right-16 -top-16 w-72 h-72 rounded-full bg-white/10 blur-2xl"></div>
+        <div class="relative px-6 py-7 sm:px-8">
+            <div class="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                    <a href="{% url 'reportes:reportes' %}"
+                       class="inline-flex items-center gap-1.5 text-emerald-100 hover:text-white text-xs font-semibold uppercase tracking-widest mb-3 transition">
+                        <i class="fas fa-arrow-left"></i>
+                        Reportes
+                    </a>
+                    <h2 class="text-2xl sm:text-3xl font-bold text-white flex items-center gap-3">
+                        <i class="fas fa-clipboard-check"></i>
+                        Reporte de asistencia
+                    </h2>
+                    <p class="text-emerald-50 text-sm mt-1 max-w-xl">
+                        Consulta e imprime las asistencias de un estudiante o de un
+                        grado/sección en un año escolar.
+                    </p>
+                </div>
+                <span class="inline-flex items-center gap-2 bg-white/15 text-white rounded-full px-4 py-1.5 text-sm font-semibold backdrop-blur ring-1 ring-inset ring-white/20">
+                    <i class="fas fa-calendar-check"></i>
+                    Año escolar: {% if anio_actual %}{{ anio_actual.nombre }}{% else %}Sin año activo{% endif %}
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm mb-6 overflow-hidden">
+
+        <div class="flex flex-wrap items-center gap-2 px-5 py-4 border-b border-gray-100 bg-gray-50/60">
+            <span class="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-gray-500 mr-2">
+                <i class="fas fa-sliders text-emerald-500"></i>
+                Tipo de reporte:
+            </span>
+            {% for t, etiqueta in tipo_opciones %}
+            <button type="button"
+                    data-tipo="{{ t }}"
+                    class="tipo-btn inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition shadow-sm
+                    {% if tipo == t %}bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-emerald-200{% else %}bg-white ring-1 ring-inset ring-gray-200 text-gray-600 hover:bg-gray-100{% endif %}">
+                {% if t == 'estudiante' %}<i class="fas fa-user-graduate"></i>
+                {% elif t == 'seccion' %}<i class="fas fa-users"></i>{% endif %}
+                {{ etiqueta }}
+            </button>
+            {% endfor %}
+        </div>
+
+        <form id="form-asis" method="get" action="{% url 'reportes:reporte_asistencia' %}"
+              class="grid grid-cols-1 md:grid-cols-5 gap-3 px-5 py-5">
+
+            <input type="hidden" name="tipo" id="ipt-tipo" value="{{ tipo }}">
+
+            <div>
+                <label for="sel-anio" class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Año escolar</label>
+                <select id="sel-anio" name="anio" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                    {% for a in anios %}
+                    <option value="{{ a.id }}" {% if a.id|stringformat:"s" == sel_anio %}selected{% endif %}>{{ a.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div id="campo-estudiante" class="md:col-span-2 {% if tipo != 'estudiante' %}hidden{% endif %}">
+                <label for="sel-estudiante" class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Estudiante</label>
+                <select id="sel-estudiante" name="estudiante_id" class="w-full searchable">
+                    <option value="">Buscar estudiante…</option>
+                    {% for e in estudiantes %}
+                    <option value="{{ e.id }}" {% if e.id|stringformat:"s" == sel_estudiante %}selected{% endif %}>
+                        {{ e.primer_apellido }} {{ e.segundo_apellido|default:'' }}, {{ e.primer_nombre }} {{ e.segundo_nombre|default:'' }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div id="campo-grado" class="{% if tipo != 'seccion' %}hidden{% endif %}">
+                <label for="sel-grado" class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Grado</label>
+                <select id="sel-grado" name="grado" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                    <option value="">Todos los grados</option>
+                    {% for g in grados %}
+                    <option value="{{ g.id }}" {% if g.id|stringformat:"s" == sel_grado %}selected{% endif %}>{{ g.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div id="campo-seccion" class="{% if tipo != 'seccion' %}hidden{% endif %}">
+                <label for="sel-seccion" class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Sección</label>
+                <select id="sel-seccion" name="seccion" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                    <option value="">Todas las secciones</option>
+                    {% for s in secciones_del_grado %}
+                    <option value="{{ s.id }}" {% if s.id|stringformat:"s" == sel_seccion %}selected{% endif %}>{{ s.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div>
+                <label for="sel-mes" class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Período</label>
+                <select id="sel-mes" name="mes" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                    <option value="">Todo el año</option>
+                    {% for m in MESES %}
+                    <option value="{{ forloop.counter }}" {% if forloop.counter|stringformat:"s" == sel_mes %}selected{% endif %}>{{ m }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-span-full flex items-end gap-2">
+                <button type="submit"
+                        class="inline-flex justify-center items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm px-4 py-2 rounded-lg transition">
+                    <i class="fas fa-search"></i> Ver
+                </button>
+                <button type="button" id="btn-imprimir"
+                        class="inline-flex justify-center items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm px-4 py-2 rounded-lg transition">
+                    <i class="fas fa-print"></i> Imprimir
+                </button>
+                <a href="{% url 'reportes:reporte_asistencia' %}"
+                   class="inline-flex justify-center items-center bg-gray-100 hover:bg-gray-200 text-gray-600 text-sm px-3 py-2 rounded-lg transition"
+                   title="Limpiar filtros">
+                    <i class="fas fa-broom"></i>
+                </a>
+            </div>
+
+        </form>
+
+    </div>
+
+    <!-- Previsualización -->
+    {% if resumen %}
+
+        {% if tipo == 'estudiante' and resumen.detalle|length == 0 and not resumen.meses %}
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 text-center">
+            <i class="fas fa-calendar-xmark text-3xl text-gray-300 block mb-2"></i>
+            <p class="text-gray-500">Este estudiante no tiene asistencias registradas para el período elegido.</p>
+        </div>
+        {% else %}
+
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm mb-6">
+
+            <div class="px-5 py-4 border-b border-gray-200 flex items-center justify-between flex-wrap gap-3">
+                <div>
+                    <h3 class="font-bold text-gray-800 flex items-center gap-2">
+                        <i class="fas fa-clipboard-check text-indigo-600"></i>
+                        {% if tipo == 'estudiante' %}Resumen del estudiante{% else %}Resumen por estudiante{% endif %}
+                    </h3>
+                    <p class="text-xs text-gray-500 mt-0.5">
+                        {% if tipo == 'estudiante' %}
+                        {{ resumen.dias }} día{{ resumen.dias|pluralize }} con registro · {{ resumen.totales.total }} marcas
+                        {% else %}
+                        {{ resumen.filas|length }} estudiante{{ resumen.filas|length|pluralize }}
+                        {% if resumen.mes %} · Período: {{ MESES|slice:resumen.mes|last }}{% else %} · Todo el año{% endif %}
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+
+            {% if tipo == 'estudiante' %}
+            <div class="px-5 py-4 border-b border-gray-100 flex flex-wrap gap-3">
+                {% with c=resumen.totales %}
+                <span class="inline-flex items-center gap-1.5 bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-semibold">
+                    <i class="fas fa-circle text-[7px]"></i> Presente: {{ c.presente }}
+                </span>
+                <span class="inline-flex items-center gap-1.5 bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-xs font-semibold">
+                    <i class="fas fa-clock text-[11px]"></i> Tardanza: {{ c.tardanza }}
+                </span>
+                <span class="inline-flex items-center gap-1.5 bg-sky-100 text-sky-700 px-3 py-1 rounded-full text-xs font-semibold">
+                    <i class="fas fa-note-sticky text-[11px]"></i> Justificado: {{ c.justificado }}
+                </span>
+                <span class="inline-flex items-center gap-1.5 bg-red-100 text-red-700 px-3 py-1 rounded-full text-xs font-semibold">
+                    <i class="fas fa-xmark text-[11px]"></i> Ausente: {{ c.ausente }}
+                </span>
+                <span class="inline-flex items-center gap-1.5 bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-xs font-semibold">
+                    <i class="fas fa-percent"></i> Asistencia: {% if c.porcentaje %}{{ c.porcentaje }}%{% else %}—{% endif %}
+                </span>
+                {% endwith %}
+            </div>
+            {% endif %}
+
+            <div class="overflow-x-auto">
+                {% if tipo == 'estudiante' %}
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-50">
+                        <tr class="text-left text-xs font-bold uppercase text-gray-500">
+                            <th class="px-5 py-3">Mes</th>
+                            <th class="px-5 py-3 text-center">Presente</th>
+                            <th class="px-5 py-3 text-center">Tardanza</th>
+                            <th class="px-5 py-3 text-center">Justificado</th>
+                            <th class="px-5 py-3 text-center">Ausente</th>
+                            <th class="px-5 py-3 text-center">Total</th>
+                            <th class="px-5 py-3 text-center">% Asistencia</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        {% for m in resumen.meses %}
+                        <tr>
+                            <td class="px-5 py-2.5 font-medium text-gray-700">{{ m.nombre }}</td>
+                            <td class="px-5 py-2.5 text-center text-green-600">{{ m.presente }}</td>
+                            <td class="px-5 py-2.5 text-center text-amber-600">{{ m.tardanza }}</td>
+                            <td class="px-5 py-2.5 text-center text-sky-600">{{ m.justificado }}</td>
+                            <td class="px-5 py-2.5 text-center text-red-600">{{ m.ausente }}</td>
+                            <td class="px-5 py-2.5 text-center text-gray-700">{{ m.total }}</td>
+                            <td class="px-5 py-2.5 text-center font-semibold text-gray-800">
+                                {% if m.porcentaje %}{{ m.porcentaje }}%{% else %}—{% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="7" class="px-5 py-8 text-center text-gray-400 text-sm">Sin registros.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+
+                {% else %}
+
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-50">
+                        <tr class="text-left text-xs font-bold uppercase text-gray-500">
+                            <th class="px-5 py-3">N°</th>
+                            <th class="px-5 py-3">Estudiante</th>
+                            <th class="px-5 py-3 text-center">Sección</th>
+                            <th class="px-5 py-3 text-center">Presente</th>
+                            <th class="px-5 py-3 text-center">Tardanza</th>
+                            <th class="px-5 py-3 text-center">Justificado</th>
+                            <th class="px-5 py-3 text-center">Ausente</th>
+                            <th class="px-5 py-3 text-center">% Asistencia</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        {% for f in resumen.filas %}
+                        <tr>
+                            <td class="px-5 py-2.5 text-gray-500">{{ forloop.counter }}</td>
+                            <td class="px-5 py-2.5 font-medium text-gray-700">{{ f.inscripcion.estudiante.nombre_completo }}</td>
+                            <td class="px-5 py-2.5 text-center text-gray-500">{{ f.inscripcion.seccion.nombre }}</td>
+                            <td class="px-5 py-2.5 text-center text-green-600">{{ f.presente }}</td>
+                            <td class="px-5 py-2.5 text-center text-amber-600">{{ f.tardanza }}</td>
+                            <td class="px-5 py-2.5 text-center text-sky-600">{{ f.justificado }}</td>
+                            <td class="px-5 py-2.5 text-center text-red-600">{{ f.ausente }}</td>
+                            <td class="px-5 py-2.5 text-center font-semibold text-gray-800">
+                                {% if f.porcentaje %}{{ f.porcentaje }}%{% else %}—{% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="8" class="px-5 py-8 text-center text-gray-400 text-sm">Sin asistencias en el período.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+
+                {% endif %}
+            </div>
+
+        </div>
+
+        {% endif %}
+
+    {% else %}
+    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 text-center mb-6">
+        <i class="fas fa-filter text-3xl text-gray-300 block mb-2"></i>
+        <p class="text-gray-500">
+            {% if tipo == 'estudiante' %}
+            Elige un año y un estudiante para ver su resumen de asistencia.
+            {% else %}
+            Elige un año y un grado (opcional sección) para ver el resumen de asistencia.
+            {% endif %}
+        </p>
+    </div>
+    {% endif %}
+
+</div>
+
+{% include "academico/_tomselect.html" %}
+
+<script nonce="{{ request.csp_nonce }}">
+document.addEventListener('DOMContentLoaded', function () {
+
+    const tipoBtns = document.querySelectorAll('.tipo-btn');
+    const iptTipo = document.getElementById('ipt-tipo');
+    const campoEst = document.getElementById('campo-estudiante');
+    const campoGrado = document.getElementById('campo-grado');
+    const campoSec = document.getElementById('campo-seccion');
+    const form = document.getElementById('form-asis');
+    const btnImprimir = document.getElementById('btn-imprimir');
+
+    // El select de estudiante (class="searchable") lo inicializa ya
+    // tomselect-init.js de forma automática; aquí solo lo leemos.
+
+    function aplicarTipo(t) {
+        iptTipo.value = t;
+        const esEstudiante = t === 'estudiante';
+        campoEst.classList.toggle('hidden', !esEstudiante);
+        campoGrado.classList.toggle('hidden', esEstudiante);
+        campoSec.classList.toggle('hidden', esEstudiante);
+        tipoBtns.forEach(btn => {
+            const activo = btn.dataset.tipo === t;
+            btn.classList.toggle('bg-gradient-to-r', activo);
+            btn.classList.toggle('from-emerald-600', activo);
+            btn.classList.toggle('to-teal-600', activo);
+            btn.classList.toggle('shadow-emerald-200', activo);
+            btn.classList.toggle('text-white', activo);
+            btn.classList.toggle('bg-white', !activo);
+            btn.classList.toggle('ring-1', !activo);
+            btn.classList.toggle('ring-gray-200', !activo);
+            btn.classList.toggle('text-gray-600', !activo);
+        });
+    }
+
+    tipoBtns.forEach(btn => {
+        btn.addEventListener('click', function () {
+            aplicarTipo(this.dataset.tipo);
+        });
+    });
+
+    // Carga de secciones al cambiar grado (AJAX).
+    const selGrado = document.getElementById('sel-grado');
+    const selSeccion = document.getElementById('sel-seccion');
+    selGrado.addEventListener('change', function () {
+        const gradoId = this.value;
+        selSeccion.innerHTML = '<option value="">Todas las secciones</option>';
+        if (!gradoId) return;
+        fetch("{% url 'ajax_cargar_secciones' %}?grado=" + gradoId)
+            .then(response => response.json())
+            .then(data => {
+                data.forEach(function (seccion) {
+                    const option = document.createElement('option');
+                    option.value = seccion.id;
+                    option.textContent = seccion.nombre;
+                    selSeccion.appendChild(option);
+                });
+            })
+            .catch(error => console.error(error));
+    });
+
+    // Imprimir: abre la vista imprimible con los filtros actuales.
+    btnImprimir.addEventListener('click', function () {
+        const params = new URLSearchParams();
+        params.set('tipo', iptTipo.value);
+        params.set('anio', document.getElementById('sel-anio').value);
+        params.set('mes', document.getElementById('sel-mes').value);
+        if (iptTipo.value === 'estudiante') {
+            const val = document.getElementById('sel-estudiante').value;
+            if (!val) { alert('Selecciona un estudiante para imprimir.'); return; }
+            params.set('estudiante_id', val);
+        } else {
+            const grado = selGrado.value;
+            if (!grado) { alert('Selecciona un grado para imprimir.'); return; }
+            params.set('grado', grado);
+            if (selSeccion.value) params.set('seccion', selSeccion.value);
+        }
+        window.open("{% url 'reportes:print_asistencia' %}?" + params.toString(), '_blank');
+    });
+
+});
+</script>
+{% endblock %}

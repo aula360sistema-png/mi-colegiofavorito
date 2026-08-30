@@ -1,6 +1,10 @@
+from datetime import date
+
 from django import forms
 from .models import Estudiante
 from tutores.models import Tutor
+from core.paises import PAISES
+from core.validators import es_cedula_rd, es_telefono_rd
 
 class EstudianteForm(forms.ModelForm):
     tutores = forms.ModelMultipleChoiceField(
@@ -11,7 +15,7 @@ class EstudianteForm(forms.ModelForm):
 
     class Meta:
         model = Estudiante
-        exclude = ['usuario', 'centro', 'estado', 'created_at', 'updated_at']
+        exclude = ['usuario', 'centro', 'estado', 'matricula', 'created_at', 'updated_at']
 
     def __init__(self, *args, **kwargs):
         centro = kwargs.pop('centro', None)
@@ -33,7 +37,64 @@ class EstudianteForm(forms.ModelForm):
 
         # Fecha más amigable
         if 'fecha_nacimiento' in self.fields:
-            self.fields['fecha_nacimiento'].widget.attrs['type'] = 'date'
+            self.fields['fecha_nacimiento'].widget.attrs.update({
+                'type': 'date',
+                'class': (
+                    'js-datepicker w-full border rounded px-3 py-2 '
+                    'focus:outline-none focus:ring-2 focus:ring-blue-500'
+                ),
+                'max': date.today().isoformat(),
+            })
+
+        # Cédula y teléfonos con formato RD
+        if 'cedula_tutor' in self.fields:
+            self.fields['cedula_tutor'].widget.attrs.update({
+                'data-mascara': 'cedula',
+                'placeholder': '000-0000000-0',
+            })
+
+        for nombre in ('telefono', 'telefono_tutor'):
+            if nombre in self.fields:
+                self.fields[nombre].widget.attrs.update({
+                    'data-mascara': 'telefono',
+                    'placeholder': '000-000-0000',
+                })
+
+        # Nacionalidad: select buscable con todos los países
+        if 'nacionalidad' in self.fields:
+            self.fields['nacionalidad'] = forms.ChoiceField(
+                choices=[('', 'Seleccione la nacionalidad...')] + [(p, p) for p in PAISES],
+                widget=forms.Select(attrs={
+                    'class': (
+                        'w-full border rounded px-3 py-2 '
+                        'focus:outline-none focus:ring-2 '
+                        'focus:ring-blue-500 searchable'
+                    ),
+                }),
+            )
+            if not self.instance.pk:
+                self.fields['nacionalidad'].initial = 'República Dominicana'
+            self._asegurar_opcion(
+                self.fields['nacionalidad'],
+                self.instance.nacionalidad,
+            )
+
+        # Parentesco: select con todas las opciones
+        if 'parentesco_tutor' in self.fields:
+            self.fields['parentesco_tutor'] = forms.ChoiceField(
+                choices=[('', 'Seleccione el parentesco...')] + list(Tutor.PARENTESCOS),
+                widget=forms.Select(attrs={
+                    'class': (
+                        'w-full border rounded px-3 py-2 '
+                        'focus:outline-none focus:ring-2 '
+                        'focus:ring-blue-500'
+                    ),
+                }),
+            )
+            self._asegurar_opcion(
+                self.fields['parentesco_tutor'],
+                self.instance.parentesco_tutor,
+            )
 
         if 'foto' in self.fields:
             self.fields['foto'].widget.attrs.update({
@@ -42,6 +103,36 @@ class EstudianteForm(forms.ModelForm):
                          'file:rounded-lg file:border-0 file:bg-blue-50 file:text-blue-700 '
                          'file:font-semibold hover:file:bg-blue-100',
             })
+
+    def _asegurar_opcion(self, campo, valor):
+        if not valor:
+            return
+        if valor not in [c[0] for c in campo.choices]:
+            campo.choices = campo.choices[:1] + [(valor, valor)] + campo.choices[1:]
+
+    def clean_cedula_tutor(self):
+        valor = self.cleaned_data.get('cedula_tutor')
+        if valor and not es_cedula_rd(valor):
+            raise forms.ValidationError(
+                'La cédula no es válida. Debe tener el formato 000-0000000-0.'
+            )
+        return valor
+
+    def clean_telefono(self):
+        valor = self.cleaned_data.get('telefono')
+        if valor and not es_telefono_rd(valor):
+            raise forms.ValidationError(
+                'El teléfono debe tener el formato 000-000-0000.'
+            )
+        return valor
+
+    def clean_telefono_tutor(self):
+        valor = self.cleaned_data.get('telefono_tutor')
+        if valor and not es_telefono_rd(valor):
+            raise forms.ValidationError(
+                'El teléfono debe tener el formato 000-000-0000.'
+            )
+        return valor
 
     def save(self, commit=True):
         estudiante = super().save(commit=commit)

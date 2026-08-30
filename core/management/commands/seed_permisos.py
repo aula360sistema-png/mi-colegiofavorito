@@ -26,8 +26,20 @@ PERMISOS_DEFECTO = {
     # Administración común (director, secretaria, admin)
     'administracion:dashboard_admin': (
         'Panel administrativo', ['director', 'secretaria', 'admin', 'superadmin']),
-    'administracion:reportes': (
-        'Reportes académicos', ['director', 'secretaria', 'admin', 'superadmin']),
+    'reportes:reportes': (
+        'Reportes académicos', ['director', 'secretaria', 'admin', 'superadmin', 'docente']),
+    'reportes:reporte_asistencia': (
+        'Reporte de asistencia', ['director', 'secretaria', 'admin', 'superadmin', 'docente']),
+    'reportes:reporte_calificaciones': (
+        'Calificaciones por grado y sección', ['director', 'secretaria', 'admin', 'superadmin', 'docente']),
+    'reportes:boleta_periodo': (
+        'Boleta del período del estudiante', ['director', 'secretaria', 'admin', 'superadmin', 'docente']),
+    'reportes:print_calificaciones': (
+        'Impresión de la planilla de calificaciones', ['director', 'secretaria', 'admin', 'superadmin', 'docente']),
+    'reportes:print_boleta': (
+        'Impresión de la boleta del período', ['director', 'secretaria', 'admin', 'superadmin', 'docente']),
+    'reportes:reporte_carga_academica': (
+        'Carga académica de docentes', ['director', 'secretaria', 'admin', 'superadmin', 'docente']),
     'administracion:mantenimiento': (
         'Mantenimiento', ['director', 'secretaria', 'admin', 'superadmin']),
     'auditoria:bitacora': (

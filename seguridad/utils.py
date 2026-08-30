@@ -1,16 +1,23 @@
 import hashlib
+import logging
 import re
 from datetime import date
 
 from cryptography.fernet import Fernet
 from django.conf import settings
+from django.core.exceptions import ImproperlyConfigured
 from django.db.models import Q
+
+logger = logging.getLogger(__name__)
 
 
 def _get_fernet():
     key = settings.ENCRYPTION_KEY
     if not key:
-        return None
+        raise ImproperlyConfigured(
+            'ENCRYPTION_KEY no está definida. Los campos cifrados no pueden '
+            'guardarse en texto plano (fail-closed).'
+        )
     if isinstance(key, str):
         key = key.encode()
     return Fernet(key)
@@ -20,8 +27,6 @@ def cifrar_campo(valor):
     if not valor or not str(valor).strip():
         return valor
     f = _get_fernet()
-    if not f:
-        return valor
     return f.encrypt(str(valor).encode()).decode()
 
 
@@ -29,11 +34,10 @@ def descifrar_campo(valor):
     if not valor:
         return valor
     f = _get_fernet()
-    if not f:
-        return valor
     try:
         return f.decrypt(valor.encode()).decode()
     except Exception:
+        logger.error('No se pudo descifrar un valor almacenado (clave rotada o dato corrupto).')
         return valor
 
 

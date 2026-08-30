@@ -1,0 +1,200 @@
+{% extends "home.html" %}
+
+{% block title %}Carga académica de docentes{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+
+    <!-- HERO -->
+    <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 shadow-xl mb-6">
+        <div class="absolute inset-0 opacity-20 hero-bg"></div>
+        <div class="absolute -right-16 -top-16 w-72 h-72 rounded-full bg-white/10 blur-2xl"></div>
+        <div class="relative px-6 py-7 sm:px-8">
+            <div class="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                    <a href="{% url 'reportes:reportes' %}"
+                       class="inline-flex items-center gap-1.5 text-violet-200 hover:text-white text-xs font-semibold uppercase tracking-widest mb-3 transition">
+                        <i class="fas fa-arrow-left"></i>
+                        Reportes
+                    </a>
+                    <h2 class="text-2xl sm:text-3xl font-bold text-white flex items-center gap-3">
+                        <i class="fas fa-chalkboard-teacher"></i>
+                        Carga académica de docentes
+                    </h2>
+                    <p class="text-violet-100 text-sm mt-1 max-w-xl">
+                        Consulta e imprime las asignaciones de cada docente por grado,
+                        sección y asignatura en un año escolar.
+                    </p>
+                </div>
+                <span class="inline-flex items-center gap-2 bg-white/15 text-white rounded-full px-4 py-1.5 text-sm font-semibold backdrop-blur ring-1 ring-inset ring-white/20">
+                    <i class="fas fa-calendar-check"></i>
+                    Año escolar: {% if anio_actual %}{{ anio_actual.nombre }}{% else %}Sin año activo{% endif %}
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm mb-6 overflow-hidden">
+
+        <div class="px-5 py-4 border-b border-gray-100 bg-gray-50/60 flex items-center gap-2">
+            <span class="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-gray-500">
+                <i class="fas fa-sliders text-violet-500"></i>
+                Filtros de consulta
+            </span>
+        </div>
+
+        <form id="form-carga" method="get" action="{% url 'reportes:reporte_carga_academica' %}"
+              class="grid grid-cols-1 md:grid-cols-3 gap-3 px-5 py-5">
+
+            <div>
+                <label for="sel-anio" class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Año escolar</label>
+                <select id="sel-anio" name="anio" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-violet-500 focus:border-violet-500">
+                    {% for a in anios %}
+                    <option value="{{ a.id }}" {% if a.id|stringformat:"s" == sel_anio %}selected{% endif %}>{{ a.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div>
+                <label for="sel-grado" class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Grado</label>
+                <select id="sel-grado" name="grado" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-violet-500 focus:border-violet-500">
+                    <option value="">Todos los grados</option>
+                    {% for g in grados %}
+                    <option value="{{ g.id }}" {% if g.id|stringformat:"s" == sel_grado %}selected{% endif %}>{{ g.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div>
+                <label for="sel-docente" class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Docente</label>
+                <select id="sel-docente" name="docente_id" class="w-full searchable">
+                    <option value="">Todos los docentes…</option>
+                    {% for d in docentes %}
+                    <option value="{{ d.id }}" {% if d.id|stringformat:"s" == sel_docente %}selected{% endif %}>{{ d.nombre_completo }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-span-full flex items-end gap-2">
+                <button type="submit"
+                        class="inline-flex justify-center items-center gap-2 bg-violet-600 hover:bg-violet-700 text-white font-semibold text-sm px-4 py-2 rounded-lg transition">
+                    <i class="fas fa-search"></i> Ver
+                </button>
+                <button type="button" id="btn-imprimir"
+                        class="inline-flex justify-center items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm px-4 py-2 rounded-lg transition">
+                    <i class="fas fa-print"></i> Imprimir
+                </button>
+                <a href="{% url 'reportes:reporte_carga_academica' %}"
+                   class="inline-flex justify-center items-center bg-gray-100 hover:bg-gray-200 text-gray-600 text-sm px-3 py-2 rounded-lg transition"
+                   title="Limpiar filtros">
+                    <i class="fas fa-broom"></i>
+                </a>
+            </div>
+
+        </form>
+
+    </div>
+
+    <!-- Previsualización -->
+    {% if anio %}
+
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm mb-6">
+
+            <div class="px-5 py-4 border-b border-gray-200 flex items-center justify-between flex-wrap gap-3">
+                <div>
+                    <h3 class="font-bold text-gray-800 flex items-center gap-2">
+                        <i class="fas fa-users text-violet-600"></i>
+                        Docentes y sus asignaciones
+                    </h3>
+                    <p class="text-xs text-gray-500 mt-0.5">
+                        {{ filas|length }} docente{{ filas|length|pluralize }} ·
+                        {{ total_asignaciones }} asignación{{ total_asignaciones|pluralize }}
+                        {% if anio %} · Año {{ anio.nombre }}{% endif %}
+                    </p>
+                </div>
+            </div>
+
+            {% if not filas %}
+            <div class="p-8 text-center">
+                <i class="fas fa-chalkboard-teacher text-3xl text-gray-300 block mb-2"></i>
+                <p class="text-gray-500">No hay docentes activos en este centro.</p>
+            </div>
+            {% else %}
+
+            <div class="divide-y divide-gray-100">
+                {% for f in filas %}
+                <div class="px-5 py-4">
+                    <div class="flex items-center justify-between flex-wrap gap-2 mb-2">
+                        <div class="flex items-center gap-3">
+                            <div class="w-9 h-9 rounded-full bg-violet-100 text-violet-600 flex items-center justify-center font-bold text-sm">
+                                {{ f.docente.primer_nombre|slice:":1" }}{{ f.docente.primer_apellido|slice:":1" }}
+                            </div>
+                            <div>
+                                <p class="font-semibold text-gray-800 text-sm">{{ f.docente.nombre_completo }}</p>
+                                <p class="text-xs text-gray-400">
+                                    Cédula {{ f.docente.cedula }} · {{ f.docente.tipo_contrato|title }} · Tanda {{ f.docente.tanda|title }}
+                                </p>
+                            </div>
+                        </div>
+                        <span class="inline-flex items-center gap-1.5 text-xs font-bold bg-gray-100 text-gray-600 px-3 py-1 rounded-full">
+                            <i class="fas fa-book text-[10px]"></i>
+                            {{ f.asignaciones|length }} asignación{{ f.asignaciones|pluralize }}
+                        </span>
+                    </div>
+
+                    {% if f.asignaciones %}
+                    <div class="flex flex-wrap gap-2 pl-12">
+                        {% for a in f.asignaciones %}
+                        <span class="inline-flex items-center gap-1.5 bg-violet-50 text-violet-700 border border-violet-100 px-2.5 py-1 rounded-md text-xs">
+                            <i class="fas fa-graduation-cap text-[10px]"></i>
+                            {{ a.grado.nombre }} - {{ a.seccion.nombre }} · {{ a.asignatura.nombre }}
+                        </span>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="pl-12 text-xs text-gray-400 italic">Sin asignaciones en este año escolar.</p>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+
+            {% endif %}
+        </div>
+
+    {% else %}
+
+    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 text-center">
+        <i class="fas fa-calendar-xmark text-3xl text-gray-300 block mb-2"></i>
+        <p class="text-gray-500">Selecciona los filtros y pulsa "Ver" para mostrar la carga académica.</p>
+    </div>
+
+    {% endif %}
+
+</div>
+
+{% include "academico/_tomselect.html" %}
+
+<script nonce="{{ request.csp_nonce }}">
+document.addEventListener('DOMContentLoaded', function () {
+    const selAnio = document.getElementById('sel-anio');
+    const selGrado = document.getElementById('sel-grado');
+    const btnImprimir = document.getElementById('btn-imprimir');
+
+    selAnio.addEventListener('change', function () {
+        document.getElementById('form-carga').submit();
+    });
+
+    if (btnImprimir) {
+        btnImprimir.addEventListener('click', function () {
+            const params = new URLSearchParams();
+            params.set('anio', selAnio.value);
+            if (selGrado.value) params.set('grado', selGrado.value);
+            const d = document.getElementById('sel-docente');
+            if (d && d.value) params.set('docente_id', d.value);
+            window.open("{% url 'reportes:print_carga_academica' %}?" + params.toString(), '_blank');
+        });
+    }
+});
+</script>
+{% endblock %}

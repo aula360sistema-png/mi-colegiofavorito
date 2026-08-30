@@ -116,7 +116,9 @@ def docente_create(request):
             usuario = Usuario.objects.create_user(
                 username=docente.cedula,
                 email=docente.correo_personal or f"{docente.cedula}@colegio.com",
-                password=password
+                password=password,
+                first_name=docente.primer_nombre,
+                last_name=f"{docente.primer_apellido} {docente.segundo_apellido or ''}".strip(),
             )
 
             usuario.rol = 'docente'

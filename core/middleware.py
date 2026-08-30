@@ -28,6 +28,12 @@ class AdminBruteForceMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response
 
+    def _client_ip(self, request):
+        xff = request.META.get('HTTP_X_FORWARDED_FOR')
+        if xff:
+            return xff.split(',')[0].strip()
+        return request.META.get('REMOTE_ADDR', '?')
+
     def __call__(self, request):
         response = self.get_response(request)
         if (
@@ -35,15 +41,16 @@ class AdminBruteForceMiddleware:
             and request.path.startswith('/admin/login/')
             and not request.user.is_authenticated
         ):
-            ip = request.META.get('REMOTE_ADDR', '?')
+            ip = self._client_ip(request)
+            usuario = request.POST.get('username', '') or '?'
+            base = f"admin_fallos:{ip}:{usuario.lower()}"
             if response.status_code == 200:
-                clave = f"admin_fallos:{ip}"
-                fallos = cache.get(clave, 0) + 1
-                cache.set(clave, fallos, 15 * 60)
+                fallos = cache.get(base, 0) + 1
+                cache.set(base, fallos, 15 * 60)
                 if fallos >= self.MAX_FALLOS:
                     return HttpResponseForbidden('Demasiados intentos. Panel bloqueado temporalmente.')
             else:
-                cache.delete(f"admin_fallos:{ip}")
+                cache.delete(base)
         return response
 
 

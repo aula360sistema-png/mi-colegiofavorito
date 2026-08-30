@@ -1,4 +1,4 @@
-﻿from collections import defaultdict
+from collections import defaultdict
 from decimal import Decimal, ROUND_HALF_UP
 
 from django.contrib import messages
@@ -65,6 +65,8 @@ from estudiantes.models import (
     Estudiante,
     Inscripcion
 )
+
+from asistencia.models import AsistenciaEstudiante
 
 from django.db import transaction
 from usuarios.models import Usuario
@@ -364,7 +366,9 @@ def administrativo_create(request):
                 usuario = Usuario.objects.create_user(
                     username=username_usuario,
                     email=email_usuario,
-                    password=password
+                    password=password,
+                    first_name=admin.primer_nombre,
+                    last_name=f"{admin.primer_apellido} {admin.segundo_apellido or ''}".strip(),
                 )
 
                 usuario.rol = cargo_form
@@ -994,156 +998,6 @@ def actas_del_centro(centro):
         timeout=ttl('CACHE_TTL_MEDIO'),
     )
 
-
-@login_required
-@centro_required
-@role_required('director', 'secretaria', 'admin', 'superadmin')
-def reportes(request):
-    centro = request.centro
-
-    metricas = obtener_metricas_reportes(centro)
-
-    # --- Consulta de matrÃ­cula por aÃ±o / grado / secciÃ³n -------------
-    anios = AnioEscolar.objects.filter(
-        centro=centro
-    ).order_by('-fecha_inicio')
-    # Los grados son un catÃ¡logo compartido; los del centro son aquellos
-    # vinculados a alguna de sus secciones.
-    grados = (
-        Grado.objects
-        .filter(secciones__centro=centro)
-        .distinct()
-        .order_by('orden')
-    )
-
-    anio_actual = obtener_anio_activo(centro)
-    sel_anio = request.GET.get('anio') or (
-        str(anio_actual.id) if anio_actual else ''
-    )
-    sel_grado = request.GET.get('grado', '')
-    sel_seccion = request.GET.get('seccion', '')
-
-    inscripciones = []
-    if sel_anio and sel_grado:
-        filtros = {
-            'anio_escolar_id': sel_anio,
-            'grado_id': sel_grado,
-        }
-        if sel_seccion:
-            filtros['seccion_id'] = sel_seccion
-
-        inscripciones = list(
-            Inscripcion.objects
-            .filter(centro=centro, **filtros)
-            .select_related(
-                'estudiante',
-                'grado',
-                'seccion',
-                'anio_escolar',
-            )
-            .order_by(
-                'estudiante__primer_apellido',
-                'estudiante__primer_nombre',
-            )
-        )
-
-    secciones_del_grado = (
-        Seccion.objects.filter(
-            centro=centro,
-            grados__id=sel_grado,
-        ).order_by('nombre')
-        if sel_grado else Seccion.objects.none()
-    )
-
-    return render(request, 'administracion/reportes.html', {
-        'centro': centro,
-        **metricas,
-        'anios': anios,
-        'grados': grados,
-        'secciones_del_grado': secciones_del_grado,
-        'sel_anio': str(sel_anio or ''),
-        'sel_grado': sel_grado,
-        'sel_seccion': sel_seccion,
-        'inscripciones': inscripciones,
-    })
-
-
-def obtener_metricas_reportes(centro):
-    """Agregados de la pantalla de reportes cacheados.
-
-    Las claves dependen de la versiÃ³n de estructura (grados/secciones/
-    periodos) y de estudiantes (matrÃ­cula/inscripciones), asÃ­ que se
-    invalidan con las seÃ±ales existentes.
-    """
-    from core.cache_utils import (
-        invalidar_dominio,
-        obtener_o_generar,
-        obtener_version,
-        ttl,
-    )
-
-    clave = (
-        f'reportes:{centro.id}:'
-        f'{obtener_version(f"estructura:{centro.id}")}:'
-        f'{obtener_version(f"estudiantes:{centro.id}")}'
-    )
-    return obtener_o_generar(
-        clave,
-        lambda: _obtener_metricas_reportes_sql(centro),
-        version=1,
-        timeout=ttl('CACHE_TTL_MEDIO'),
-    )
-
-
-def _obtener_metricas_reportes_sql(centro):
-    anio_actual = obtener_anio_activo(centro)
-
-    matricula_por_grado = list(
-        Inscripcion.objects
-        .filter(centro=centro, anio_escolar=anio_actual)
-        .values('grado__nombre', 'seccion__nombre')
-        .annotate(total=Count('id'))
-        .order_by('grado__orden', 'seccion__nombre')
-        if anio_actual else []
-    )
-
-    matricula_por_anio = list(
-        Inscripcion.objects
-        .filter(centro=centro)
-        .values('anio_escolar__nombre')
-        .annotate(total=Count('id'))
-        .order_by('-anio_escolar__fecha_inicio')
-    )
-
-    estudiantes_por_estado = list(
-        Estudiante.objects
-        .filter(centro=centro)
-        .values('estado')
-        .annotate(total=Count('id'))
-    )
-
-    estados_academicos = list(
-        Inscripcion.objects
-        .filter(centro=centro, anio_escolar=anio_actual)
-        .values('estado_final')
-        .annotate(total=Count('id'))
-        if anio_actual else []
-    )
-
-    total_matricula_activa = sum(r['total'] for r in matricula_por_grado)
-    total_estudiantes = Estudiante.objects.filter(centro=centro).count()
-    total_estados_academicos = sum(r['total'] for r in estados_academicos)
-
-    return {
-        'anio_actual': anio_actual,
-        'matricula_por_grado': matricula_por_grado,
-        'matricula_por_anio': matricula_por_anio,
-        'estudiantes_por_estado': estudiantes_por_estado,
-        'estados_academicos': estados_academicos,
-        'total_matricula_activa': total_matricula_activa,
-        'total_estudiantes': total_estudiantes,
-        'total_estados_academicos': total_estados_academicos,
-    }
 
 
 @login_required

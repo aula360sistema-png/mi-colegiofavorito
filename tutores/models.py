@@ -41,10 +41,15 @@ class Tutor(models.Model):
     PARENTESCOS = (
         ('padre', 'Padre'),
         ('madre', 'Madre'),
+        ('padrastro', 'Padrastro'),
+        ('madrastra', 'Madrastra'),
         ('tutor_legal', 'Tutor legal'),
+        ('encargado', 'Encargado(a)'),
         ('abuelo', 'Abuelo(a)'),
         ('tio', 'Tío(a)'),
         ('hermano', 'Hermano(a)'),
+        ('primo', 'Primo(a)'),
+        ('sobrino', 'Sobrino(a)'),
         ('otro', 'Otro'),
     )
     parentesco = models.CharField(

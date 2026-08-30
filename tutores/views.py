@@ -144,7 +144,9 @@ def tutor_create(request):
             usuario = Usuario.objects.create_user(
                 username=tutor.cedula,
                 email=tutor.correo_personal or f"{tutor.cedula}@colegio.com",
-                password=password
+                password=password,
+                first_name=tutor.primer_nombre,
+                last_name=f"{tutor.primer_apellido} {tutor.segundo_apellido or ''}".strip(),
             )
             usuario.rol = 'tutor'
             usuario.debe_cambiar_password = True

@@ -8,6 +8,27 @@ from django.db import models
 from seguridad.fields import EncryptedCharField, EncryptedTextField
 
 
+def _tipo_de_contenido_valido(archivo):
+    """Valida los primeros bytes (magic bytes) del archivo subido.
+
+    Rechaza polizones que solo cambian la extensión pero cuyo contenido no
+    es un PDF, JPEG o PNG real.
+    """
+    try:
+        archivo.seek(0)
+        cabecera = archivo.read(12)
+        archivo.seek(0)
+    except Exception:
+        return False
+    if cabecera.startswith(b'%PDF-'):
+        return True
+    if cabecera.startswith(b'\xff\xd8\xff'):
+        return True
+    if cabecera.startswith(b'\x89PNG\r\n\x1a\n'):
+        return True
+    return False
+
+
 class Estudiante(models.Model):
     usuario = models.OneToOneField(
         'usuarios.Usuario',
@@ -142,6 +163,10 @@ class DocumentoEstudiante(models.Model):
             })
         if self.archivo and self.archivo.size > 5 * 1024 * 1024:
             raise ValidationError({'archivo': 'El archivo no puede superar los 5 MB.'})
+        if self.archivo and not _tipo_de_contenido_valido(self.archivo):
+            raise ValidationError({
+                'archivo': 'El contenido del archivo no corresponde a un PDF o imagen válida.',
+            })
 
 class ObservacionEstudiante(models.Model):
     TIPOS = (

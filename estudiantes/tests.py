@@ -19,6 +19,7 @@ from estudiantes.models import (
     SolicitudCertificado,
 )
 from usuarios.models import Usuario
+from tutores.models import Tutor
 
 
 class DocumentoEstudianteTests(TestCase):
@@ -1380,3 +1381,76 @@ class DeudaBloqueaCertificadosTests(TestCase):
         )
         solicitud.refresh_from_db()
         self.assertEqual(solicitud.estado, 'aprobada')
+
+
+class EstudianteCreateTutoresTests(TestCase):
+
+    def setUp(self):
+        self.centro = CentroEducativo.objects.create(
+            nombre='Colegio de Prueba',
+            codigo_minerd='MIN-0004'
+        )
+
+        self.director = Usuario.objects.create_user(
+            username='directorcrea',
+            email='directorcrea@test.com',
+            password='clave123'
+        )
+        self.director.rol = 'director'
+        self.director.save()
+
+        self.tutor = Tutor.objects.create(
+            centro=self.centro,
+            primer_nombre='Juan',
+            primer_apellido='Gomez',
+            cedula='00100000004',
+            sexo='M',
+            fecha_nacimiento='1980-04-03',
+            nacionalidad='República Dominicana',
+            direccion='Calle 4',
+            telefono='8095550104',
+        )
+
+        self.client.login(username='directorcrea', password='clave123')
+        session = self.client.session
+        session['centro_id'] = self.centro.id
+        session.save()
+
+    def _datos(self, tutor_id):
+        return {
+            'primer_nombre': 'Maria',
+            'primer_apellido': 'Gomez',
+            'sexo': 'F',
+            'fecha_nacimiento': '2012-04-03',
+            'lugar_nacimiento': 'Santo Domingo',
+            'nacionalidad': 'República Dominicana',
+            'direccion': 'Calle 1',
+            'nombre_tutor': 'Juan Gomez',
+            'cedula_tutor': '00100000003',
+            'telefono_tutor': '8095550103',
+            'parentesco_tutor': 'padre',
+            'tutores': [str(tutor_id)],
+        }
+
+    def test_creacion_guarda_tutores_seleccionados(self):
+        response = self.client.post(
+            '/estudiantes/nuevo/',
+            self._datos(self.tutor.pk),
+        )
+
+        self.assertEqual(response.status_code, 200)
+        estudiante = Estudiante.objects.get(primer_nombre='Maria')
+        self.assertEqual(list(estudiante.tutores.all()), [self.tutor])
+
+    def test_creacion_sin_tutores_no_falla(self):
+        datos = self._datos('')
+        datos['tutores'] = []
+
+        response = self.client.post(
+            '/estudiantes/nuevo/',
+            datos,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        estudiante = Estudiante.objects.get(primer_nombre='Maria')
+        self.assertEqual(list(estudiante.tutores.all()), [])

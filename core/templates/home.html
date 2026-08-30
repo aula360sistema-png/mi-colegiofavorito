@@ -29,6 +29,7 @@
     <link rel="stylesheet" href="{% static 'css/dashboard.css' %}" />
     <link rel="stylesheet" href="{% static 'css/nomina.css' %}" />
     <link rel="stylesheet" href="{% static 'css/asistencia.css' %}" />
+    <link rel="stylesheet" href="{% static 'css/datepicker.css' %}" />
 
     <!-- Theme CSS Variables + Tailwind Overrides -->
     {% if tema_centro %}
@@ -65,7 +66,6 @@
          ============================== */
       .sidebar { background: var(--color-sidebar-bg); border-right: 1px solid rgba(255,255,255,.06); }
       .sidebar-title { color: #fff; }
-      .sidebar-user { color: var(--color-sidebar-text); }
       .sidebar-section { color: var(--color-accent); }
       .sidebar-link { color: var(--color-sidebar-text); }
       .sidebar-link:hover { background: rgba(255,255,255,.08); color: #fff; }
@@ -76,7 +76,6 @@
       .sidebar-sublink { color: var(--color-sidebar-text); }
       .sidebar-sublink:hover { background: rgba(255,255,255,.07); color: #fff; }
       .sidebar-sublink.active { background: var(--color-primary-mid); color: #fff; }
-      .sidebar-role { background: rgba(255,255,255,.15); color: var(--color-sidebar-text); }
       .sidebar-toggle { color: var(--color-sidebar-text); }
       .sidebar-toggle:hover { background: rgba(255,255,255,.18); color: #fff; }
       .sidebar-logo { background: linear-gradient(135deg, var(--color-primary), var(--color-secondary)); box-shadow: 0 10px 25px var(--color-primary-mid); }
@@ -620,6 +619,24 @@
         </a>
       </header>
 
+      <!-- ================= TOPBAR ESCRITORIO (perfil a la derecha) ================= -->
+      <header class="topbar">
+        <div class="topbar-perfil">
+          <button type="button" id="perfil-btn" class="topbar-avatar" title="Mi cuenta" data-action="toggle-perfil-menu" aria-haspopup="true" aria-expanded="false">
+            {% if request.user.foto %}
+            <img src="{{ request.user.foto.url }}" alt="{{ request.user.get_full_name }}">
+            {% else %}
+            <span class="topbar-avatar-iniciales">{{ request.user.first_name|slice:":1" }}{{ request.user.last_name|slice:":1" }}</span>
+            {% endif %}
+          </button>
+          <div class="topbar-identidad">
+            <span class="topbar-nombre">{{ request.user.get_full_name|default:request.user.username }}</span>
+            <span class="topbar-rol">{{ request.user.get_rol_display }}</span>
+          </div>
+          <i class="fas fa-chevron-down topbar-caret"></i>
+        </div>
+      </header>
+
       <!-- ================= FONDO OSCURO (cierra el menú en móvil) ================= -->
       <div class="sidebar-backdrop" data-action="close-sidebar-mobile" aria-hidden="true"></div>
 
@@ -667,7 +684,7 @@
       <aside class="sidebar">
         <!-- HEADER -->
         <div class="sidebar-header">
-          <button type="button" id="perfil-btn" class="sidebar-logo" title="Mi cuenta" data-action="toggle-perfil-menu" aria-haspopup="true" aria-expanded="false">
+          <span class="sidebar-logo">
             {% if centro_logo %}
             <img src="{{ centro_logo }}" alt="Logo del centro"
                  class="w-10 h-10 rounded-lg object-cover ring-2 ring-white/30">
@@ -679,15 +696,9 @@
               {{ request.user.first_name|slice:":1" }}{{ request.user.last_name|slice:":1" }}
             </span>
             {% endif %}
-          </button>
+          </span>
 
-          <div>
-            <h1 class="sidebar-title">{% if centro_nombre %}{{ centro_nombre }}{% else %}Mi Colegio{% endif %}</h1>
-
-            <p class="sidebar-user">{{ request.user.get_full_name }}</p>
-
-            <span class="sidebar-role">{{ request.user.get_rol_display }}</span>
-          </div>
+          <h1 class="sidebar-title">{% if centro_nombre %}{{ centro_nombre }}{% else %}Mi Colegio{% endif %}</h1>
 
           <button type="button" id="sidebar-toggle" class="sidebar-toggle" title="Ocultar menú" data-action="toggle-sidebar">
             <i class="fas fa-angles-left"></i>
@@ -716,6 +727,14 @@
     <a href="{% url 'dashboard_docente' %}" class="sidebar-link">
       <i class="fas fa-home"></i>
       <span>Inicio</span>
+    </a>
+    {% endif %}
+
+    {% has_perm_page 'reportes:reportes' as p_docente_rep %}
+    {% if p_docente_rep %}
+    <a href="{% url 'reportes:reportes' %}" class="sidebar-link">
+      <i class="fas fa-chart-bar"></i>
+      <span>Reportes</span>
     </a>
     {% endif %}
   {% endif %}
@@ -821,6 +840,14 @@
     </a>
     {% endif %}
 
+    {% has_perm_page 'reportes:reportes' as p_sec_rep %}
+    {% if p_sec_rep %}
+    <a href="{% url 'reportes:reportes' %}" class="sidebar-link">
+      <i class="fas fa-chart-bar"></i>
+      <span>Reportes</span>
+    </a>
+    {% endif %}
+
     <!-- ESTUDIANTES -->
     <button type="button" data-action="toggle-menu" data-target="menu-sec-estudiantes" data-menu-toggle="menu-sec-estudiantes" class="menu-toggle">
       <div>
@@ -837,14 +864,6 @@
       <a href="{% url 'estudiante_list' %}" class="sidebar-sublink">
         <i class="fas fa-list"></i>
         <span>Listado</span>
-      </a>
-      {% endif %}
-
-      {% has_perm_page 'estudiante_create' as p_sec_ecreate %}
-      {% if p_sec_ecreate %}
-      <a href="{% url 'estudiante_create' %}" class="sidebar-sublink">
-        <i class="fas fa-user-plus"></i>
-        <span>Nuevo estudiante</span>
       </a>
       {% endif %}
 
@@ -885,14 +904,6 @@
       <a href="{% url 'historial_clinico_list' %}" class="sidebar-sublink">
         <i class="fas fa-heartbeat"></i>
         <span>Historial clínico</span>
-      </a>
-      {% endif %}
-
-      {% has_perm_page 'administracion:reportes' as p_sec_rep %}
-      {% if p_sec_rep %}
-      <a href="{% url 'administracion:reportes' %}" class="sidebar-sublink">
-        <i class="fas fa-chart-bar"></i>
-        <span>Reportes</span>
       </a>
       {% endif %}
     </div>
@@ -956,6 +967,14 @@
       <span>Seguridad de Datos</span>
     </a>
     {% endif %}
+
+    {% has_perm_page 'automatizaciones:tablero' as p_sec_auto %}
+    {% if p_sec_auto %}
+    <a href="{% url 'automatizaciones:tablero' %}" class="sidebar-link">
+      <i class="fas fa-bell"></i>
+      <span>Alertas</span>
+    </a>
+    {% endif %}
   {% endif %}
 
   <!-- ================= DIRECTOR ================= -->
@@ -975,6 +994,14 @@
     </a>
     {% endif %}
 
+    {% has_perm_page 'reportes:reportes' as p_dir_rep %}
+    {% if p_dir_rep %}
+    <a href="{% url 'reportes:reportes' %}" class="sidebar-link">
+      <i class="fas fa-chart-bar"></i>
+      <span>Reportes</span>
+    </a>
+    {% endif %}
+
     <!-- ESTUDIANTES -->
     <button type="button" data-action="toggle-menu" data-target="menu-estudiantes" data-menu-toggle="menu-estudiantes" class="menu-toggle">
       <div>
@@ -991,14 +1018,6 @@
       <a href="{% url 'estudiante_list' %}" class="sidebar-sublink">
         <i class="fas fa-list"></i>
         <span>Listado</span>
-      </a>
-      {% endif %}
-
-      {% has_perm_page 'estudiante_create' as p_dir_ecreate %}
-      {% if p_dir_ecreate %}
-      <a href="{% url 'estudiante_create' %}" class="sidebar-sublink">
-        <i class="fas fa-user-plus"></i>
-        <span>Nuevo estudiante</span>
       </a>
       {% endif %}
 
@@ -1039,14 +1058,6 @@
       <a href="{% url 'historial_clinico_list' %}" class="sidebar-sublink">
         <i class="fas fa-heartbeat"></i>
         <span>Historial clínico</span>
-      </a>
-      {% endif %}
-
-      {% has_perm_page 'administracion:reportes' as p_dir_rep %}
-      {% if p_dir_rep %}
-      <a href="{% url 'administracion:reportes' %}" class="sidebar-sublink">
-        <i class="fas fa-chart-bar"></i>
-        <span>Reportes</span>
       </a>
       {% endif %}
     </div>
@@ -1125,6 +1136,14 @@
         <span>Seguridad de Datos</span>
       </a>
       {% endif %}
+
+      {% has_perm_page 'automatizaciones:tablero' as p_dir_auto %}
+      {% if p_dir_auto %}
+      <a href="{% url 'automatizaciones:tablero' %}" class="sidebar-sublink">
+        <i class="fas fa-bell"></i>
+        <span>Alertas</span>
+      </a>
+      {% endif %}
     </div>
 
     <!-- COMUNICACIONES -->
@@ -1189,6 +1208,14 @@
     </a>
     {% endif %}
 
+    {% has_perm_page 'reportes:reportes' as p_adm_rep %}
+    {% if p_adm_rep %}
+    <a href="{% url 'reportes:reportes' %}" class="sidebar-link">
+      <i class="fas fa-chart-bar"></i>
+      <span>Reportes</span>
+    </a>
+    {% endif %}
+
     <!-- ESTUDIANTES -->
     <button type="button" data-action="toggle-menu" data-target="menu-admin-estudiantes" data-menu-toggle="menu-admin-estudiantes" class="menu-toggle">
       <div>
@@ -1205,14 +1232,6 @@
       <a href="{% url 'estudiante_list' %}" class="sidebar-sublink">
         <i class="fas fa-list"></i>
         <span>Listado</span>
-      </a>
-      {% endif %}
-
-      {% has_perm_page 'estudiante_create' as p_adm_ecreate %}
-      {% if p_adm_ecreate %}
-      <a href="{% url 'estudiante_create' %}" class="sidebar-sublink">
-        <i class="fas fa-user-plus"></i>
-        <span>Nuevo estudiante</span>
       </a>
       {% endif %}
 
@@ -1261,14 +1280,6 @@
       <a href="{% url 'historial_clinico_list' %}" class="sidebar-sublink">
         <i class="fas fa-heartbeat"></i>
         <span>Historial clínico</span>
-      </a>
-      {% endif %}
-
-      {% has_perm_page 'administracion:reportes' as p_adm_rep %}
-      {% if p_adm_rep %}
-      <a href="{% url 'administracion:reportes' %}" class="sidebar-sublink">
-        <i class="fas fa-chart-bar"></i>
-        <span>Reportes</span>
       </a>
       {% endif %}
     </div>
@@ -1360,6 +1371,14 @@
     <a href="{% url 'seguridad:dashboard' %}" class="sidebar-link">
       <i class="fas fa-shield-alt"></i>
       <span>Seguridad de Datos</span>
+    </a>
+    {% endif %}
+
+    {% has_perm_page 'automatizaciones:tablero' as p_adm_auto %}
+    {% if p_adm_auto %}
+    <a href="{% url 'automatizaciones:tablero' %}" class="sidebar-link">
+      <i class="fas fa-bell"></i>
+      <span>Alertas</span>
     </a>
     {% endif %}
 
@@ -1458,6 +1477,8 @@
 
     <!-- ================= JS ================= -->
     <script src="{% static 'js/shared.js' %}"></script>
+    <script src="{% static 'js/datepicker.js' %}"></script>
+    <script src="{% static 'js/mascaras.js' %}"></script>
 
     <!-- ================= ALERTS ================= -->
     {% if messages %}

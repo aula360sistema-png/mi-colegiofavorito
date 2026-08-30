@@ -1,0 +1,137 @@
+{% load formatos %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Planilla de calificaciones — {{ centro.nombre }}</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Georgia, 'Times New Roman', serif; color: #111; padding: 40px; max-width: 1100px; margin: 0 auto; }
+        .encabezado { text-align: center; border-bottom: 3px double #111; padding-bottom: 12px; margin-bottom: 16px; }
+        .encabezado h1 { font-size: 18px; text-transform: uppercase; letter-spacing: 1px; }
+        .encabezado h2 { font-size: 15px; font-weight: normal; margin-top: 4px; }
+        .encabezado p { font-size: 12px; color: #444; margin-top: 2px; }
+        h3.titulo { text-align: center; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+        p.subtitulo { text-align: center; font-size: 12px; color: #444; margin-bottom: 14px; }
+        .datos { font-size: 12.5px; line-height: 1.7; margin-bottom: 14px; }
+        table { width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 16px; }
+        th, td { border: 1px solid #333; padding: 5px 7px; text-align: left; }
+        th { background: #eee; font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.4px; }
+        td.ctr, th.ctr { text-align: center; }
+        td.num { text-align: center; width: 30px; }
+        td.mat { font-family: 'Courier New', monospace; }
+        .nota { text-align: center; font-weight: bold; }
+        .nota.reprobada { color: #b91c1c; }
+        .vacio { color: #aaa; }
+        .sinasig { background: #f7f7f7; }
+        .firmas { display: flex; justify-content: space-between; margin-top: 60px; page-break-inside: avoid; }
+        .firma { text-align: center; width: 280px; }
+        .firma .linea { border-top: 1.5px solid #111; margin-bottom: 5px; padding-top: 5px; font-size: 12px; font-weight: bold; }
+        .firma .cargo { font-size: 11px; color: #444; }
+        .pie { margin-top: 24px; font-size: 10px; color: #666; text-align: center; }
+        .acciones { max-width: 1100px; margin: 0 auto 16px; text-align: right; }
+        button { background: #e11d48; color: #fff; border: 0; padding: 9px 18px; border-radius: 8px; font-size: 13px; cursor: pointer; }
+        .leyenda { font-size: 10.5px; color: #444; margin-bottom: 10px; }
+        @media print { .acciones { display: none; } body { padding: 16px; } }
+        .no-romper { page-break-inside: avoid; }
+    </style>
+</head>
+<body>
+
+    <div class="acciones">
+        <button onclick="window.print()">Imprimir / Guardar PDF</button>
+    </div>
+
+    <div class="encabezado">
+        <h1>República Dominicana</h1>
+        <h2>Ministerio de Educación — MINERD</h2>
+        <p>Código: {{ centro.codigo_minerd }} · {{ centro.nombre }}</p>
+        {% if centro.region %}<p>Regional {{ centro.region }} · Distrito {{ centro.distrito }}</p>{% endif %}
+    </div>
+
+    <h3 class="titulo">Planilla de calificaciones</h3>
+    <p class="subtitulo">
+        {{ grado.nombre }} · Sección {{ seccion.nombre }} · Período {{ periodo.nombre }} ·
+        Año escolar {{ anio_escolar.nombre }}
+    </p>
+
+    <p class="leyenda">
+        Nota mínima de aprobación:
+        {% if nota_minima is not None %}{{ nota_minima }}{% else %}sin configurar{% endif %}.
+        Las celdas vacías indican que aún no hay calificación registrada.
+    </p>
+
+    <table>
+        <thead>
+            <tr>
+                <th class="num">#</th>
+                <th>Estudiante</th>
+                {% for a in asignaturas %}
+                <th class="ctr">{{ a.nombre }}</th>
+                {% endfor %}
+                <th class="ctr">Prom.</th>
+                <th class="ctr">Estado</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for fila in filas %}
+            <tr>
+                <td class="num">{{ forloop.counter }}</td>
+                <td>
+                    {{ fila.inscripcion.estudiante.nombre_completo }}<br>
+                    <span style="font-size: 10px; color: #555;">{{ fila.inscripcion.estudiante.matricula }}</span>
+                </td>
+                {% for a in asignaturas %}
+                {% with nota=fila.notas|get_item:a.id %}
+                <td class="nota{% if nota is not None and nota_minima is not None and nota < nota_minima %} reprobada{% endif %}">
+                    {% if nota is not None %}{{ nota }}{% else %}<span class="vacio">—</span>{% endif %}
+                </td>
+                {% endwith %}
+                {% endfor %}
+                <td class="nota ctr">
+                    {% if fila.promedio_general is not None %}{{ fila.promedio_general }}{% else %}<span class="vacio">—</span>{% endif %}
+                </td>
+                <td class="ctr">
+                    {% if fila.estado == 'aprobado' %}Aprobado
+                    {% elif fila.estado == 'reprobado' %}Reprobado
+                    {% elif fila.estado == 'pendiente' %}Pendiente
+                    {% else %}Sin notas{% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        {% if promedios_por_asignatura %}
+        <tfoot>
+            <tr>
+                <th colspan="2">Promedio del grupo</th>
+                {% for a in asignaturas %}
+                <th class="ctr">
+                    {% with p=promedios_por_asignatura|get_item:a.id %}
+                    {% if p %}{{ p }}{% else %}<span class="vacio">—</span>{% endif %}
+                    {% endwith %}
+                </th>
+                {% endfor %}
+                <th></th>
+                <th></th>
+            </tr>
+        </tfoot>
+        {% endif %}
+    </table>
+
+    <p class="sub">Total de estudiantes: {{ total }} · Emitido el {{ fecha_emision|date:"d/m/Y" }}</p>
+
+    <div class="firmas">
+        <div class="firma">
+            <div class="linea">Director(a)</div>
+            <div class="cargo">Firma y sello</div>
+        </div>
+        <div class="firma">
+            <div class="linea">Registrador(a)</div>
+            <div class="cargo">Firma y sello</div>
+        </div>
+    </div>
+
+    <p class="pie">Documento generado por el Sistema de Gestión Escolar · {{ centro.nombre }}</p>
+
+</body>
+</html>

@@ -1,5 +1,9 @@
+import logging
+
 from openai import OpenAI
 from django.conf import settings
+
+logger = logging.getLogger('security')
 
 _client = None
 
@@ -42,4 +46,5 @@ def preguntar_ia(mensaje):
         return response.choices[0].message.content
 
     except Exception as e:
-        return f"Error IA: {str(e)}"
+        logger.warning('Error inesperado en la IA: %s', type(e).__name__)
+        return "Error IA: No se pudo completar la petición."
