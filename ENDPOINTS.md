@@ -151,12 +151,6 @@ Convenciones:
 | `/administracion/crear-administrativo/` | `administracion:administrativo_create` | `administracion.views.administrativo_create` |
 | `/administracion/personal/` | `administracion:listado_personal` | `administracion.views.listado_personal` |
 | `/administracion/mantenimiento/` | `administracion:mantenimiento` | `administracion.views.mantenimiento_home` |
-| `/reportes/` | `reportes:reportes` | `reportes.views.reportes` |
-| `/reportes/asistencia/` | `reportes:reporte_asistencia` | `reportes.views.reporte_asistencia` |
-| `/reportes/listado-seccion/imprimir/` | `reportes:print_listado_seccion` | `reportes.views.print_listado_seccion` |
-| `/reportes/asistencia/imprimir/` | `reportes:print_asistencia` | `reportes.views.print_asistencia` |
-| `/reportes/carga-academica/` | `reportes:reporte_carga_academica` | `reportes.views.reporte_carga_academica` |
-| `/reportes/carga-academica/imprimir/` | `reportes:print_carga_academica` | `reportes.views.print_carga_academica` |
 | `/administracion/boletines/generar/` | `administracion:generar_boletines` | `administracion.views.generar_boletines` |
 | `/administracion/boletines/cerrar-completivo/` | `administracion:cerrar_completivo` | `administracion.views.cerrar_completivo` |
 | `/administracion/boletines/` | `administracion:lista_boletines` | `administracion.views.lista_boletines` |
@@ -164,6 +158,21 @@ Convenciones:
 | `/administracion/boletines/imprimir/<int:acta_id>/` | `administracion:imprimir_boletin_acta` | `administracion.views.imprimir_boletin_acta` |
 | `/administracion/seguimiento/estudiantes/` | `administracion:seguimiento_estudiantes` | `administracion.views.seguimiento_estudiantes` |
 | `/administracion/seguimiento/estudiante/<int:estudiante_id>/` | `administracion:seguimiento_estudiante` | `administracion.views.seguimiento_estudiante` |
+
+## Reportes — `/reportes/` (namespace `reportes`, app `reportes`)
+
+| URL | Nombre | Vista |
+|---|---|---|
+| `/reportes/` | `reportes:reportes` | `reportes.views.principal.reportes` |
+| `/reportes/asistencia/` | `reportes:reporte_asistencia` | `reportes.views.asistencia.reporte_asistencia` |
+| `/reportes/asistencia/imprimir/` | `reportes:print_asistencia` | `reportes.views.asistencia.print_asistencia` |
+| `/reportes/carga-academica/` | `reportes:reporte_carga_academica` | `reportes.views.carga_academica.reporte_carga_academica` |
+| `/reportes/carga-academica/imprimir/` | `reportes:print_carga_academica` | `reportes.views.carga_academica.print_carga_academica` |
+| `/reportes/calificaciones/` | `reportes:reporte_calificaciones` | `reportes.views.calificaciones.reporte_calificaciones` |
+| `/reportes/calificaciones/imprimir/` | `reportes:print_calificaciones` | `reportes.views.calificaciones.print_calificaciones` |
+| `/reportes/boleta/<int:inscripcion_id>/<int:periodo_id>/` | `reportes:boleta_periodo` | `reportes.views.calificaciones.boleta_periodo` |
+| `/reportes/boleta/imprimir/` | `reportes:print_boleta` | `reportes.views.calificaciones.print_boleta` |
+| `/reportes/listado-seccion/imprimir/` | `reportes:print_listado_seccion` | `reportes.views.principal.print_listado_seccion` |
 
 ## Nómina — `/nomina/` (namespace `nomina`)
 

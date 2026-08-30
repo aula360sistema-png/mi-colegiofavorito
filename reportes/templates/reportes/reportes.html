@@ -581,6 +581,7 @@
 
 </div>
 
+{% if es_gestion %}
 <script nonce="{{ request.csp_nonce }}">
 document.addEventListener('DOMContentLoaded', function () {
 
@@ -622,4 +623,5 @@ document.addEventListener('DOMContentLoaded', function () {
 
 });
 </script>
+{% endif %}
 {% endblock %}

@@ -7,7 +7,7 @@ from django.utils import timezone
 from core.decorators import centro_required, role_required
 from core.utils.anio import obtener_anio_activo
 
-from reportes.services.base import anio_de
+from reportes.services.base import anio_de, es_rol_gestion
 from reportes.services.metricas import obtener_metricas_reportes
 from reportes.views import base as base_views
 
@@ -61,6 +61,7 @@ def reportes(request):
         'sel_grado': sel_grado,
         'sel_seccion': sel_seccion,
         'tab_activa': tab_activa,
+        'es_gestion': es_rol_gestion(request.user),
         'inscripciones': inscripciones,
     })
 

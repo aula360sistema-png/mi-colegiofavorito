@@ -213,6 +213,65 @@ class ReportesAsistenciaTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'id="tab-disponibles" class="tab-panel p-6"')
 
+    def test_hub_gestion_incluye_cascada_ajax(self):
+        self._login(self.director)
+
+        response = self.client.get('/reportes/?tab=consultas')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, '/estudiantes/ajax/cargar-secciones/?grado=')
+
+    def test_hub_docente_no_consume_ajax_y_solo_ve_sus_secciones(self):
+        docente = Usuario.objects.create_user(
+            username='dochub1',
+            email='dochub1@test.com',
+            password='clave123',
+        )
+        docente.rol = 'docente'
+        docente.save()
+
+        registro_docente = _crear_docente(
+            self.centro, '001-0000000-8', 'Luisa', 'Gomez'
+        )
+        registro_docente.usuario = docente
+        registro_docente.save()
+
+        DocenteMateria.objects.create(
+            docente=registro_docente,
+            asignatura=Asignatura.objects.create(
+                centro=self.centro,
+                area=AreaCurricular.objects.create(
+                    centro=self.centro, nombre='Letras'
+                ),
+                nombre='Lengua Española',
+            ),
+            grado=self.grado,
+            seccion=self.seccion,
+            anio_escolar=self.anio,
+        )
+
+        otra_seccion = Seccion.objects.create(
+            centro=self.centro,
+            nombre='B',
+        )
+        self.grado.secciones.add(otra_seccion)
+
+        self._login(docente)
+
+        url = (
+            '/reportes/'
+            f'?tab=consultas&anio={self.anio.id}&grado={self.grado.id}'
+        )
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, 200)
+        # Sin AJAX para docentes (el endpoint rechaza rol docente): la cascada
+        # se resuelve por el servidor al recargar con los filtros.
+        self.assertNotContains(response, 'ajax_cargar_secciones')
+        # El desplegable de secciones solo lista las suyas.
+        self.assertContains(response, '>A</option>')
+        self.assertNotContains(response, '>B</option>')
+
     def test_listado_seccion_imprimible(self):
         self._login(self.director)
 
